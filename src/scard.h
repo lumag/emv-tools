@@ -9,6 +9,14 @@ struct sc;
 struct sc *scard_init(void);
 void scard_shutdown(struct sc **psc);
 
+enum {
+	SCARD_NO_ERROR = 0,
+	SCARD_CARD,
+	SCARD_MEMORY,
+	SCARD_PARAMETER,
+	_SCARD_ERROR_MAX,
+};
+void scard_raise_error(struct sc *sc, int type);
 bool scard_is_error(struct sc *sc);
 const char *scard_error(struct sc *sc);
 

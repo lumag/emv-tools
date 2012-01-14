@@ -121,3 +121,24 @@ size_t scard_transmit(struct sc *sc,
 
 	return dwRecvLength;
 }
+
+void scard_raise_error(struct sc *sc, int type)
+{
+	switch (type) {
+	case SCARD_NO_ERROR:
+		sc->rv = SCARD_S_SUCCESS;
+		break;
+	case SCARD_CARD:
+		sc->rv = SCARD_F_COMM_ERROR;
+		break;
+	case SCARD_MEMORY:
+		sc->rv = SCARD_E_NO_MEMORY;
+		break;
+	case SCARD_PARAMETER:
+		sc->rv = SCARD_E_INVALID_PARAMETER;
+		break;
+	default:
+		sc->rv = SCARD_E_INVALID_PARAMETER;
+		break;
+	}
+}
