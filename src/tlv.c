@@ -102,6 +102,9 @@ static bool tlv_parse_one(struct tlv *tlv, const unsigned char **buf, size_t *le
 
 void tlv_free(struct tlv *tlv)
 {
+	if (!tlv)
+		return;
+
 	while (tlv->e) {
 		struct tlv_elem *e = tlv->e;
 		tlv->e = e->next;
