@@ -2,6 +2,7 @@
 #define SCARD_H
 
 #include <stdbool.h>
+#include <stddef.h>
 
 struct sc;
 
@@ -14,7 +15,7 @@ const char *scard_error(struct sc *sc);
 void scard_connect(struct sc *sc);
 void scard_disconnect(struct sc *sc);
 
-int scard_transmit(struct sc *sc,
+size_t scard_transmit(struct sc *sc,
 		const unsigned char *inbuf, size_t inlen,
 		unsigned char *outbuf, size_t outlen);
 

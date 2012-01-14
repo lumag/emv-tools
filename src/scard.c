@@ -24,6 +24,9 @@ struct sc *scard_init(void)
 	struct sc *sc = calloc(1, sizeof(*sc));
 	DWORD dwReaders;
 
+	if (!sc)
+		return NULL;
+
 	sc->rv = SCardEstablishContext(SCARD_SCOPE_SYSTEM, NULL, NULL, &sc->hContext);
 	CHECK(sc, "SCardEstablishContext", sc);
 
@@ -37,6 +40,10 @@ struct sc *scard_init(void)
 	CHECK(sc, "SCardListReaders", sc);
 
 	sc->mszReaders = calloc(dwReaders, sizeof(char));
+	if (!sc->mszReaders) {
+		scard_shutdown(&sc);
+		return NULL;
+	}
 	sc->rv = SCardListReaders(sc->hContext, NULL, sc->mszReaders, &dwReaders);
 	CHECK(sc, "SCardListReaders", sc);
 #endif
@@ -52,7 +59,8 @@ void scard_shutdown(struct sc **psc)
 	sc->rv = SCardFreeMemory(sc->hContext, sc->mszReaders);
 	CHECK(sc, "SCardFreeMemory", );
 #else
-	free(sc->mszReaders);
+	if (sc->mszReaders)
+		free(sc->mszReaders);
 #endif
 
 	sc->rv = SCardReleaseContext(sc->hContext);
@@ -102,7 +110,7 @@ void scard_disconnect(struct sc *sc)
 	CHECK(sc, "SCardDisconnect", );
 }
 
-int scard_transmit(struct sc *sc,
+size_t scard_transmit(struct sc *sc,
 		const unsigned char *inbuf, size_t inlen,
 		unsigned char *outbuf, size_t outlen)
 {

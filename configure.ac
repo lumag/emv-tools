@@ -17,7 +17,7 @@ AC_PROG_RANLIB
 PKG_CHECK_MODULES([PCSC], [libpcsclite])
 
 # Checks for header files.
-AC_CHECK_HEADERS([stdint.h stdlib.h string.h])
+AC_CHECK_HEADERS([stdint.h stdlib.h string.h stddef.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL
