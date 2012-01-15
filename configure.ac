@@ -7,10 +7,13 @@ AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_SRCDIR([src/tlv.c])
 AC_CONFIG_HEADERS([config.h])
 AC_CANONICAL_TARGET
-AM_INIT_AUTOMAKE([-Wall -Werror foreign])
+AM_INIT_AUTOMAKE([foreign -Wall -Werror])
+m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES], [])
+AM_MAINTAINER_MODE
 
 # Checks for programs.
 AC_PROG_CC
+AM_PROG_CC_C_O
 AC_PROG_RANLIB
 
 # Checks for libraries.
