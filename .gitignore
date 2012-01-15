@@ -9,6 +9,7 @@ autoscan.log
 build-aux/
 config.h
 config.h.in
+config.h.in~
 config.log
 config.status
 configure
@@ -18,4 +19,4 @@ Makefile
 stamp-h1
 
 src/main
-src/pcsc2
+src/pcsc?
