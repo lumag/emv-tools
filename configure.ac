@@ -18,6 +18,7 @@ AC_PROG_RANLIB
 
 # Checks for libraries.
 PKG_CHECK_MODULES([PCSC], [libpcsclite])
+AM_PATH_LIBGCRYPT
 
 # Checks for header files.
 AC_CHECK_HEADERS([stdint.h stdlib.h string.h stddef.h])
