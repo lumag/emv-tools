@@ -54,7 +54,7 @@ static size_t tlv_parse_len(const unsigned char **buf, size_t *len)
 {
 	size_t l;
 
-	if (len == 0)
+	if (*len == 0)
 		return TLV_LEN_INVALID;
 
 	l = **buf;
@@ -63,9 +63,20 @@ static size_t tlv_parse_len(const unsigned char **buf, size_t *len)
 
 	if (!(l & TLV_LEN_LONG))
 		return l;
-	
+
+	size_t ll = l &~ TLV_LEN_LONG;
+	if (*len < ll)
+		return TLV_LEN_INVALID;
+
 	/* FIXME */
-	return TLV_LEN_INVALID;
+	if (ll != 1)
+		return TLV_LEN_INVALID;
+
+	l = **buf;
+	--*len;
+	++*buf;
+
+	return l;
 }
 
 static bool tlv_parse_one(struct tlv *tlv, const unsigned char **buf, size_t *len)
