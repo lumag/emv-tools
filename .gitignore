@@ -21,3 +21,4 @@ stamp-h1
 src/main
 src/pcsc?
 src/capk-test
+src/sda-test
