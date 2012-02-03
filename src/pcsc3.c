@@ -84,8 +84,9 @@ static void docmd(struct sc *sc,
 	if (sw == 0x9000) {
 		tlv = tlv_parse(outbuf, outlen);
 		tlv_visit(tlv, print_cb, NULL);
-	} else
-		free(outbuf);
+	}
+
+	free(outbuf);
 
 	printf("\n");
 
