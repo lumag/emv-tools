@@ -9,7 +9,7 @@ static bool print_cb(void *data, const struct tlv_elem_info *tei)
 		printf("NULL\n");
 		return false;
 	}
-	printf("%hx %x\n", tei->tag, tei->len);
+	printf("%hx %zx\n", tei->tag, tei->len);
 
 	return true;
 }
