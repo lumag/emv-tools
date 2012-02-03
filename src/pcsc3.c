@@ -19,8 +19,8 @@ static char *pcsc_stringify_error(LONG rv)
 #define CHECK(f, rv) \
 	if (SCARD_S_SUCCESS != rv) \
 	{ \
-	 printf(f ": %s\n", pcsc_stringify_error(rv)); \
-	 return -1; \
+		printf(f ": %s\n", pcsc_stringify_error(rv)); \
+		return -1; \
 	}
 
 static bool print_cb(void *data, const struct tlv_elem_info *tei)
@@ -60,7 +60,7 @@ static struct tlv *docmd(struct sc *sc,
 		unsigned char p1,
 		unsigned char p2,
 		size_t dlen,
-	       	const unsigned char *data)
+		const unsigned char *data)
 {
 	unsigned short sw;
 	size_t outlen;
@@ -69,7 +69,7 @@ static struct tlv *docmd(struct sc *sc,
 
 	printf("CMD: %02hhx %02hhx %02hhx %02hhx (%02hhx)\n", cla, ins, p1, p2, dlen);
 	outbuf = sc_command(sc, cla, ins, p1, p2,
-		       dlen, data, &sw, &outlen);
+			dlen, data, &sw, &outlen);
 	if (scard_is_error(sc)) {
 		printf(scard_error(sc));
 		return NULL;
@@ -97,10 +97,10 @@ int main(void)
 {
 	struct sc *sc;
 	unsigned char cmd1[] = {
-	       0x31, 0x50, 0x41, 0x59, 0x2e, 0x53, 0x59, 0x53, 0x2e, 0x44, 0x44, 0x46, 0x30, 0x31,
+		0x31, 0x50, 0x41, 0x59, 0x2e, 0x53, 0x59, 0x53, 0x2e, 0x44, 0x44, 0x46, 0x30, 0x31,
 	};
 	unsigned char cmd4[] = {
-	       0xa0, 0x00, 0x00, 0x00, 0x03, 0x10, 0x10,
+		0xa0, 0x00, 0x00, 0x00, 0x03, 0x10, 0x10,
 	};
 	unsigned char cmd5[] = {
 		0x83, 0x00,
