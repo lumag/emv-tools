@@ -25,7 +25,7 @@ static char *pcsc_stringify_error(LONG rv)
 
 static bool print_cb(void *data, const struct tlv_elem_info *tei)
 {
-	int i;
+	int i, j;
 
 	if (!tei) {
 		printf("NULL\n");
@@ -33,15 +33,23 @@ static bool print_cb(void *data, const struct tlv_elem_info *tei)
 	}
 
 	if (tei->tag < 0x100)
-		printf("%02hx   %02x -", tei->tag, tei->len);
+		printf("Got tag %02hx len %02x:\n", tei->tag, tei->len);
 	else
-		printf("%04hx %02x -", tei->tag, tei->len);
-	for (i = 0; i < tei->len; i++)
-		printf(" %02hhx", tei->ptr[i]);
-	printf (" |");
-	for (i = 0; i < tei->len; i++)
-		printf("%c", (tei->ptr[i] >= 0x20 && tei->ptr[i] < 0x7f) ? tei->ptr[i] : '.' );
-	printf("\n");
+		printf("Got tag %04hx len %02x:\n", tei->tag, tei->len);
+	for (i = 0; i < tei->len; i += 16) {
+		printf("\t%02x:", i);
+		for (j = 0; j < 16; j++) {
+			if (i + j < tei->len)
+				printf(" %02hhx", tei->ptr[i + j]);
+			else
+				printf("   ");
+		}
+		printf(" |");
+		for (j = 0; j < 16 && i + j < tei->len; j++) {
+			printf("%c", (tei->ptr[i+j] >= 0x20 && tei->ptr[i+j] < 0x7f) ? tei->ptr[i+j] : '.' );
+		}
+		printf("\n");
+	}
 
 	return true;
 }
@@ -57,7 +65,6 @@ static void docmd(struct sc *sc,
 	unsigned short sw;
 	size_t outlen;
 	unsigned char *outbuf;
-	int i;
 	struct tlv *tlv = NULL;
 
 	printf("CMD: %02hhx %02hhx %02hhx %02hhx (%02hhx)\n", cla, ins, p1, p2, dlen);
@@ -68,14 +75,19 @@ static void docmd(struct sc *sc,
 		return;
 	}
 	printf("response (%hx): ", sw);
+#if 0
+	int i;
 	for(i=0; i<outlen; i++)
 		printf("%02X ", outbuf[i]);
 	printf("\n");
+#endif
 	if (sw == 0x9000) {
 		tlv = tlv_parse(outbuf, outlen);
 		tlv_visit(tlv, print_cb, NULL);
 	} else
 		free(outbuf);
+
+	printf("\n");
 
 	tlv_free(tlv);
 }
