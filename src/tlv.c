@@ -128,9 +128,18 @@ void tlv_free(struct tlv *tlv)
 
 struct tlv *tlv_parse(const unsigned char *buf, size_t len)
 {
-	unsigned char *buf_copy = malloc(len);
 	struct tlv *r = calloc(1, sizeof(*r));
+
+	if (!r)
+		return NULL;
+
+	unsigned char *buf_copy = malloc(len);
 	const unsigned char *cbuf = buf_copy;
+
+	if (!buf_copy) {
+		free(r);
+		return NULL;
+	}
 
 	memcpy(buf_copy, buf, len);
 
