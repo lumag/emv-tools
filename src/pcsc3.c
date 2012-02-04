@@ -4,6 +4,7 @@
 #include "scard.h"
 #include "sc_helpers.h"
 #include "tlv.h"
+#include "tlvs.h"
 
 #ifdef WIN32
 static char *pcsc_stringify_error(LONG rv)
@@ -74,7 +75,7 @@ static struct tlv *docmd(struct sc *sc,
 		printf(scard_error(sc));
 		return NULL;
 	}
-	printf("response (%hx): ", sw);
+	printf("response (%hx):\n", sw);
 #if 0
 	int i;
 	for(i=0; i<outlen; i++)
@@ -83,7 +84,6 @@ static struct tlv *docmd(struct sc *sc,
 #endif
 	if (sw == 0x9000) {
 		tlv = tlv_parse(outbuf, outlen);
-		tlv_visit(tlv, print_cb, NULL);
 	}
 
 	free(outbuf);
@@ -96,9 +96,11 @@ static struct tlv *docmd(struct sc *sc,
 int main(void)
 {
 	struct sc *sc;
+#if 0
 	unsigned char cmd1[] = {
 		0x31, 0x50, 0x41, 0x59, 0x2e, 0x53, 0x59, 0x53, 0x2e, 0x44, 0x44, 0x46, 0x30, 0x31,
 	};
+#endif
 	unsigned char cmd4[] = {
 		0xa0, 0x00, 0x00, 0x00, 0x03, 0x10, 0x10,
 	};
@@ -118,23 +120,50 @@ int main(void)
 		return 1;
 	}
 
+#if 0
 	tlv_free(docmd(sc, 0x00, 0xa4, 0x04, 0x00, sizeof(cmd1), cmd1));
 	tlv_free(docmd(sc, 0x00, 0xb2, 0x01, (0x01 << 3) | 0x04, 0, NULL));
 	tlv_free(docmd(sc, 0x00, 0xb2, 0x02, (0x01 << 3) | 0x04, 0, NULL));
-//	tlv_free(docmd(sc, 0x00, 0xa4, 0x04, 0x00, sizeof(cmd2), cmd2));
-//	tlv_free(docmd(sc, 0x00, 0xa4, 0x04, 0x00, sizeof(cmd3), cmd3));
-	tlv_free(docmd(sc, 0x00, 0xa4, 0x04, 0x00, sizeof(cmd4), cmd4));
-	tlv_free(docmd(sc, 0x80, 0xa8, 0x00, 0x00, sizeof(cmd5), cmd5));
-	tlv_free(docmd(sc, 0x00, 0xb2, 0x01, 0x08 | 0x04, 0, NULL));
-	tlv_free(docmd(sc, 0x00, 0xb2, 0x01, 0x30 | 0x04, 0, NULL));
-	tlv_free(docmd(sc, 0x00, 0xb2, 0x01, 0x10 | 0x04, 0, NULL));
-	tlv_free(docmd(sc, 0x00, 0xb2, 0x02, 0x10 | 0x04, 0, NULL));
-	tlv_free(docmd(sc, 0x00, 0xb2, 0x03, 0x10 | 0x04, 0, NULL));
-	tlv_free(docmd(sc, 0x00, 0xb2, 0x04, 0x10 | 0x04, 0, NULL));
-	tlv_free(docmd(sc, 0x00, 0xb2, 0x05, 0x10 | 0x04, 0, NULL));
-	tlv_free(docmd(sc, 0x00, 0xb2, 0x01, 0x18 | 0x04, 0, NULL));
-	tlv_free(docmd(sc, 0x00, 0xb2, 0x02, 0x18 | 0x04, 0, NULL));
+#endif
 
+	struct tlvs *s = tlvs_new();
+	struct tlv *t;
+	const struct tlv_elem_info *e;
+	t = docmd(sc, 0x00, 0xa4, 0x04, 0x00, sizeof(cmd4), cmd4);
+	tlvs_add(s, t);
+	t = docmd(sc, 0x80, 0xa8, 0x00, 0x00, sizeof(cmd5), cmd5);
+	if ((e = tlv_get(t, 0x80)) != NULL) {
+		struct tlv *t1, *t2;
+		t1 = tlv_new(0x82, e->ptr, 2);
+		t2 = tlv_new(0x94, e->ptr+2, e->len - 2);
+		tlvs_add(s, t1);
+		tlvs_add(s, t2);
+		tlv_free(t);
+	} else {
+		tlvs_add(s, t);
+	}
+
+	e = tlvs_get(s, 0x94);
+	int i;
+	for (i = 0; i < e->len; i += 4) {
+		unsigned char p2 = e->ptr[i + 0];
+		unsigned char first = e->ptr[i + 1];
+		unsigned char last = e->ptr[i + 2];
+//		unsigned char sdarec = e->ptr[i + 3];
+
+		if (p2 == 0 || p2 == (31 << 3) || first == 0 || first > last)
+			break; /* error */
+
+		for (; first <= last; first ++) {
+			t = docmd(sc, 0x00, 0xb2, first, p2 | 0x04, 0, NULL);
+			tlv_remove(t, 0x70);
+			tlvs_add(s, t);
+		}
+
+	}
+
+	tlvs_visit(s, print_cb, NULL);
+	tlvs_free(s);
 
 	scard_disconnect(sc);
 	if (scard_is_error(sc)) {
