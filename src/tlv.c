@@ -181,3 +181,57 @@ const struct tlv_elem_info *tlv_get(struct tlv *tlv, uint16_t tag)
 
 	return NULL;
 }
+
+struct tlv *tlv_new(uint16_t tag, const unsigned char *buf, size_t len)
+{
+	struct tlv *r = calloc(1, sizeof(*r));
+
+	if (!r)
+		return NULL;
+
+	unsigned char *buf_copy = malloc(len);
+
+	if (!buf_copy) {
+		free(r);
+		return NULL;
+	}
+
+	memcpy(buf_copy, buf, len);
+
+	r->buf = buf_copy;
+	r->len = len;
+
+	struct tlv_elem *e = calloc(1, sizeof(*e));
+	if (!e) {
+		free(r);
+		free(buf_copy);
+		return NULL;
+	}
+
+	e->info.tag = tag;
+	e->info.ptr = buf_copy;
+	e->info.len = len;
+
+	e->next = r->e;
+	r->e = e;
+
+	return r;
+}
+
+bool tlv_remove(struct tlv *tlv, uint16_t tag)
+{
+	if (!tlv)
+		return false;
+
+	struct tlv_elem *e, **p;
+	for (p = &tlv->e; *p; p = &((*p)->next)) {
+		if ((*p)->info.tag == tag) {
+			e = *p;
+			*p = e->next;
+			free(e);
+			return true;
+		}
+	}
+
+	return false;
+}
