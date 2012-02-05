@@ -27,4 +27,11 @@ size_t scard_transmit(struct sc *sc,
 		const unsigned char *inbuf, size_t inlen,
 		unsigned char *outbuf, size_t outlen);
 
+enum {
+	SC_PROTO_INVALID,
+	SC_PROTO_T0,
+	SC_PROTO_T1,
+};
+int scard_getproto(struct sc *sc);
+
 #endif
