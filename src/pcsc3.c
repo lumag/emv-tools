@@ -34,9 +34,9 @@ static bool print_cb(void *data, const struct tlv_elem_info *tei)
 	}
 
 	if (tei->tag < 0x100)
-		printf("Got tag %02hx len %02x:\n", tei->tag, tei->len);
+		printf("Got tag %02hx len %02zx:\n", tei->tag, tei->len);
 	else
-		printf("Got tag %04hx len %02x:\n", tei->tag, tei->len);
+		printf("Got tag %04hx len %02zx:\n", tei->tag, tei->len);
 	for (i = 0; i < tei->len; i += 16) {
 		printf("\t%02x:", i);
 		for (j = 0; j < 16; j++) {
@@ -68,7 +68,7 @@ static struct tlv *docmd(struct sc *sc,
 	unsigned char *outbuf;
 	struct tlv *tlv = NULL;
 
-	printf("CMD: %02hhx %02hhx %02hhx %02hhx (%02hhx)\n", cla, ins, p1, p2, dlen);
+	printf("CMD: %02hhx %02hhx %02hhx %02hhx (%02zx)\n", cla, ins, p1, p2, dlen);
 	outbuf = sc_command(sc, cla, ins, p1, p2,
 			dlen, data, &sw, &outlen);
 	if (scard_is_error(sc)) {
