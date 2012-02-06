@@ -86,7 +86,8 @@ static struct tlv *docmd(struct sc *sc,
 		tlv = tlv_parse(outbuf, outlen);
 	}
 
-	free(outbuf);
+	if (!tlv)
+		free(outbuf);
 
 	printf("\n");
 
@@ -134,8 +135,8 @@ int main(void)
 	t = docmd(sc, 0x80, 0xa8, 0x00, 0x00, sizeof(cmd5), cmd5);
 	if ((e = tlv_get(t, 0x80)) != NULL) {
 		struct tlv *t1, *t2;
-		t1 = tlv_new(0x82, e->ptr, 2);
-		t2 = tlv_new(0x94, e->ptr+2, e->len - 2);
+		t1 = tlv_new_copy(0x82, e->ptr, 2);
+		t2 = tlv_new_copy(0x94, e->ptr+2, e->len - 2);
 		tlvs_add(s, t1);
 		tlvs_add(s, t2);
 		tlv_free(t);

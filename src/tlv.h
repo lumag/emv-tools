@@ -10,8 +10,10 @@ struct tlv_elem_info {
 	const unsigned char *ptr;
 };
 
-struct tlv *tlv_parse(const unsigned char *buf, size_t len);
-struct tlv *tlv_new(uint16_t tag, const unsigned char *buf, size_t len);
+struct tlv *tlv_parse(unsigned char *buf, size_t len);
+struct tlv *tlv_parse_copy(const unsigned char *buf, size_t len);
+struct tlv *tlv_new(uint16_t tag, unsigned char *buf, size_t len);
+struct tlv *tlv_new_copy(uint16_t tag, const unsigned char *buf, size_t len);
 void tlv_free(struct tlv *tlv);
 bool tlv_visit(struct tlv *tlv, bool (*cb)(void *data, const struct tlv_elem_info *tei), void *data);
 const struct tlv_elem_info *tlv_get(struct tlv *tlv, uint16_t tag);

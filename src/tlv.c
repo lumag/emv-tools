@@ -50,6 +50,22 @@ static uint16_t tlv_parse_tag(const unsigned char **buf, size_t *len)
 	return tag;
 }
 
+struct tlv *tlv_parse_copy(const unsigned char *buf, size_t len)
+{
+	if (!buf)
+		return NULL;
+
+	unsigned char *buf2 = malloc(len);
+	memcpy(buf2, buf, len);
+
+	struct tlv *r = tlv_parse(buf2, len);
+
+	if (!r)
+		free(buf2);
+
+	return r;
+}
+
 static size_t tlv_parse_len(const unsigned char **buf, size_t *len)
 {
 	size_t l;
@@ -126,29 +142,24 @@ void tlv_free(struct tlv *tlv)
 	free(tlv);
 }
 
-struct tlv *tlv_parse(const unsigned char *buf, size_t len)
+struct tlv *tlv_parse(unsigned char *buf, size_t len)
 {
-	struct tlv *r = calloc(1, sizeof(*r));
+	const unsigned char *cbuf = buf;
 
+	if (!buf)
+		return NULL;
+
+	struct tlv *r = calloc(1, sizeof(*r));
 	if (!r)
 		return NULL;
 
-	unsigned char *buf_copy = malloc(len);
-	const unsigned char *cbuf = buf_copy;
-
-	if (!buf_copy) {
-		free(r);
-		return NULL;
-	}
-
-	memcpy(buf_copy, buf, len);
-
-	r->buf = buf_copy;
+	r->buf = buf;
 	r->len = len;
 
 	if (tlv_parse_one(r, &cbuf, &len))
 		return r;
 	else {
+		r->buf = NULL; /* Don't free it in tlv_free */
 		tlv_free(r);
 		return NULL;
 	}
@@ -182,34 +193,26 @@ const struct tlv_elem_info *tlv_get(struct tlv *tlv, uint16_t tag)
 	return NULL;
 }
 
-struct tlv *tlv_new(uint16_t tag, const unsigned char *buf, size_t len)
+struct tlv *tlv_new(uint16_t tag, unsigned char *buf, size_t len)
 {
-	struct tlv *r = calloc(1, sizeof(*r));
+	if (!buf)
+		return NULL;
 
+	struct tlv *r = calloc(1, sizeof(*r));
 	if (!r)
 		return NULL;
 
-	unsigned char *buf_copy = malloc(len);
-
-	if (!buf_copy) {
-		free(r);
-		return NULL;
-	}
-
-	memcpy(buf_copy, buf, len);
-
-	r->buf = buf_copy;
+	r->buf = buf;
 	r->len = len;
 
 	struct tlv_elem *e = calloc(1, sizeof(*e));
 	if (!e) {
 		free(r);
-		free(buf_copy);
 		return NULL;
 	}
 
 	e->info.tag = tag;
-	e->info.ptr = buf_copy;
+	e->info.ptr = buf;
 	e->info.len = len;
 
 	e->next = r->e;
@@ -217,6 +220,23 @@ struct tlv *tlv_new(uint16_t tag, const unsigned char *buf, size_t len)
 
 	return r;
 }
+
+struct tlv *tlv_new_copy(uint16_t tag, const unsigned char *buf, size_t len)
+{
+	if (!buf)
+		return NULL;
+
+	unsigned char *buf2 = malloc(len);
+	memcpy(buf2, buf, len);
+
+	struct tlv *r = tlv_new(tag, buf2, len);
+
+	if (!r)
+		free(buf2);
+
+	return r;
+}
+
 
 bool tlv_remove(struct tlv *tlv, uint16_t tag)
 {
