@@ -24,33 +24,39 @@ static char *pcsc_stringify_error(LONG rv)
 		return -1; \
 	}
 
-static bool print_cb(void *data, const struct tlv_elem_info *tei)
+static void dump(const unsigned char *ptr, size_t len)
 {
 	int i, j;
 
+	for (i = 0; i < len; i += 16) {
+		printf("\t%02x:", i);
+		for (j = 0; j < 16; j++) {
+			if (i + j < len)
+				printf(" %02hhx", ptr[i + j]);
+			else
+				printf("   ");
+		}
+		printf(" |");
+		for (j = 0; j < 16 && i + j < len; j++) {
+			printf("%c", (ptr[i+j] >= 0x20 && ptr[i+j] < 0x7f) ? ptr[i+j] : '.' );
+		}
+		printf("\n");
+	}
+}
+
+static bool print_cb(void *data, const struct tlv_elem_info *tei)
+{
 	if (!tei) {
 		printf("NULL\n");
 		return false;
 	}
 
 	if (tei->tag < 0x100)
-		printf("Got tag %02hx len %02zx:\n", tei->tag, tei->len);
+		printf("Got tag %02hx len %02x:\n", tei->tag, tei->len);
 	else
-		printf("Got tag %04hx len %02zx:\n", tei->tag, tei->len);
-	for (i = 0; i < tei->len; i += 16) {
-		printf("\t%02x:", i);
-		for (j = 0; j < 16; j++) {
-			if (i + j < tei->len)
-				printf(" %02hhx", tei->ptr[i + j]);
-			else
-				printf("   ");
-		}
-		printf(" |");
-		for (j = 0; j < 16 && i + j < tei->len; j++) {
-			printf("%c", (tei->ptr[i+j] >= 0x20 && tei->ptr[i+j] < 0x7f) ? tei->ptr[i+j] : '.' );
-		}
-		printf("\n");
-	}
+		printf("Got tag %04hx len %02x:\n", tei->tag, tei->len);
+
+	dump(tei->ptr, tei->len);
 
 	return true;
 }
