@@ -129,13 +129,13 @@ static unsigned char *sc_command_t1(struct sc *sc,
 	buf[1] = ins;
 	buf[2] = p1;
 	buf[3] = p2;
-	buf[4] = dlen;
-	len = 5;
+	len = 4;
 	if (data != NULL) {
+		buf[4] = dlen;
 		memcpy(buf + 5, data, dlen);
-		buf[4 + 1 + dlen] = 0;
 		len += dlen + 1;
 	}
+	buf[len] = 0;
 
 	obuf = malloc(osize);
 
