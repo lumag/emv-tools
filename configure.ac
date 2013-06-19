@@ -15,6 +15,7 @@ AM_MAINTAINER_MODE
 AC_PROG_CC
 AM_PROG_CC_C_O
 AC_PROG_RANLIB
+AM_PROG_AR
 
 # Checks for libraries.
 PKG_CHECK_MODULES([PCSC], [libpcsclite])
