@@ -6,24 +6,6 @@
 #include "tlv.h"
 #include "tlvs.h"
 
-#ifdef WIN32
-static char *pcsc_stringify_error(LONG rv)
-{
-
-	static char out[20];
-	sprintf_s(out, sizeof(out), "0x%08X", rv);
-
-	return out;
-}
-#endif
-
-#define CHECK(f, rv) \
-	if (SCARD_S_SUCCESS != rv) \
-	{ \
-		printf(f ": %s\n", pcsc_stringify_error(rv)); \
-		return -1; \
-	}
-
 static void dump(const unsigned char *ptr, size_t len)
 {
 	int i, j;

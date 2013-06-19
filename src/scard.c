@@ -154,3 +154,14 @@ int scard_getproto(struct sc *sc)
 
 	return sc->wProto;
 }
+
+#ifdef WIN32
+static char *pcsc_stringify_error(LONG rv)
+{
+
+	static char out[20];
+	sprintf_s(out, sizeof(out), "0x%08X", rv);
+
+	return out;
+}
+#endif
