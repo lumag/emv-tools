@@ -51,6 +51,12 @@ int main(int argc, char **argv) {
 	init_gcry();
 
 	FILE *f = fopen(argv[1] ? : "capk.txt", "r");
+
+	if (!f) {
+		perror("fopen");
+		return 1;
+	}
+
 	while (!feof(f)) {
 		char buf[BUFSIZ];
 		if (fgets(buf, sizeof(buf), f) == NULL)
