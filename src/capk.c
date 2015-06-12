@@ -333,6 +333,30 @@ bool capk_verify(const struct capk *pk)
 	return r;
 }
 
+struct capk *capk_new(size_t modlen, size_t explen)
+{
+	struct capk *pk;
+
+	/* Not supported ATM */
+	if (explen > 3)
+		return NULL;
+
+	pk = calloc(1, sizeof(*pk));
+	if (!pk)
+		return NULL;
+
+	pk->mlen = modlen;
+	pk->elen = explen;
+
+	pk->modulus = calloc(modlen, 1);
+	if (!pk->modulus) {
+		free(pk);
+		pk = NULL;
+	}
+
+	return pk;
+}
+
 void capk_free(struct capk *pk)
 {
 	free(pk->modulus);
