@@ -359,6 +359,9 @@ struct capk *capk_new(size_t modlen, size_t explen)
 
 void capk_free(struct capk *pk)
 {
+	if (!pk)
+		return;
+
 	free(pk->modulus);
 	free(pk);
 }
