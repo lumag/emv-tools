@@ -20,6 +20,7 @@ struct capk {
 #define EXPIRE(yy, mm, dd)	0x ## yy ## mm ## dd
 
 struct capk *capk_parse_pk(char *buf);
+void capk_free(struct capk *pk);
 unsigned char *capk_dump_pk(const struct capk *pk);
 bool capk_verify(const struct capk *pk);
 

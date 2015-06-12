@@ -46,8 +46,7 @@ int main(int argc, char **argv) {
 			}
 		} else
 			fprintf(stderr, "Failed!\n");
-		free(pk->modulus);
-		free(pk);
+		capk_free(pk);
 	}
 
 	return 0;

@@ -328,3 +328,8 @@ bool capk_verify(const struct capk *pk)
 	return r;
 }
 
+void capk_free(struct capk *pk)
+{
+	free(pk->modulus);
+	free(pk);
+}
