@@ -2,6 +2,7 @@
 #define CAPK_H
 
 #include <stdbool.h>
+#include <stddef.h>
 
 struct capk {
 	unsigned char rid[5];
@@ -16,8 +17,6 @@ struct capk {
 	unsigned int expire;
 };
 
-#define HASH_SHA_1	1
-#define PK_RSA		1
 #define EXPIRE(yy, mm, dd)	0x ## yy ## mm ## dd
 
 struct capk *capk_parse_pk(char *buf);

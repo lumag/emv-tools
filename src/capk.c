@@ -1,9 +1,9 @@
 #include <stdbool.h>
-#define GCRYPT_NO_DEPRECATED
-#define GCRYPT_NO_MPI_MACROS
-#include <gcrypt.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "capk.h"
+#include "crypto_backend.h"
 
 #define BCD(c) (((c) >= '0' && (c) <= '9') ? ((c) - '0') : \
 		-1)
@@ -308,37 +308,22 @@ err:
 
 bool capk_verify(const struct capk *pk)
 {
-	gcry_error_t err;
-	gcry_md_hd_t mdh;
-	int algo = GCRY_MD_SHA1;
-
-	if (pk->hash_algo != HASH_SHA_1 || pk->pk_algo != PK_RSA)
+	struct crypto_hash *ch = crypto_hash_open(pk->hash_algo);
+	if (!ch)
 		return false;
 
-	err = gcry_md_open(&mdh, algo, 0);
-	if (err) {
-#if 0
-		fprintf(stderr, "LibGCrypt error %s/%s\n",
-				gcry_strsource (err),
-				gcry_strerror (err));
-#endif
-		return false;
-	}
+	crypto_hash_write(ch, pk->rid, sizeof(pk->rid));
+	crypto_hash_write(ch, &pk->index, 1);
+	crypto_hash_write(ch, pk->modulus, pk->mlen);
+	crypto_hash_write(ch, pk->exp, pk->elen);
 
-	gcry_md_write(mdh, pk->rid, sizeof(pk->rid));
-	gcry_md_putc(mdh, pk->index);
-	gcry_md_write(mdh, pk->modulus, pk->mlen);
-	gcry_md_write(mdh, pk->exp, pk->elen);
-
-	gcry_md_final(mdh);
-
-	unsigned char *h = gcry_md_read(mdh, 0);
+	unsigned char *h = crypto_hash_read(ch);
 	if (!h)
 		return false;
 
 	bool r = memcmp(h, pk->hash, 20) ? false : true;
 
-	gcry_md_close(mdh);
+	crypto_hash_close(ch);
 
 	return r;
 }

@@ -1,9 +1,9 @@
 #include <stdio.h>
-#define GCRYPT_NO_DEPRECATED
-#define GCRYPT_NO_MPI_MACROS
-#include <gcrypt.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "capk.h"
+#include "crypto_backend.h"
 
 struct capk vsdc_01 = {
 	.rid = { 0xa0, 0x00, 0x00, 0x00, 0x03, },
@@ -72,206 +72,86 @@ const unsigned char ssd2[] = {
 };
 
 int main(void) {
-	/* Version check should be the very first call because it
-	 * makes sure that important subsystems are intialized. */
-	if (!gcry_check_version (GCRYPT_VERSION)) {
-		fputs ("libgcrypt version mismatch\n", stderr);
-		exit (2);
-	}
-
-	/* We don't want to see any warnings, e.g. because we have not yet
-	 * parsed program options which might be used to suppress such
-	 * warnings. */
-	gcry_control (GCRYCTL_SUSPEND_SECMEM_WARN);
-
-	/* ... If required, other initialization goes here.  Note that the
-	 * process might still be running with increased privileges and that
-	 * the secure memory has not been intialized.  */
-
-	/* Allocate a pool of 16k secure memory.  This make the secure memory
-	 * available and also drops privileges where needed.  */
-	gcry_control (GCRYCTL_INIT_SECMEM, 16384, 0);
-
-	/* It is now okay to let Libgcrypt complain when there was/is
-	 * a problem with the secure memory. */
-	gcry_control (GCRYCTL_RESUME_SECMEM_WARN);
-
-	/* ... If required, other initialization goes here.  */
-
-	/* Tell Libgcrypt that initialization has completed. */
-	gcry_control (GCRYCTL_INITIALIZATION_FINISHED, 0);
-	    gcry_control (GCRYCTL_SET_DEBUG_FLAGS, 1u , 0);
+	if (!crypto_be_init())
+		exit(2);
 
 	const struct capk *pk = &vsdc_01;
 
-	gcry_error_t err;
-
-	gcry_sexp_t ksexp;
-	gcry_sexp_t csexp;
-	gcry_sexp_t usexp;
-	gcry_sexp_t asexp;
-	gcry_mpi_t ipk_data_mpi;
-
-	err = gcry_sexp_build(&ksexp, NULL, "(public-key (rsa (n %b) (e %b)))",
-			pk->mlen, pk->modulus, pk->elen, pk->exp);
-	if (err) {
-		fprintf(stderr, "LibGCrypt error %s/%s\n",
-				gcry_strsource (err),
-				gcry_strerror (err));
+	struct crypto_pk *kcp = crypto_pk_open(PK_RSA,
+			pk->modulus, pk->mlen,
+			pk->exp, pk->elen);
+	if (!kcp)
 		exit(1);
-	}
-
-	err = gcry_sexp_build(&csexp, NULL, "(data (flags raw) (value %b))",
-			sizeof(issuer_cert), issuer_cert);
-	if (err) {
-		fprintf(stderr, "LibGCrypt error %s/%s\n",
-				gcry_strsource (err),
-				gcry_strerror (err));
-		exit(1);
-	}
-
-	err = gcry_pk_encrypt(&usexp, csexp, ksexp);
-	if (err) {
-		fprintf(stderr, "LibGCrypt error %s/%s\n",
-				gcry_strsource (err),
-				gcry_strerror (err));
-		exit(1);
-	}
-
-	asexp = gcry_sexp_find_token(usexp, "a", 1);
-
-	ipk_data_mpi = gcry_sexp_nth_mpi(asexp, 1, GCRYMPI_FMT_USG);
-
-	gcry_sexp_release(usexp);
-	gcry_sexp_release(csexp);
-	gcry_sexp_release(asexp);
 
 	unsigned char *ipk_data;
 	size_t ipk_data_len;
+	ipk_data = crypto_pk_encrypt(kcp, issuer_cert, sizeof(issuer_cert), &ipk_data_len);
+
+	crypto_pk_close(kcp);
+
 	int i;
-	gcry_mpi_aprint(GCRYMPI_FMT_USG, &ipk_data, &ipk_data_len, ipk_data_mpi);
 	for (i = 0; i < ipk_data_len; i++)
 		printf(i ? " %02hhx" : "%02hhx", ipk_data[i]);
 	printf("\n");
 
-	gcry_mpi_dump(ipk_data_mpi); printf("\n");
-	gcry_mpi_t t = gcry_mpi_new(1024);
-	gcry_mpi_clear_highbit(ipk_data_mpi, (128 - 36 + 21) * 8);
-	gcry_mpi_rshift(t, ipk_data_mpi, 21 * 8);
-	gcry_mpi_lshift(ipk_data_mpi, t, 36 * 8);
+	size_t ipk_pk_len = ipk_data[13];
+	unsigned char *ipk_pk = malloc(ipk_pk_len);
+	memcpy(ipk_pk, ipk_data + 15, ipk_data_len - 36);
+	memcpy(ipk_pk + ipk_data_len - 36, issuer_rem, sizeof(issuer_rem));
 
-
-	gcry_mpi_t ipk_rem_mpi;
-	err = gcry_mpi_scan(&ipk_rem_mpi, GCRYMPI_FMT_USG, issuer_rem, sizeof(issuer_rem), NULL);
-	if (err) {
-		fprintf(stderr, "LibGCrypt error %s/%s\n",
-				gcry_strsource (err),
-				gcry_strerror (err));
-		exit(1);
-	}
-	gcry_mpi_add(t, ipk_data_mpi, ipk_rem_mpi);
-	gcry_mpi_swap(t, ipk_data_mpi);
-	gcry_mpi_release(t);
-	gcry_mpi_release(ipk_rem_mpi);
-
-	gcry_mpi_dump(ipk_data_mpi); printf("\n");
-
-	gcry_md_hd_t mdh;
-	err = gcry_md_open(&mdh, GCRY_MD_SHA1, 0);
-	if (err) {
-		fprintf(stderr, "LibGCrypt error %s/%s\n",
-				gcry_strsource (err),
-				gcry_strerror (err));
+	struct crypto_hash *ch;
+	ch = crypto_hash_open(HASH_SHA_1);
+	if (!ch) {
 		exit(1);
 	}
 
-	gcry_md_write(mdh, ipk_data + 1, ipk_data_len - 22);
-	gcry_md_write(mdh, issuer_rem, sizeof(issuer_rem));
-	gcry_md_write(mdh, issuer_exp, sizeof(issuer_exp));
-	gcry_md_final(mdh);
+	crypto_hash_write(ch, ipk_data + 1, 14);
+	crypto_hash_write(ch, ipk_pk, ipk_pk_len);
+	crypto_hash_write(ch, issuer_exp, sizeof(issuer_exp));
 
-	unsigned char *h = gcry_md_read(mdh, GCRY_MD_SHA1);
-
+	unsigned char *h = crypto_hash_read(ch);
 	for (i = 0; i < 20; i++) {
 		printf("%s%02hhx", i ? ":" : "", h[i]);
 	}
 	printf("\n");
 
-	gcry_md_close(mdh);
-
-	gcry_sexp_t iksexp;
-	err = gcry_sexp_build(&iksexp, NULL, "(public-key (rsa (n %M) (e %b)))",
-			ipk_data_mpi, sizeof(issuer_exp), issuer_exp);
-	if (err) {
-		fprintf(stderr, "LibGCrypt error %s/%s\n",
-				gcry_strsource (err),
-				gcry_strerror (err));
+	if (memcmp(ipk_data + ipk_data_len - 21, h, 20))
 		exit(1);
-	}
 
+	crypto_hash_close(ch);
 
-	err = gcry_sexp_build(&csexp, NULL, "(data (flags raw) (value %b))",
-			sizeof(ssad_cr), ssad_cr);
-	if (err) {
-		fprintf(stderr, "LibGCrypt error %s/%s\n",
-				gcry_strsource (err),
-				gcry_strerror (err));
-		exit(1);
-	}
+	struct crypto_pk *ikcp = crypto_pk_open(PK_RSA, ipk_pk, (int) ipk_pk_len,
+			issuer_exp, (int) sizeof(issuer_exp));
+	free(ipk_pk);
 
-	err = gcry_pk_encrypt(&usexp, csexp, iksexp);
-	if (err) {
-		fprintf(stderr, "LibGCrypt error %s/%s\n",
-				gcry_strsource (err),
-				gcry_strerror (err));
-		exit(1);
-	}
-
-	asexp = gcry_sexp_find_token(usexp, "a", 1);
-
-	gcry_mpi_t ssad_mpi;
-
-	ssad_mpi = gcry_sexp_nth_mpi(asexp, 1, GCRYMPI_FMT_USG);
-
-	gcry_sexp_release(usexp);
-	gcry_sexp_release(csexp);
-	gcry_sexp_release(asexp);
-
-	unsigned char *ssad;
 	size_t ssad_len;
-	gcry_mpi_aprint(GCRYMPI_FMT_USG, &ssad, &ssad_len, ssad_mpi);
+	unsigned char *ssad = crypto_pk_encrypt(ikcp, ssad_cr, sizeof(ssad_cr), &ssad_len);
+	crypto_pk_close(ikcp);
+
 	for (i = 0; i < ssad_len; i++)
 		printf(i ? " %02hhx" : "%02hhx", ssad[i]);
 	printf("\n");
 
-	err = gcry_md_open(&mdh, GCRY_MD_SHA1, 0);
-	if (err) {
-		fprintf(stderr, "LibGCrypt error %s/%s\n",
-				gcry_strsource (err),
-				gcry_strerror (err));
+	ch = crypto_hash_open(HASH_SHA_1);
+	if (!ch) {
 		exit(1);
 	}
 
-	gcry_md_write(mdh, ssad + 1, ssad_len - 22);
-	gcry_md_write(mdh, ssd1, sizeof(ssd1));
-	gcry_md_write(mdh, ssd2, sizeof(ssd2));
-	gcry_md_final(mdh);
+	crypto_hash_write(ch, ssad + 1, ssad_len - 22);
+	crypto_hash_write(ch, ssd1, sizeof(ssd1));
+	crypto_hash_write(ch, ssd2, sizeof(ssd2));
 
-	unsigned char *h2 = gcry_md_read(mdh, GCRY_MD_SHA1);
+	unsigned char *h2 = crypto_hash_read(ch);
 
 	for (i = 0; i < 20; i++) {
 		printf("%s%02hhx", i ? ":" : "", h2[i]);
 	}
 	printf("\n");
 
-	gcry_md_close(mdh);
+	crypto_hash_close(ch);
 
-	gcry_free(ssad);
-	gcry_mpi_release(ssad_mpi);
-	gcry_sexp_release(iksexp);
-	gcry_free(ipk_data);
-	gcry_mpi_release(ipk_data_mpi);
-	gcry_sexp_release(ksexp);
+	free(ssad);
+	free(ipk_data);
 
 	return 0;
 }
