@@ -4,6 +4,7 @@
 #include "scard.h"
 #include "sc_helpers.h"
 #include "tlv.h"
+#include "emv_tags.h"
 
 static void dump(const unsigned char *ptr, size_t len)
 {
@@ -27,16 +28,8 @@ static void dump(const unsigned char *ptr, size_t len)
 
 static bool print_cb(void *data, const struct tlv *tlv)
 {
-	if (!tlv) {
-		printf("NULL\n");
-		return false;
-	}
-
-	if (tlv->tag < 0x100)
-		printf("Got tag %02hx len %02x:\n", tlv->tag, tlv->len);
-	else
-		printf("Got tag %04hx len %02x:\n", tlv->tag, tlv->len);
-
+	if (tlv->tag & 0x20) return true;
+	emv_tag_dump(tlv, stdout);
 	dump(tlv->value, tlv->len);
 
 	return true;
@@ -79,6 +72,11 @@ static struct tlvdb *docmd(struct sc *sc,
 //	printf("\n");
 
 	return tlvdb;
+}
+
+static struct tlvdb *get_data(struct sc *sc, tlv_tag_t tag)
+{
+	return docmd(sc, 0x80, 0xca, tag & 0xff, tag >> 8, 0, NULL);
 }
 
 int main(void)
@@ -134,7 +132,14 @@ int main(void)
 		tlvdb_add(s, t);
 	}
 
+	tlvdb_add(s, get_data(sc, 0x369f));
+	tlvdb_add(s, get_data(sc, 0x139f));
+	tlvdb_add(s, get_data(sc, 0x179f));
+	tlvdb_add(s, get_data(sc, 0x4f9f));
+
 	e = tlvdb_get(s, 0x94, NULL);
+	if (!e)
+		return 1;
 	int i;
 	for (i = 0; i < e->len; i += 4) {
 		unsigned char p2 = e->value[i + 0];
