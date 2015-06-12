@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 #include <winscard.h>
 //#undef SCARD_AUTOALLOCATE
 
@@ -87,11 +88,31 @@ static LONG _SCardInvalidProtocol(void)
 	return SCARD_E_INVALID_VALUE;
 }
 
-void scard_connect(struct sc *sc)
+static LONG _SCardGetReader(struct sc *sc, unsigned idx, LPSTR *pReader)
+{
+	LPSTR r = sc->mszReaders;
+
+	while (idx && *r) {
+		r += strlen(r) + 1;
+		idx--;
+	}
+
+	if (!*r)
+		return SCARD_E_UNKNOWN_READER;
+
+	*pReader = r;
+
+	return SCARD_S_SUCCESS;
+}
+
+void scard_connect(struct sc *sc, unsigned idx)
 {
 	DWORD dwActiveProtocol;
+	LPSTR r;
 
-	CHECK(sc, , SCardConnect, sc->hContext, sc->mszReaders, SCARD_SHARE_EXCLUSIVE,
+	CHECK(sc, , _SCardGetReader, sc, idx, &r);
+
+	CHECK(sc, , SCardConnect, sc->hContext, r, SCARD_SHARE_EXCLUSIVE,
 		SCARD_PROTOCOL_T0 | SCARD_PROTOCOL_T1, &sc->hCard, &dwActiveProtocol);
 
 	switch(dwActiveProtocol)

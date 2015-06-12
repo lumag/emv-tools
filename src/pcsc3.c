@@ -102,7 +102,7 @@ int main(void)
 		return 1;
 	}
 
-	scard_connect(sc);
+	scard_connect(sc, 0);
 	if (scard_is_error(sc)) {
 		printf(scard_error(sc));
 		return 1;

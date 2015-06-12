@@ -20,7 +20,7 @@ void scard_raise_error(struct sc *sc, int type);
 bool scard_is_error(struct sc *sc);
 const char *scard_error(struct sc *sc);
 
-void scard_connect(struct sc *sc);
+void scard_connect(struct sc *sc, unsigned idx);
 void scard_disconnect(struct sc *sc);
 
 size_t scard_transmit(struct sc *sc,
