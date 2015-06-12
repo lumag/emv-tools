@@ -8,6 +8,7 @@ libopenemv_a_SOURCES = \
 	scard.c scard.h \
 	sc_helpers.c sc_helpers.h \
 	tlv.c tlv.h \
+	emv_tags.c emv_tags.h \
 	crypto_backend.h \
 	capk.c capk.h
 
