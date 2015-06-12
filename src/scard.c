@@ -54,7 +54,9 @@ struct sc *scard_init(void)
 void scard_shutdown(struct sc **psc)
 {
 	struct sc *sc = *psc;
-	// FIXME: disconect if necessary
+
+	scard_disconnect(*psc);
+
 #ifdef SCARD_AUTOALLOCATE
 	CHECK(sc, , SCardFreeMemory, sc->hContext, sc->mszReaders);
 #else
