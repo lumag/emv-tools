@@ -600,11 +600,6 @@ int main(void)
 		tlvdb_add(s, t);
 	}
 
-	tlvdb_add(s, get_data(sc, 0x369f));
-	tlvdb_add(s, get_data(sc, 0x139f));
-	tlvdb_add(s, get_data(sc, 0x179f));
-	tlvdb_add(s, get_data(sc, 0x4f9f));
-
 	e = tlvdb_get(s, 0x94, NULL);
 	if (!e)
 		return 1;
@@ -672,6 +667,11 @@ int main(void)
 	tlvdb_add(s, idn_db);
 
 	free(sda_data);
+
+	tlvdb_add(s, get_data(sc, 0x369f));
+	tlvdb_add(s, get_data(sc, 0x139f));
+	tlvdb_add(s, get_data(sc, 0x179f));
+	tlvdb_add(s, get_data(sc, 0x4f9f));
 
 	printf("Final\n");
 	tlvdb_visit(s, print_cb, NULL);
