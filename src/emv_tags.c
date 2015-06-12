@@ -143,6 +143,7 @@ static struct emv_tag emv_tags[] = {
 	{ 0x9f48, "ICC Public Key Remainder" },
 	{ 0x9f49, "Dynamic Data Authentication Data Object List (DDOL)", EMV_TAG_DOL },
 	{ 0x9f4a, "Static Data Authentication Tag List" },
+	{ 0x9f4b, "Signed Dynamic Application Data" },
 	{ 0x9f4c, "ICC Dynamic Number" },
 	{ 0x9f4d, "Log Entry" },
 	{ 0x9f4f, "Log Format", EMV_TAG_DOL },
