@@ -1,7 +1,7 @@
-#include <stdlib.h>
-
 #include "tlv.h"
 #include "emv_tags.h"
+
+#include <stdlib.h>
 
 enum emv_tag_t {
 	EMV_TAG_GENERIC,

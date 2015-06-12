@@ -1,9 +1,10 @@
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include "capk.h"
 #include "crypto_backend.h"
+
+#include <stdio.h>
+#include <stdbool.h>
+#include <string.h>
+#include <stdlib.h>
 
 #define BCD(c) (((c) >= '0' && (c) <= '9') ? ((c) - '0') : \
 		-1)

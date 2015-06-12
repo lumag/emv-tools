@@ -1,10 +1,11 @@
-#include <stdio.h>
-#include <stdlib.h>
-
 #include "scard.h"
 #include "sc_helpers.h"
 #include "tlv.h"
 #include "emv_tags.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 static void dump(const unsigned char *ptr, size_t len)
 {

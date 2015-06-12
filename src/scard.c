@@ -1,9 +1,9 @@
+#include "scard.h"
+
 #include <stdlib.h>
 #include <string.h>
 #include <winscard.h>
 //#undef SCARD_AUTOALLOCATE
-
-#include "scard.h"
 
 struct sc {
 	SCARDCONTEXT hContext;

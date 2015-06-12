@@ -1,10 +1,10 @@
+#include "crypto_backend.h"
+
 #include <stdarg.h>
 
 #define GCRYPT_NO_DEPRECATED
 #define GCRYPT_NO_MPI_MACROS
 #include <gcrypt.h>
-
-#include "crypto_backend.h"
 
 bool crypto_be_init(void)
 {

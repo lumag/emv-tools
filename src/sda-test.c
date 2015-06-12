@@ -1,9 +1,9 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include "capk.h"
 #include "crypto_backend.h"
+
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 
 struct capk vsdc_01 = {
 	.rid = { 0xa0, 0x00, 0x00, 0x00, 0x03, },

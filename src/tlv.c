@@ -1,9 +1,9 @@
-#include <stdint.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include "tlv.h"
+
+#include <string.h>
+#include <stdint.h>
+#include <stddef.h>
+#include <stdlib.h>
 
 #define TLV_TAG_CLASS_MASK	0xc0
 #define TLV_TAG_COMPLEX		0x20

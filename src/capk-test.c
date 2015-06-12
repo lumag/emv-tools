@@ -1,8 +1,8 @@
-#include <stdio.h>
-#include <stdlib.h>
-
 #include "capk.h"
 #include "crypto_backend.h"
+
+#include <stdio.h>
+#include <stdlib.h>
 
 #ifndef BUFSIZ
 #define BUFSIZ 4096

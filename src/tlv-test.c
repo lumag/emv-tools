@@ -1,8 +1,8 @@
+#include "tlv.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
-
-#include "tlv.h"
 
 static void dump(const unsigned char *ptr, size_t len)
 {

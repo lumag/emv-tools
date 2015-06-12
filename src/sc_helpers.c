@@ -1,8 +1,8 @@
-#include <string.h>
-#include <stdlib.h>
-
 #include "scard.h"
 #include "sc_helpers.h"
+
+#include <string.h>
+#include <stdlib.h>
 
 static unsigned char *sc_command_t0(struct sc *sc,
 		unsigned char cla,
