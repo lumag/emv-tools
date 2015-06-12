@@ -1,22 +1,37 @@
 #ifndef TLV_H
 #define TLV_H
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
-struct tlv_elem_info {
-	uint16_t tag;
+typedef uint16_t tlv_tag_t;
+
+struct tlv {
+	tlv_tag_t tag;
 	size_t len;
-	const unsigned char *ptr;
+	const unsigned char *value;
 };
 
-struct tlv *tlv_parse(unsigned char *buf, size_t len);
-struct tlv *tlv_parse_copy(const unsigned char *buf, size_t len);
-struct tlv *tlv_new(uint16_t tag, unsigned char *buf, size_t len);
-struct tlv *tlv_new_copy(uint16_t tag, const unsigned char *buf, size_t len);
-void tlv_free(struct tlv *tlv);
-bool tlv_visit(struct tlv *tlv, bool (*cb)(void *data, const struct tlv_elem_info *tei), void *data);
-const struct tlv_elem_info *tlv_get(struct tlv *tlv, uint16_t tag);
-bool tlv_remove(struct tlv *tlv, uint16_t tag);
+static inline tlv_tag_t tlv_tag(const struct tlv *tlv)
+{
+	return tlv->tag < 0x100 ? tlv->tag :
+		(tlv->tag >> 8) | (tlv->tag << 8);
+}
+
+struct tlvdb;
+typedef bool (*tlv_cb)(void *data, const struct tlv *tlv);
+
+struct tlvdb *tlvdb_fixed(tlv_tag_t tag, size_t len, const unsigned char *value);
+struct tlvdb *tlvdb_parse(const unsigned char *buf, size_t len);
+void tlvdb_free(struct tlvdb *tlvdb);
+
+void tlvdb_add(struct tlvdb *tlvdb, struct tlvdb *other);
+
+void tlvdb_visit(struct tlvdb *tlvdb, tlv_cb cb, void *data);
+struct tlv *tlvdb_get(struct tlvdb *tlvdb, tlv_tag_t tag, const struct tlv *prev);
+
+tlv_tag_t tlv_parse_tag(const unsigned char **buf, size_t *len);
+size_t tlv_parse_len(const unsigned char **buf, size_t *len);
 
 #endif

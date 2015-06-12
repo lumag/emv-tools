@@ -13,24 +13,28 @@
 
 #define TLV_LEN_LONG		0x80
 #define TLV_LEN_MASK		0x7f
-#define TLV_LEN_INVALID		0
+#define TLV_LEN_INVALID		(~0)
 
-struct tlv_elem {
-	struct tlv_elem_info info;
+#define container_of(ptr, type, member) ({			\
+	const typeof( ((type *)0)->member ) *__mptr = (ptr);	\
+        (type *)( (char *)__mptr - offsetof(type,member) );})
 
-	struct tlv_elem *next;
+struct tlvdb {
+	struct tlv tag;
+	struct tlvdb *next;
+	struct tlvdb *parent;
+	struct tlvdb *children;
 };
 
-struct tlv {
-	unsigned char *buf;
+struct tlvdb_root {
+	struct tlvdb db;
 	size_t len;
-
-	struct tlv_elem  *e;
+	unsigned char buf[0];
 };
 
-static uint16_t tlv_parse_tag(const unsigned char **buf, size_t *len)
+tlv_tag_t tlv_parse_tag(const unsigned char **buf, size_t *len)
 {
-	uint16_t tag;
+	tlv_tag_t tag;
 
 	if (*len == 0)
 		return TLV_TAG_INVALID;
@@ -50,23 +54,7 @@ static uint16_t tlv_parse_tag(const unsigned char **buf, size_t *len)
 	return tag;
 }
 
-struct tlv *tlv_parse_copy(const unsigned char *buf, size_t len)
-{
-	if (!buf)
-		return NULL;
-
-	unsigned char *buf2 = malloc(len);
-	memcpy(buf2, buf, len);
-
-	struct tlv *r = tlv_parse(buf2, len);
-
-	if (!r)
-		free(buf2);
-
-	return r;
-}
-
-static size_t tlv_parse_len(const unsigned char **buf, size_t *len)
+size_t tlv_parse_len(const unsigned char **buf, size_t *len)
 {
 	size_t l;
 
@@ -95,163 +83,180 @@ static size_t tlv_parse_len(const unsigned char **buf, size_t *len)
 	return l;
 }
 
-static bool tlv_parse_one(struct tlv *tlv, const unsigned char **buf, size_t *len)
+static struct tlvdb *tlvdb_parse_children(struct tlvdb *parent);
+
+static bool tlvdb_parse_one(struct tlvdb *tlvdb,
+		struct tlvdb *parent,
+		const unsigned char **tmp,
+		size_t *left)
 {
-	struct tlv_elem *e = calloc(1, sizeof(*e));
-	bool rc = false;
-	e->info.tag = tlv_parse_tag(buf, len);
-	e->info.len = tlv_parse_len(buf, len);
-	e->info.ptr = *buf;
+	tlvdb->next = tlvdb->children = NULL;
+	tlvdb->parent = parent;
 
-	if (*len < e->info.len || e->info.len == TLV_LEN_INVALID || e->info.tag == TLV_TAG_INVALID) {
-		*len = 0;
-		free(e);
-		return false;
+	tlvdb->tag.tag = tlv_parse_tag(tmp, left);
+	if (tlvdb->tag.tag == TLV_TAG_INVALID)
+		goto err;
+
+	tlvdb->tag.len = tlv_parse_len(tmp, left);
+	if (tlvdb->tag.len == TLV_LEN_INVALID)
+		goto err;
+
+	if (tlvdb->tag.len > *left)
+		goto err;
+
+	tlvdb->tag.value = *tmp;
+
+	*tmp += tlvdb->tag.len;
+	*left -= tlvdb->tag.len;
+
+	if ((tlvdb->tag.tag & TLV_TAG_COMPLEX)/* && (tlvdb->tag.len != 0)*/) {
+		tlvdb->children = tlvdb_parse_children(tlvdb);
+		if (!tlvdb->children)
+			goto err;
+	} else {
+		tlvdb->children = NULL;
 	}
 
-	rc = true;
+	return true;
 
-	if (e->info.tag & TLV_TAG_COMPLEX) {
-		const unsigned char *b = e->info.ptr;
-		size_t l = e->info.len;
-		while (l > 0) {
-			rc = tlv_parse_one(tlv, &b, &l);
-		}
-	}
-
-	e->next = tlv->e;
-	tlv->e = e;
-
-	*buf += e->info.len;
-	*len -= e->info.len;
-	return rc;
+err:
+	return false;
 }
 
-void tlv_free(struct tlv *tlv)
+static struct tlvdb *tlvdb_parse_children(struct tlvdb *parent)
 {
-	if (!tlv)
+	const unsigned char *tmp = parent->tag.value;
+	size_t left = parent->tag.len;
+	struct tlvdb *tlvdb, *first = NULL, *prev = NULL;
+
+	while (left != 0) {
+		tlvdb = malloc(sizeof(*tlvdb));
+		if (prev)
+			prev->next = tlvdb;
+		else
+			first = tlvdb;
+		prev = tlvdb;
+
+		if (!tlvdb_parse_one(tlvdb, parent, &tmp, &left))
+			goto err;
+
+		tlvdb->parent = parent;
+	}
+
+	return first;
+
+err:
+	tlvdb_free(first);
+
+	return NULL;
+}
+
+struct tlvdb *tlvdb_parse(const unsigned char *buf, size_t len)
+{
+	struct tlvdb_root *root = malloc(sizeof(*root) + len);
+	const unsigned char *tmp;
+	size_t left;
+
+	root->len = len;
+	memcpy(root->buf, buf, len);
+
+	tmp = root->buf;
+	left = len;
+
+	if (!tlvdb_parse_one(&root->db, NULL, &tmp, &left))
+		goto err;
+
+	if (left)
+		goto err;
+
+	return &root->db;
+
+err:
+	tlvdb_free(&root->db);
+
+	return NULL;
+}
+
+struct tlvdb *tlvdb_fixed(tlv_tag_t tag, size_t len, const unsigned char *value)
+{
+	struct tlvdb_root *root = malloc(sizeof(*root) + len);
+
+	root->len = len;
+	memcpy(root->buf, value, len);
+
+	root->db.parent = root->db.next = root->db.children = NULL;
+	root->db.tag.tag = tag;
+	root->db.tag.len = len;
+	root->db.tag.value = root->buf;
+
+	return &root->db;
+}
+
+void tlvdb_free(struct tlvdb *tlvdb)
+{
+	struct tlvdb *next = NULL;
+
+	if (!tlvdb)
 		return;
 
-	while (tlv->e) {
-		struct tlv_elem *e = tlv->e;
-		tlv->e = e->next;
-		free(e);
-	}
-
-	free(tlv->buf);
-	free(tlv);
-}
-
-struct tlv *tlv_parse(unsigned char *buf, size_t len)
-{
-	const unsigned char *cbuf = buf;
-
-	if (!buf)
-		return NULL;
-
-	struct tlv *r = calloc(1, sizeof(*r));
-	if (!r)
-		return NULL;
-
-	r->buf = buf;
-	r->len = len;
-
-	if (tlv_parse_one(r, &cbuf, &len))
-		return r;
-	else {
-		r->buf = NULL; /* Don't free it in tlv_free */
-		tlv_free(r);
-		return NULL;
+	for (; tlvdb; tlvdb = next) {
+		next = tlvdb->next;
+		tlvdb_free(tlvdb->children);
+		free(tlvdb);
 	}
 }
 
-bool tlv_visit(struct tlv *tlv, bool (*cb)(void *data, const struct tlv_elem_info *tei), void *data)
+void tlvdb_add(struct tlvdb *tlvdb, struct tlvdb *other)
 {
-	if (!tlv)
-		return false;
-
-	struct tlv_elem *e;
-	bool rc = true;
-	for (e = tlv->e; e && rc; e = e->next) {
-		rc = cb(data, &e->info);
+	while (tlvdb->next) {
+		tlvdb = tlvdb->next;
 	}
 
-	return rc;
+	tlvdb->next = other;
 }
 
-const struct tlv_elem_info *tlv_get(struct tlv *tlv, uint16_t tag)
+void tlvdb_visit(struct tlvdb *tlvdb, tlv_cb cb, void *data)
 {
-	if (!tlv)
-		return NULL;
+	struct tlvdb *next = NULL;
 
-	struct tlv_elem *e;
-	for (e = tlv->e; e; e = e->next) {
-		if (e->info.tag == tag)
-			return &e->info;
+	if (!tlvdb)
+		return;
+
+	for (; tlvdb; tlvdb = next) {
+		next = tlvdb->next;
+		cb(data, &tlvdb->tag);
+		tlvdb_visit(tlvdb->children, cb, data);
+	}
+}
+
+static struct tlvdb *tlvdb_next(struct tlvdb *tlvdb)
+{
+	if (tlvdb->children)
+		return tlvdb->children;
+
+	while (tlvdb) {
+		if (tlvdb->next)
+			return tlvdb->next;
+
+		tlvdb = tlvdb->parent;
 	}
 
 	return NULL;
 }
 
-struct tlv *tlv_new(uint16_t tag, unsigned char *buf, size_t len)
+struct tlv *tlvdb_get(struct tlvdb *tlvdb, tlv_tag_t tag, const struct tlv *prev)
 {
-	if (!buf)
-		return NULL;
-
-	struct tlv *r = calloc(1, sizeof(*r));
-	if (!r)
-		return NULL;
-
-	r->buf = buf;
-	r->len = len;
-
-	struct tlv_elem *e = calloc(1, sizeof(*e));
-	if (!e) {
-		free(r);
-		return NULL;
+	if (prev) {
+		tlvdb = tlvdb_next(container_of(prev, struct tlvdb, tag));
 	}
 
-	e->info.tag = tag;
-	e->info.ptr = buf;
-	e->info.len = len;
 
-	e->next = r->e;
-	r->e = e;
+	while (tlvdb) {
+		if (tlvdb->tag.tag == tag)
+			return &tlvdb->tag;
 
-	return r;
-}
-
-struct tlv *tlv_new_copy(uint16_t tag, const unsigned char *buf, size_t len)
-{
-	if (!buf)
-		return NULL;
-
-	unsigned char *buf2 = malloc(len);
-	memcpy(buf2, buf, len);
-
-	struct tlv *r = tlv_new(tag, buf2, len);
-
-	if (!r)
-		free(buf2);
-
-	return r;
-}
-
-
-bool tlv_remove(struct tlv *tlv, uint16_t tag)
-{
-	if (!tlv)
-		return false;
-
-	struct tlv_elem *e, **p;
-	for (p = &tlv->e; *p; p = &((*p)->next)) {
-		if ((*p)->info.tag == tag) {
-			e = *p;
-			*p = e->next;
-			free(e);
-			return true;
-		}
+		tlvdb = tlvdb_next(tlvdb);
 	}
 
-	return false;
+	return NULL;
 }

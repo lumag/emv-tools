@@ -2,7 +2,7 @@ AM_CFLAGS = -Wall -Wmissing-prototypes
 noinst_LIBRARIES = libopenemv.a
 bin_PROGRAMS = tlv-test pcsc3 capk-test sda-test
 tlv_test_SOURCES = tlv-test.c
-libopenemv_a_SOURCES = tlv.c tlv.h scard.c scard.h sc_helpers.c sc_helpers.h tlvs.c tlvs.h capk.c capk.h
+libopenemv_a_SOURCES = tlv.c tlv.h scard.c scard.h sc_helpers.c sc_helpers.h capk.c capk.h
 
 libopenemv_a_CFLAGS = $(AM_CFLAGS) $(PCSC_CFLAGS)
 capk_test_CFLAGS = $(LIBGCRYPT_CFLAGS)
