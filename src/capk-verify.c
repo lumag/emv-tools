@@ -31,7 +31,7 @@ int main(int argc, char **argv) {
 		struct capk *pk = capk_parse_pk(buf);
 		if (!pk)
 			continue;
-		fprintf(stderr, "Verifying CA PK for %02hhx:%02hhx:%02hhx:%02hhx:%02hhx IDX %02hhx %d bits...",
+		fprintf(stderr, "Verifying CA PK for %02hhx:%02hhx:%02hhx:%02hhx:%02hhx IDX %02hhx %zd bits...",
 				pk->rid[0],
 				pk->rid[1],
 				pk->rid[2],

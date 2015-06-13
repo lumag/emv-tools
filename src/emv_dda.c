@@ -477,7 +477,7 @@ static struct tlvdb *perform_dda(const struct capk *pk, struct tlvdb *db, struct
 
 	free(dad);
 
-	printf("DDA verified OK (IDN %d bytes long)!\n", idn_len);
+	printf("DDA verified OK (IDN %zd bytes long)!\n", idn_len);
 
 	return idn_db;
 }
@@ -508,7 +508,7 @@ static struct capk *get_ca_pk(struct tlvdb *db)
 			capk_free(pk);
 			continue;
 		}
-		printf("Verifying CA PK for %02hhx:%02hhx:%02hhx:%02hhx:%02hhx IDX %02hhx %d bits...",
+		printf("Verifying CA PK for %02hhx:%02hhx:%02hhx:%02hhx:%02hhx IDX %02hhx %zd bits...",
 				pk->rid[0],
 				pk->rid[1],
 				pk->rid[2],
