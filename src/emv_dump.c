@@ -33,11 +33,35 @@ static void dump(const unsigned char *ptr, size_t len)
 
 static bool print_cb(void *data, const struct tlv *tlv)
 {
-	if (tlv->tag & 0x20) return true;
+//	if (tlv->tag & 0x20) return true;
 	emv_tag_dump(tlv, stdout);
 	dump(tlv->value, tlv->len);
 
 	return true;
+}
+
+static unsigned char *docmd_int(struct sc *sc,
+		unsigned char cla,
+		unsigned char ins,
+		unsigned char p1,
+		unsigned char p2,
+		size_t dlen,
+		const unsigned char *data,
+		unsigned short *sw,
+		size_t *outlen)
+{
+	unsigned char *outbuf;
+
+	printf("CMD: %02hhx %02hhx %02hhx %02hhx (%02zx)\n", cla, ins, p1, p2, dlen);
+	outbuf = sc_command(sc, cla, ins, p1, p2,
+			dlen, data, sw, outlen);
+	if (scard_is_error(sc)) {
+		printf(scard_error(sc));
+		return NULL;
+	}
+	printf("response (%hx)\n", *sw);
+
+	return outbuf;
 }
 
 static struct tlvdb *docmd(struct sc *sc,
@@ -53,28 +77,13 @@ static struct tlvdb *docmd(struct sc *sc,
 	unsigned char *outbuf;
 	struct tlvdb *tlvdb = NULL;
 
-	printf("CMD: %02hhx %02hhx %02hhx %02hhx (%02zx)\n", cla, ins, p1, p2, dlen);
-	outbuf = sc_command(sc, cla, ins, p1, p2,
-			dlen, data, &sw, &outlen);
-	if (scard_is_error(sc)) {
-		printf(scard_error(sc));
-		return NULL;
-	}
-	printf("response (%hx):\n", sw);
-#if 0
-	int i;
-	for(i=0; i<outlen; i++)
-		printf("%02X ", outbuf[i]);
-	printf("\n");
-#endif
+	outbuf = docmd_int(sc, cla, ins, p1, p2, dlen, data, &sw, &outlen);
+
 	if (sw == 0x9000) {
 		tlvdb = tlvdb_parse(outbuf, outlen);
 	}
 
-	if (!tlvdb)
-		free(outbuf);
-
-//	printf("\n");
+	free(outbuf);
 
 	return tlvdb;
 }
@@ -163,6 +172,21 @@ int main(void)
 	tlvdb_add(s, get_data(sc, 0x4f9f));
 
 	tlvdb_visit(s, print_cb, NULL);
+
+	struct tlv *logent_tlv = tlvdb_get(s, 0x4d9f, NULL);
+	if (logent_tlv && logent_tlv->len == 2) {
+		for (i = 1; i <= logent_tlv->value[1]; i++) {
+			unsigned short sw;
+			size_t log_len;
+			unsigned char * log = docmd_int(sc, 0x00, 0xb2, i, (logent_tlv->value[0] << 3) | 0x4, 0, NULL, &sw, &log_len);
+			if (sw == 0x9000) {
+				printf("Log #%d\n", i);
+				dump(log, log_len);
+			}
+			free(log);
+		}
+	}
+
 	tlvdb_free(s);
 
 	scard_disconnect(sc);
