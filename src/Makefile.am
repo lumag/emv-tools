@@ -18,3 +18,5 @@ OPENEMV_LIBS += $(LIBGCRYPT_LIBS)
 
 LDADD = $(OPENEMV_LIBS)
 bin_PROGRAMS = capk-verify tlv-test emv_dump emv_sda emv_dda
+
+dist_pkgdata_DATA = capk.txt
