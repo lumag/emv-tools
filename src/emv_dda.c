@@ -236,19 +236,6 @@ static struct capk *recover_icc_cert(const struct capk *pk, struct tlvdb *db, un
 	crypto_hash_write(ch, icc_exp_tlv->value, icc_exp_tlv->len);
 	crypto_hash_write(ch, sda_data, sda_len);
 
-	struct tlv *sdatl_tlv = tlvdb_get(db, 0x4a9f, NULL);
-	if (sdatl_tlv) {
-		struct tlv *aip_tlv = tlvdb_get(db, 0x82, NULL);
-
-		if (sdatl_tlv->len != 1 || sdatl_tlv->value[0] != 0x82 || !aip_tlv) {
-			crypto_hash_close(ch);
-			free(icc_data);
-			return NULL;
-		}
-
-		crypto_hash_write(ch, aip_tlv->value, aip_tlv->len);
-	}
-
 	if (memcmp(icc_data + icc_data_len - 21, crypto_hash_read(ch), 20)) {
 		crypto_hash_close(ch);
 		free(icc_data);
@@ -332,19 +319,6 @@ static struct tlvdb *perform_sda(const struct capk *pk, struct tlvdb *db, unsign
 
 	crypto_hash_write(ch, ssad + 1, ssad_len - 22);
 	crypto_hash_write(ch, sda_data, sda_len);
-
-	struct tlv *sdatl_tlv = tlvdb_get(db, 0x4a9f, NULL);
-	if (sdatl_tlv) {
-		struct tlv *aip_tlv = tlvdb_get(db, 0x82, NULL);
-
-		if (sdatl_tlv->len != 1 || sdatl_tlv->value[0] != 0x82 || !aip_tlv) {
-			crypto_hash_close(ch);
-			free(ssad);
-			return NULL;
-		}
-
-		crypto_hash_write(ch, aip_tlv->value, aip_tlv->len);
-	}
 
 	if (memcmp(ssad + ssad_len - 21, crypto_hash_read(ch), 20)) {
 		crypto_hash_close(ch);
@@ -654,6 +628,21 @@ int main(void)
 		}
 
 	}
+	struct tlv *sdatl_tlv = tlvdb_get(s, 0x4a9f, NULL);
+	if (sdatl_tlv) {
+		struct tlv *aip_tlv = tlvdb_get(s, 0x82, NULL);
+		if (sdatl_tlv->len == 1 && sdatl_tlv->value[0] == 0x82 && aip_tlv) {
+			sda_data = realloc(sda_data, sda_len + aip_tlv->len);
+			memcpy(sda_data + sda_len, aip_tlv->value, aip_tlv->len);
+			sda_len += aip_tlv->len;
+		} else {
+			/* Error!! */
+			free(sda_data);
+			sda_data = NULL;
+			sda_len = 0;
+		}
+	}
+
 
 	struct capk *pk = get_ca_pk(s);
 	struct capk *issuer_pk = recover_issuer_cert(pk, s);
