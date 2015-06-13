@@ -132,10 +132,8 @@ int main(void)
 		t2 = tlvdb_fixed(0x94, e->len - 2, e->value+2);
 		tlvdb_add(s, t1);
 		tlvdb_add(s, t2);
-		tlvdb_free(t);
-	} else {
-		tlvdb_add(s, t);
 	}
+	tlvdb_add(s, t);
 
 	tlvdb_add(s, get_data(sc, 0x369f));
 	tlvdb_add(s, get_data(sc, 0x139f));
