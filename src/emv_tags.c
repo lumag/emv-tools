@@ -85,6 +85,7 @@ static const struct emv_tag_bit EMV_TVR[] = {
 
 static struct emv_tag emv_tags[] = {
 	{ 0x00  , "Unknown ???" },
+	{ 0x4f  , "Application Dedicated File (ADF) Name" },
 	{ 0x50  , "Application Label" },
 	{ 0x56  , "Track 1 Data" },
 	{ 0x57  , "Track 2 Equivalent Data" },
@@ -97,11 +98,15 @@ static struct emv_tag emv_tags[] = {
 	{ 0x5f2d, "Language Preference" },
 	{ 0x5f30, "Service Code" },
 	{ 0x5f34, "Application Primary Account Number (PAN) Sequence Number" },
+	{ 0x61  , "Application Template" },
 	{ 0x6f  , "File Control Information (FCI) Template" },
 	{ 0x70  , "READ RECORD Response Message Template" },
+	{ 0x77  , "Response Message Template Format 2" },
+	{ 0x80  , "Response Message Template Format 1" },
 	{ 0x82  , "Application Interchange Profile", EMV_TAG_BITMASK, &EMV_AIP },
 	{ 0x84  , "Dedicated File (DF) Name" },
 	{ 0x87  , "Application Priority Indicator" },
+	{ 0x88  , "Short File Identifier (SFI)" },
 	{ 0x8a  , "Authorisation Response Code" },
 	{ 0x8c  , "Card Risk Management Data Object List 1 (CDOL1)", EMV_TAG_DOL },
 	{ 0x8d  , "Card Risk Management Data Object List 2 (CDOL2)", EMV_TAG_DOL },
@@ -155,6 +160,7 @@ static struct emv_tag emv_tags[] = {
 	{ 0x9f67, "NATC(Track2)" },
 	{ 0x9f6b, "Track 2 Data" },
 	{ 0xa5  , "File Control Information (FCI) Proprietary Template" },
+	{ 0xbf0c, "File Control Information (FCI) Issuer Discretionary Data" },
 };
 
 static int emv_sort_tag(tlv_tag_t tag)
