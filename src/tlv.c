@@ -13,11 +13,9 @@
 #define TLV_TAG_COMPLEX		0x20
 #define TLV_TAG_VALUE_MASK	0x1f
 #define TLV_TAG_VALUE_CONT	0x1f
-#define TLV_TAG_INVALID		0
 
 #define TLV_LEN_LONG		0x80
 #define TLV_LEN_MASK		0x7f
-#define TLV_LEN_INVALID		(~0)
 
 #define container_of(ptr, type, member) ({			\
 	const typeof( ((type *)0)->member ) *__mptr = (ptr);	\
