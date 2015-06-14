@@ -18,6 +18,9 @@ libopenemv_a_CFLAGS += $(LIBGCRYPT_CFLAGS)
 OPENEMV_LIBS += $(LIBGCRYPT_LIBS)
 
 LDADD = $(OPENEMV_LIBS)
-bin_PROGRAMS = capk-verify tlv-test emv_dump emv_dda
+bin_PROGRAMS = capk-verify emv_dump emv_dda
+check_PROGRAMS = tlv-test
+
+TESTS = tlv-test
 
 dist_pkgdata_DATA = capk.txt
