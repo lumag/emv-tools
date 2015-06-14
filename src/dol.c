@@ -69,3 +69,38 @@ unsigned char *dol_process(const struct tlv *tlv, const struct tlvdb *tlvdb, siz
 
 	return res;
 }
+
+struct tlvdb *dol_parse(const struct tlv *tlv, const unsigned char *data, size_t data_len)
+{
+	if (!tlv)
+		return NULL;
+
+	const unsigned char *buf = tlv->value;
+	size_t left = tlv->len;
+	size_t res_len = dol_calculate_len(tlv);
+	size_t pos = 0;
+	struct tlvdb *db = NULL;
+
+	if (res_len != data_len)
+		return NULL;
+
+	while (left) {
+		tlv_tag_t tag = tlv_parse_tag(&buf, &left);
+		size_t taglen = tlv_parse_len(&buf, &left);
+
+		if (tag == TLV_TAG_INVALID || taglen == TLV_LEN_INVALID || pos + taglen > res_len) {
+			tlvdb_free(db);
+			return NULL;
+		}
+
+		struct tlvdb *tag_db = tlvdb_fixed(tag, taglen, data + pos);
+		if (!db)
+			db = tag_db;
+		else
+			tlvdb_add(db, tag_db);
+
+		pos += taglen;
+	}
+
+	return db;
+}

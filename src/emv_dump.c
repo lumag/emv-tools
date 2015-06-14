@@ -6,6 +6,7 @@
 #include "sc_helpers.h"
 #include "tlv.h"
 #include "emv_tags.h"
+#include "dol.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -174,14 +175,17 @@ int main(void)
 	tlvdb_visit(s, print_cb, NULL);
 
 	const struct tlv *logent_tlv = tlvdb_get(s, 0x4d9f, NULL);
-	if (logent_tlv && logent_tlv->len == 2) {
+	const struct tlv *logent_dol = tlvdb_get(s, 0x4f9f, NULL);
+	if (logent_tlv && logent_tlv->len == 2 && logent_dol) {
 		for (i = 1; i <= logent_tlv->value[1]; i++) {
 			unsigned short sw;
 			size_t log_len;
-			unsigned char * log = docmd_int(sc, 0x00, 0xb2, i, (logent_tlv->value[0] << 3) | 0x4, 0, NULL, &sw, &log_len);
+			unsigned char *log = docmd_int(sc, 0x00, 0xb2, i, (logent_tlv->value[0] << 3) | 0x4, 0, NULL, &sw, &log_len);
 			if (sw == 0x9000) {
 				printf("Log #%d\n", i);
-				dump(log, log_len);
+				struct tlvdb *log_db = dol_parse(logent_dol, log, log_len);
+				tlvdb_visit(log_db, print_cb, NULL);
+				tlvdb_free(log_db);
 			}
 			free(log);
 		}
