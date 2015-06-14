@@ -103,9 +103,9 @@ static struct capk *recover_issuer_cert(const struct capk *pk, struct tlvdb *db)
 	size_t issuer_data_len;
 	size_t issuer_pk_len;
 
-	struct tlv *issuer_cert_tlv = tlvdb_get(db, 0x90, NULL);
-	struct tlv *issuer_rem_tlv = tlvdb_get(db, 0x92, NULL);
-	struct tlv *issuer_exp_tlv = tlvdb_get(db, 0x329f, NULL);
+	const struct tlv *issuer_cert_tlv = tlvdb_get(db, 0x90, NULL);
+	const struct tlv *issuer_rem_tlv = tlvdb_get(db, 0x92, NULL);
+	const struct tlv *issuer_exp_tlv = tlvdb_get(db, 0x329f, NULL);
 
 	if (!pk)
 		return NULL;
@@ -194,9 +194,9 @@ static struct capk *recover_icc_cert(const struct capk *pk, struct tlvdb *db, un
 	size_t icc_data_len;
 	size_t icc_pk_len;
 
-	struct tlv *icc_cert_tlv = tlvdb_get(db, 0x469f, NULL);
-	struct tlv *icc_rem_tlv = tlvdb_get(db, 0x489f, NULL);
-	struct tlv *icc_exp_tlv = tlvdb_get(db, 0x479f, NULL);
+	const struct tlv *icc_cert_tlv = tlvdb_get(db, 0x469f, NULL);
+	const struct tlv *icc_rem_tlv = tlvdb_get(db, 0x489f, NULL);
+	const struct tlv *icc_exp_tlv = tlvdb_get(db, 0x479f, NULL);
 
 	if (!pk)
 		return NULL;
@@ -278,11 +278,11 @@ static struct capk *recover_icc_cert(const struct capk *pk, struct tlvdb *db, un
 	return icc_pk;
 }
 
-static struct tlvdb *perform_sda(const struct capk *pk, struct tlvdb *db, unsigned char *sda_data, size_t sda_len)
+static struct tlvdb *perform_sda(const struct capk *pk, const struct tlvdb *db, unsigned char *sda_data, size_t sda_len)
 {
 	struct crypto_pk *ikcp;
 
-	struct tlv *ssad_tlv = tlvdb_get(db, 0x93, NULL);
+	const struct tlv *ssad_tlv = tlvdb_get(db, 0x93, NULL);
 
 	if (!pk)
 		return NULL;
@@ -342,7 +342,7 @@ static struct tlvdb *perform_sda(const struct capk *pk, struct tlvdb *db, unsign
 	return dac_db;
 }
 
-static unsigned char *process_dol(struct tlvdb *db, struct tlv *tlv, size_t *len)
+static unsigned char *process_dol(const struct tlvdb *db, const struct tlv *tlv, size_t *len)
 {
 	const unsigned char *buf = tlv->value;
 	size_t left = tlv->len;
@@ -359,7 +359,7 @@ static unsigned char *process_dol(struct tlvdb *db, struct tlv *tlv, size_t *len
 			res = realloc(res, res_len);
 		}
 
-		struct tlv *db_tag = tlvdb_get(db, tag, NULL);
+		const struct tlv *db_tag = tlvdb_get(db, tag, NULL);
 		if (!db_tag) {
 			memset(res + pos, 0, taglen);
 		} else if (db_tag->len > taglen) {
@@ -380,11 +380,11 @@ static unsigned char *process_dol(struct tlvdb *db, struct tlv *tlv, size_t *len
 static const unsigned char default_ddol_value[] = {0x9f, 0x37, 0x04};
 static struct tlv default_ddol_tlv = {.tag = 0x499f, .len = 3, .value = default_ddol_value };
 
-static struct tlvdb *perform_dda(const struct capk *pk, struct tlvdb *db, struct sc *sc)
+static struct tlvdb *perform_dda(const struct capk *pk, const struct tlvdb *db, struct sc *sc)
 {
 	const struct tlv *e;
 	const struct tlv *dad_tlv;
-	struct tlv *ddol_tlv = tlvdb_get(db, 0x499f, NULL);
+	const struct tlv *ddol_tlv = tlvdb_get(db, 0x499f, NULL);
 
 	if (!pk)
 		return NULL;
@@ -397,24 +397,23 @@ static struct tlvdb *perform_dda(const struct capk *pk, struct tlvdb *db, struct
 	if (!ddol_data)
 		return NULL;
 
-	struct tlvdb *doldb = docmd(sc, 0x00, 0x88, 0x00, 0x00, ddol_data_len, ddol_data);
-	if (!doldb) {
+	struct tlvdb *dda_db = docmd(sc, 0x00, 0x88, 0x00, 0x00, ddol_data_len, ddol_data);
+	if (!dda_db) {
 		free(ddol_data);
 		return NULL;
 	}
 
-	if ((e = tlvdb_get(doldb, 0x80, NULL)) != NULL) {
+	if ((e = tlvdb_get(dda_db, 0x80, NULL)) != NULL) {
 		struct tlvdb *t;
 		t = tlvdb_fixed(0x4b9f, e->len, e->value);
-		tlvdb_add(db, t);
-		tlvdb_free(doldb);
-	} else {
-		tlvdb_add(db, doldb);
+		tlvdb_free(dda_db);
+		dda_db = t;
 	}
 
-	dad_tlv = tlvdb_get(db, 0x4b9f, NULL);
+	dad_tlv = tlvdb_get(dda_db, 0x4b9f, NULL);
 	if (!dad_tlv) {
 		free(ddol_data);
+		tlvdb_free(dda_db);
 		return NULL;
 	}
 
@@ -424,6 +423,7 @@ static struct tlvdb *perform_dda(const struct capk *pk, struct tlvdb *db, struct
 			pk->exp, pk->elen);
 	if (!ikcp) {
 		free(ddol_data);
+		tlvdb_free(dda_db);
 		return NULL;
 	}
 
@@ -434,6 +434,7 @@ static struct tlvdb *perform_dda(const struct capk *pk, struct tlvdb *db, struct
 	if (dad[dad_len - 1] != 0xbc || dad[0] != 0x6a || dad[1] != 0x05) {
 		free(dad);
 		free(ddol_data);
+		tlvdb_free(dda_db);
 		return NULL;
 	}
 
@@ -442,6 +443,7 @@ static struct tlvdb *perform_dda(const struct capk *pk, struct tlvdb *db, struct
 	if (!ch) {
 		free(dad);
 		free(ddol_data);
+		tlvdb_free(dda_db);
 		return NULL;
 	}
 
@@ -453,6 +455,7 @@ static struct tlvdb *perform_dda(const struct capk *pk, struct tlvdb *db, struct
 	if (memcmp(dad + dad_len - 21, crypto_hash_read(ch), 20)) {
 		crypto_hash_close(ch);
 		free(dad);
+		tlvdb_free(dda_db);
 		return NULL;
 	}
 
@@ -460,32 +463,37 @@ static struct tlvdb *perform_dda(const struct capk *pk, struct tlvdb *db, struct
 
 	if (dad[3] < 2 || dad[3] > dad_len - 25) {
 		free(dad);
+		tlvdb_free(dda_db);
 		return NULL;
 	}
 
 	size_t idn_len = dad[4];
 	if (idn_len > dad[3] - 1) {
 		free(dad);
+		tlvdb_free(dda_db);
 		return NULL;
 	}
 
 	struct tlvdb *idn_db = tlvdb_fixed(0x4c9f, idn_len, dad + 5);
 	if (!idn_db) {
 		free(dad);
+		tlvdb_free(dda_db);
 		return NULL;
 	}
 
 	free(dad);
 
+	tlvdb_add(dda_db, idn_db);
+
 	printf("DDA verified OK (IDN %zd bytes long)!\n", idn_len);
 
-	return idn_db;
+	return dda_db;
 }
 
 static struct capk *get_ca_pk(struct tlvdb *db)
 {
-	struct tlv *df_tlv = tlvdb_get(db, 0x84, NULL);
-	struct tlv *caidx_tlv = tlvdb_get(db, 0x8f, NULL);
+	const struct tlv *df_tlv = tlvdb_get(db, 0x84, NULL);
+	const struct tlv *caidx_tlv = tlvdb_get(db, 0x8f, NULL);
 
 	if (!df_tlv || !caidx_tlv || df_tlv->len < 6 || caidx_tlv->len != 1)
 		return NULL;
@@ -628,9 +636,9 @@ int main(void)
 		}
 
 	}
-	struct tlv *sdatl_tlv = tlvdb_get(s, 0x4a9f, NULL);
+	const struct tlv *sdatl_tlv = tlvdb_get(s, 0x4a9f, NULL);
 	if (sdatl_tlv) {
-		struct tlv *aip_tlv = tlvdb_get(s, 0x82, NULL);
+		const struct tlv *aip_tlv = tlvdb_get(s, 0x82, NULL);
 		if (sdatl_tlv->len == 1 && sdatl_tlv->value[0] == 0x82 && aip_tlv) {
 			sda_data = realloc(sda_data, sda_len + aip_tlv->len);
 			memcpy(sda_data + sda_len, aip_tlv->value, aip_tlv->len);

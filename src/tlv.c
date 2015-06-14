@@ -219,7 +219,7 @@ void tlvdb_add(struct tlvdb *tlvdb, struct tlvdb *other)
 	tlvdb->next = other;
 }
 
-void tlvdb_visit(struct tlvdb *tlvdb, tlv_cb cb, void *data)
+void tlvdb_visit(const struct tlvdb *tlvdb, tlv_cb cb, void *data)
 {
 	struct tlvdb *next = NULL;
 
@@ -233,7 +233,7 @@ void tlvdb_visit(struct tlvdb *tlvdb, tlv_cb cb, void *data)
 	}
 }
 
-static struct tlvdb *tlvdb_next(struct tlvdb *tlvdb)
+static const struct tlvdb *tlvdb_next(const struct tlvdb *tlvdb)
 {
 	if (tlvdb->children)
 		return tlvdb->children;
@@ -248,7 +248,7 @@ static struct tlvdb *tlvdb_next(struct tlvdb *tlvdb)
 	return NULL;
 }
 
-struct tlv *tlvdb_get(struct tlvdb *tlvdb, tlv_tag_t tag, const struct tlv *prev)
+const struct tlv *tlvdb_get(const struct tlvdb *tlvdb, tlv_tag_t tag, const struct tlv *prev)
 {
 	if (prev) {
 		tlvdb = tlvdb_next(container_of(prev, struct tlvdb, tag));

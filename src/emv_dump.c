@@ -173,7 +173,7 @@ int main(void)
 
 	tlvdb_visit(s, print_cb, NULL);
 
-	struct tlv *logent_tlv = tlvdb_get(s, 0x4d9f, NULL);
+	const struct tlv *logent_tlv = tlvdb_get(s, 0x4d9f, NULL);
 	if (logent_tlv && logent_tlv->len == 2) {
 		for (i = 1; i <= logent_tlv->value[1]; i++) {
 			unsigned short sw;

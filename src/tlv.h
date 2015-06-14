@@ -28,8 +28,8 @@ void tlvdb_free(struct tlvdb *tlvdb);
 
 void tlvdb_add(struct tlvdb *tlvdb, struct tlvdb *other);
 
-void tlvdb_visit(struct tlvdb *tlvdb, tlv_cb cb, void *data);
-struct tlv *tlvdb_get(struct tlvdb *tlvdb, tlv_tag_t tag, const struct tlv *prev);
+void tlvdb_visit(const struct tlvdb *tlvdb, tlv_cb cb, void *data);
+const struct tlv *tlvdb_get(const struct tlvdb *tlvdb, tlv_tag_t tag, const struct tlv *prev);
 
 tlv_tag_t tlv_parse_tag(const unsigned char **buf, size_t *len);
 size_t tlv_parse_len(const unsigned char **buf, size_t *len);
