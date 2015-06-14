@@ -152,7 +152,7 @@ unsigned char *crypto_pk_encrypt(struct crypto_pk *cp, const unsigned char *buf,
 	gcry_error_t err;
 	int blen = len;
 	gcry_sexp_t dsexp, esexp, asexp;
-	void *temp;
+	gcry_mpi_t tmpi;
 	size_t templen;
 	size_t keysize;
 	unsigned char *result;
@@ -180,22 +180,41 @@ unsigned char *crypto_pk_encrypt(struct crypto_pk *cp, const unsigned char *buf,
 	if (!asexp)
 		return NULL;
 
-	temp = gcry_sexp_nth_buffer(asexp, 1, &templen);
+	tmpi = gcry_sexp_nth_mpi(asexp, 1, GCRYMPI_FMT_USG);
 	gcry_sexp_release(asexp);
-	if (!temp)
+	if (!tmpi)
 		return NULL;
 
 	keysize = (gcry_pk_get_nbits(cp->pk) + 7) / 8;
 	result = malloc(keysize);
 	if (!result) {
-		gcry_free(temp);
+		gcry_mpi_release(tmpi);
 		return NULL;
 	}
 
+	err = gcry_mpi_print(GCRYMPI_FMT_USG, NULL, keysize, &templen, tmpi);
+	if (err) {
+		fprintf(stderr, "LibGCrypt error %s/%s\n",
+				gcry_strsource (err),
+				gcry_strerror (err));
+		gcry_mpi_release(tmpi);
+		free(result);
+		return NULL;
+	}
+
+	err = gcry_mpi_print(GCRYMPI_FMT_USG, result + keysize - templen, templen, &templen, tmpi);
+	if (err) {
+		fprintf(stderr, "LibGCrypt error %s/%s\n",
+				gcry_strsource (err),
+				gcry_strerror (err));
+		gcry_mpi_release(tmpi);
+		free(result);
+		return NULL;
+	}
 	memset(result, 0, keysize - templen);
-	memcpy(result + keysize - templen, temp, templen);
+
 	*clen = keysize;
-	gcry_free(temp);
+	gcry_mpi_release(tmpi);
 
 	return result;
 }
