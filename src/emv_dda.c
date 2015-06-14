@@ -8,6 +8,7 @@
 #include "emv_tags.h"
 #include "capk.h"
 #include "crypto_backend.h"
+#include "dol.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -342,41 +343,6 @@ static struct tlvdb *perform_sda(const struct capk *pk, const struct tlvdb *db, 
 	return dac_db;
 }
 
-static unsigned char *process_dol(const struct tlvdb *db, const struct tlv *tlv, size_t *len)
-{
-	const unsigned char *buf = tlv->value;
-	size_t left = tlv->len;
-	size_t res_len = 256;
-	unsigned char *res = malloc(res_len);
-	size_t pos = 0;
-
-	while (left) {
-		tlv_tag_t tag = tlv_parse_tag(&buf, &left);
-		size_t taglen = tlv_parse_len(&buf, &left);
-
-		if (pos + taglen > res_len) {
-			res_len *= 2;
-			res = realloc(res, res_len);
-		}
-
-		const struct tlv *db_tag = tlvdb_get(db, tag, NULL);
-		if (!db_tag) {
-			memset(res + pos, 0, taglen);
-		} else if (db_tag->len > taglen) {
-			memcpy(res + pos, db_tag->value, taglen);
-		} else {
-			// FIXME: cn data should be padded with 0xFF !!!
-			memcpy(res + pos, db_tag->value, db_tag->len);
-			memset(res + pos + db_tag->len, 0, taglen - db_tag->len);
-		}
-		pos += taglen;
-	}
-
-	*len = pos;
-
-	return res;
-}
-
 static const unsigned char default_ddol_value[] = {0x9f, 0x37, 0x04};
 static struct tlv default_ddol_tlv = {.tag = 0x499f, .len = 3, .value = default_ddol_value };
 
@@ -393,7 +359,7 @@ static struct tlvdb *perform_dda(const struct capk *pk, const struct tlvdb *db, 
 		ddol_tlv = &default_ddol_tlv;
 
 	size_t ddol_data_len;
-	unsigned char *ddol_data = process_dol(db, ddol_tlv, &ddol_data_len);
+	unsigned char *ddol_data = dol_process(ddol_tlv, db, &ddol_data_len);
 	if (!ddol_data)
 		return NULL;
 

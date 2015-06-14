@@ -10,6 +10,7 @@ libopenemv_a_SOURCES = \
 	tlv.c tlv.h \
 	emv_tags.c emv_tags.h \
 	crypto_backend.h \
+	dol.c dol.h \
 	capk.c capk.h
 
 libopenemv_a_SOURCES += crypto_gcrypt.c
