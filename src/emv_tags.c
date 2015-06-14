@@ -11,7 +11,10 @@ enum emv_tag_t {
 	EMV_TAG_GENERIC,
 	EMV_TAG_BITMASK,
 	EMV_TAG_DOL,
-	EVM_TAG_CVM_LIST,
+	EMV_TAG_CVM_LIST,
+	EMV_TAG_STRING,
+	EMV_TAG_NUMERIC,
+	EMV_TAG_YYMMDD,
 };
 
 struct emv_tag {
@@ -86,31 +89,32 @@ static const struct emv_tag_bit EMV_TVR[] = {
 static struct emv_tag emv_tags[] = {
 	{ 0x00  , "Unknown ???" },
 	{ 0x4f  , "Application Dedicated File (ADF) Name" },
-	{ 0x50  , "Application Label" },
+	{ 0x50  , "Application Label", EMV_TAG_STRING },
 	{ 0x56  , "Track 1 Data" },
 	{ 0x57  , "Track 2 Equivalent Data" },
 	{ 0x5a  , "Application Primary Account Number (PAN)" },
-	{ 0x5f20, "Cardholder Name" },
-	{ 0x5f24, "Application Expiration Date" },
-	{ 0x5f25, "Application Effective Date" },
-	{ 0x5f28, "Issuer Country Code" },
-	{ 0x5f2a, "Transaction Currency Code" },
-	{ 0x5f2d, "Language Preference" },
-	{ 0x5f30, "Service Code" },
-	{ 0x5f34, "Application Primary Account Number (PAN) Sequence Number" },
+	{ 0x5f20, "Cardholder Name", EMV_TAG_STRING },
+	{ 0x5f24, "Application Expiration Date", EMV_TAG_YYMMDD },
+	{ 0x5f25, "Application Effective Date", EMV_TAG_YYMMDD },
+	{ 0x5f28, "Issuer Country Code", EMV_TAG_NUMERIC },
+	{ 0x5f2a, "Transaction Currency Code", EMV_TAG_NUMERIC },
+	{ 0x5f2d, "Language Preference", EMV_TAG_STRING },
+	{ 0x5f30, "Service Code", EMV_TAG_NUMERIC },
+	{ 0x5f34, "Application Primary Account Number (PAN) Sequence Number", EMV_TAG_NUMERIC },
 	{ 0x61  , "Application Template" },
 	{ 0x6f  , "File Control Information (FCI) Template" },
 	{ 0x70  , "READ RECORD Response Message Template" },
 	{ 0x77  , "Response Message Template Format 2" },
 	{ 0x80  , "Response Message Template Format 1" },
 	{ 0x82  , "Application Interchange Profile", EMV_TAG_BITMASK, &EMV_AIP },
+	{ 0x83  , "Command Template" },
 	{ 0x84  , "Dedicated File (DF) Name" },
 	{ 0x87  , "Application Priority Indicator" },
 	{ 0x88  , "Short File Identifier (SFI)" },
 	{ 0x8a  , "Authorisation Response Code" },
 	{ 0x8c  , "Card Risk Management Data Object List 1 (CDOL1)", EMV_TAG_DOL },
 	{ 0x8d  , "Card Risk Management Data Object List 2 (CDOL2)", EMV_TAG_DOL },
-	{ 0x8e  , "Cardholder Verification Method (CVM) List", EVM_TAG_CVM_LIST },
+	{ 0x8e  , "Cardholder Verification Method (CVM) List", EMV_TAG_CVM_LIST },
 	{ 0x8f  , "Certification Authority Public Key Index" },
 	{ 0x90  , "Issuer Public Key Certificate" },
 	{ 0x91  , "Issuer Authentication Data" },
@@ -118,21 +122,21 @@ static struct emv_tag emv_tags[] = {
 	{ 0x93  , "Signed Static Application Data" },
 	{ 0x94  , "Application File Locator (AFL)" },
 	{ 0x95  , "Terminal Verification Results" },
-	{ 0x9a  , "Transaction Date" },
+	{ 0x9a  , "Transaction Date", EMV_TAG_YYMMDD },
 	{ 0x9c  , "Transaction Type" },
-	{ 0x9f02, "Amount, Authorised (Numeric)" },
-	{ 0x9f03, "Amount, Other (Numeric)" },
+	{ 0x9f02, "Amount, Authorised (Numeric)", EMV_TAG_NUMERIC },
+	{ 0x9f03, "Amount, Other (Numeric)", EMV_TAG_NUMERIC, },
 	{ 0x9f07, "Application Usage Control", EMV_TAG_BITMASK, &EMV_AUC },
 	{ 0x9f08, "Application Version Number" },
 	{ 0x9f0d, "Issuer Action Code - Default", EMV_TAG_BITMASK, &EMV_TVR },
 	{ 0x9f0e, "Issuer Action Code - Denial", EMV_TAG_BITMASK, &EMV_TVR },
 	{ 0x9f0f, "Issuer Action Code - Online", EMV_TAG_BITMASK, &EMV_TVR },
-	{ 0x9f11, "Issuer Code Table Index" },
-	{ 0x9f12, "Application Preferred Name" },
+	{ 0x9f11, "Issuer Code Table Index", EMV_TAG_NUMERIC },
+	{ 0x9f12, "Application Preferred Name", EMV_TAG_STRING },
 	{ 0x9f13, "Last Online Application Transaction Counter (ATC) Register" },
 	{ 0x9f17, "Personal Identification Number (PIN) Try Counter" },
 	{ 0x9f1a, "Terminal Country Code" },
-	{ 0x9f1f, "Track 1 Discretionary Data" },
+	{ 0x9f1f, "Track 1 Discretionary Data", EMV_TAG_STRING },
 	{ 0x9f21, "Transaction Time" },
 	{ 0x9f27, "Cryptogram Information Data" },
 	{ 0x9f32, "Issuer Public Key Exponent" },
@@ -140,8 +144,9 @@ static struct emv_tag emv_tags[] = {
 	{ 0x9f35, "Terminal Type" },
 	{ 0x9f36, "Application Transaction Counter (ATC)" },
 	{ 0x9f37, "Unpredictable Number" },
-	{ 0x9f42, "Application Currency Code" },
-	{ 0x9f44, "Application Currency Exponent" },
+	{ 0x9f37, "Processing Options Data Object List (PDOL)", EMV_TAG_DOL },
+	{ 0x9f42, "Application Currency Code", EMV_TAG_NUMERIC },
+	{ 0x9f44, "Application Currency Exponent", EMV_TAG_NUMERIC },
 	{ 0x9f45, "Data Authentication Code" },
 	{ 0x9f46, "ICC Public Key Certificate" },
 	{ 0x9f47, "ICC Public Key Exponent" },
@@ -230,6 +235,57 @@ static void emv_tag_dump_dol(const struct tlv *tlv, const struct emv_tag *tag, F
 
 		fprintf(f, "\tTag %4hx len %02zx ('%s')\n", tlv_tag(&doltlv), doltlv.len, doltag->name);
 	}
+}
+
+static void emv_tag_dump_string(const struct tlv *tlv, const struct emv_tag *tag, FILE *f)
+{
+	fprintf(f, "\tString value '");
+	fwrite(tlv->value, 1, tlv->len, f);
+	fprintf(f, "'\n");
+}
+
+static unsigned long emv_value_numeric(const struct tlv *tlv, unsigned start, unsigned end)
+{
+	unsigned long ret = 0;
+	int i;
+
+	if (end > tlv->len * 2)
+		return ret;
+	if (start >= end)
+		return ret;
+
+	if (start & 1) {
+		ret += tlv->value[start/2] & 0xf;
+		i = start + 1;
+	} else
+		i = start;
+
+	for (; i < end - 1; i += 2) {
+		ret *= 10;
+		ret += tlv->value[i/2] >> 4;
+		ret *= 10;
+		ret += tlv->value[i/2] & 0xf;
+	}
+
+	if (end & 1) {
+		ret *= 10;
+		ret += tlv->value[end/2] >> 4;
+	}
+
+	return ret;
+}
+
+static void emv_tag_dump_numeric(const struct tlv *tlv, const struct emv_tag *tag, FILE *f)
+{
+	fprintf(f, "\tNumeric value %lu\n", emv_value_numeric(tlv, 0, tlv->len * 2));
+}
+
+static void emv_tag_dump_yymmdd(const struct tlv *tlv, const struct emv_tag *tag, FILE *f)
+{
+	fprintf(f, "\tDate: 20%02ld.%ld.%ld\n",
+			emv_value_numeric(tlv, 0, 2),
+			emv_value_numeric(tlv, 2, 4),
+			emv_value_numeric(tlv, 4, 6));
 }
 
 static uint32_t emv_get_binary(const unsigned char *S)
@@ -352,8 +408,18 @@ bool emv_tag_dump(const struct tlv *tlv, FILE *f)
 	case EMV_TAG_DOL:
 		emv_tag_dump_dol(tlv, tag, f);
 		break;
-	case EVM_TAG_CVM_LIST:
+	case EMV_TAG_CVM_LIST:
 		emv_tag_dump_cvm_list(tlv, tag, f);
+		break;
+	case EMV_TAG_STRING:
+		emv_tag_dump_string(tlv, tag, f);
+		break;
+	case EMV_TAG_NUMERIC:
+		emv_tag_dump_numeric(tlv, tag, f);
+		break;
+	case EMV_TAG_YYMMDD:
+		emv_tag_dump_yymmdd(tlv, tag, f);
+		break;
 	};
 
 	return true;
