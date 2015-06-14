@@ -58,7 +58,7 @@ static unsigned char *docmd_int(struct sc *sc,
 	outbuf = sc_command(sc, cla, ins, p1, p2,
 			dlen, data, sw, outlen);
 	if (scard_is_error(sc)) {
-		printf(scard_error(sc));
+		printf("%s\n", scard_error(sc));
 		return NULL;
 	}
 	printf("response (%hx)\n", *sw);
@@ -518,13 +518,13 @@ int main(void)
 
 	sc = scard_init();
 	if (scard_is_error(sc)) {
-		printf(scard_error(sc));
+		printf("%s\n", scard_error(sc));
 		return 1;
 	}
 
 	scard_connect(sc, 0);
 	if (scard_is_error(sc)) {
-		printf(scard_error(sc));
+		printf("%s\n", scard_error(sc));
 		return 1;
 	}
 
@@ -642,12 +642,12 @@ int main(void)
 
 	scard_disconnect(sc);
 	if (scard_is_error(sc)) {
-		printf(scard_error(sc));
+		printf("%s\n", scard_error(sc));
 		return 1;
 	}
 	scard_shutdown(&sc);
 	if (scard_is_error(sc)) {
-		printf(scard_error(sc));
+		printf("%s\n", scard_error(sc));
 		return 1;
 	}
 
