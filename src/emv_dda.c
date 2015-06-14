@@ -339,7 +339,7 @@ static struct tlvdb *perform_sda(const struct capk *pk, const struct tlvdb *db, 
 	if (!dac_db)
 		return NULL;
 
-	printf("SDA verified OK (%02hx:%02hx)!\n", dac[0], dac[1]);
+	printf("SDA verified OK (%02hhx:%02hhx)!\n", dac[0], dac[1]);
 	return dac_db;
 }
 
