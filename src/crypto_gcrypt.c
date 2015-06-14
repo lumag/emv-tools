@@ -5,6 +5,7 @@
 #include "crypto_backend.h"
 
 #include <stdarg.h>
+#include <stdio.h>
 
 #define GCRYPT_NO_DEPRECATED
 #define GCRYPT_NO_MPI_MACROS
