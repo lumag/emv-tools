@@ -13,12 +13,19 @@
 #endif
 
 int main(int argc, char **argv) {
+	FILE *f;
+	const char *fname;
 
 	if (!crypto_be_init())
 		exit(2);
 
-	FILE *f = fopen(argv[1] ? : "capk.txt", "r");
+	fname = argv[1];
+	if (!fname)
+		fname = getenv("CAPKFILE");
+	if (!fname)
+		fname = "capk.txt";
 
+	f = fopen(fname, "r");
 	if (!f) {
 		perror("fopen");
 		return 1;

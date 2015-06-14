@@ -21,6 +21,7 @@ LDADD = $(OPENEMV_LIBS)
 bin_PROGRAMS = capk-verify emv_dump emv_dda
 check_PROGRAMS = tlv-test
 
-TESTS = tlv-test
+TESTS = tlv-test capk-verify
+TESTS_ENVIRONMENT = env CAPKFILE="$(srcdir)"/capk.txt
 
 dist_pkgdata_DATA = capk.txt
