@@ -1,5 +1,5 @@
 language: c
 before_install:
-        - autoreconf -vis
         - sudo apt-get update -qq
         - sudo apt-get install -y libpcsclite-dev libgcrypt11-dev
+script: autoreconf -vfi && ./configure && make && make check
