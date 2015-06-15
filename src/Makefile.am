@@ -1,4 +1,4 @@
-AM_CFLAGS = -Wall -Werror -Wmissing-prototypes -Wformat=2
+AM_CFLAGS = -Wall -Werror -Wmissing-prototypes -Wformat=2 -DEMV_DATA_DIR="\"$(pkgdatadir)\""
 AM_LDFLAGS = -Wl,--as-needed
 
 noinst_LIBRARIES = libopenemv.a

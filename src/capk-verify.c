@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
 	if (!fname)
 		fname = getenv("CAPKFILE");
 	if (!fname)
-		fname = "capk.txt";
+		fname = EMV_DATA_DIR "capk.txt";
 
 	f = fopen(fname, "r");
 	if (!f) {
