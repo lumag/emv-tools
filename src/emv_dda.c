@@ -96,77 +96,12 @@ static struct tlvdb *get_data(struct sc *sc, tlv_tag_t tag)
 	return docmd(sc, 0x80, 0xca, tag & 0xff, tag >> 8, 0, NULL);
 }
 
-static struct tlvdb *perform_sda(const struct capk *pk, const struct tlvdb *db, unsigned char *sda_data, size_t sda_len)
-{
-	struct crypto_pk *ikcp;
-
-	const struct tlv *ssad_tlv = tlvdb_get(db, 0x93, NULL);
-
-	if (!pk)
-		return NULL;
-
-	if (!ssad_tlv) {
-		return NULL;
-	};
-
-	if (ssad_tlv->len != pk->mlen) {
-		return NULL;
-	}
-
-	ikcp = crypto_pk_open(pk->pk_algo,
-			pk->modulus, pk->mlen,
-			pk->exp, pk->elen);
-	if (!ikcp)
-		return NULL;
-
-	size_t ssad_len;
-	unsigned char *ssad = crypto_pk_encrypt(ikcp, ssad_tlv->value, ssad_tlv->len, &ssad_len);
-	crypto_pk_close(ikcp);
-
-	if (ssad[ssad_len - 1] != 0xbc || ssad[0] != 0x6a || ssad[1] != 0x03) {
-		free(ssad);
-		return NULL;
-	}
-
-	struct crypto_hash *ch;
-	ch = crypto_hash_open(pk->hash_algo);
-	if (!ch) {
-		free(ssad);
-		return NULL;
-	}
-
-	crypto_hash_write(ch, ssad + 1, ssad_len - 22);
-	crypto_hash_write(ch, sda_data, sda_len);
-
-	if (memcmp(ssad + ssad_len - 21, crypto_hash_read(ch), 20)) {
-		crypto_hash_close(ch);
-		free(ssad);
-		return NULL;
-	}
-
-	crypto_hash_close(ch);
-
-	unsigned char dac[2];
-	dac[0] = ssad[3];
-	dac[1] = ssad[4];
-
-	free(ssad);
-
-	struct tlvdb *dac_db = tlvdb_fixed(0x459f, 2, dac);
-	if (!dac_db)
-		return NULL;
-
-	printf("SDA verified OK (%02hhx:%02hhx)!\n", dac[0], dac[1]);
-	return dac_db;
-}
-
 static const unsigned char default_ddol_value[] = {0x9f, 0x37, 0x04};
 static struct tlv default_ddol_tlv = {.tag = 0x499f, .len = 3, .value = default_ddol_value };
 
 static struct tlvdb *perform_dda(const struct capk *pk, const struct tlvdb *db, struct sc *sc)
 {
 	const struct tlv *e;
-	const struct tlv *dad_tlv;
 	const struct tlv *ddol_tlv = tlvdb_get(db, 0x499f, NULL);
 
 	if (!pk)
@@ -193,82 +128,14 @@ static struct tlvdb *perform_dda(const struct capk *pk, const struct tlvdb *db, 
 		dda_db = t;
 	}
 
-	dad_tlv = tlvdb_get(dda_db, 0x4b9f, NULL);
-	if (!dad_tlv) {
-		free(ddol_data);
-		tlvdb_free(dda_db);
-		return NULL;
-	}
-
-	struct crypto_pk *ikcp;
-	ikcp = crypto_pk_open(pk->pk_algo,
-			pk->modulus, pk->mlen,
-			pk->exp, pk->elen);
-	if (!ikcp) {
-		free(ddol_data);
-		tlvdb_free(dda_db);
-		return NULL;
-	}
-
-	size_t dad_len;
-	unsigned char *dad = crypto_pk_encrypt(ikcp, dad_tlv->value, dad_tlv->len, &dad_len);
-	crypto_pk_close(ikcp);
-
-	if (dad[dad_len - 1] != 0xbc || dad[0] != 0x6a || dad[1] != 0x05) {
-		free(dad);
-		free(ddol_data);
-		tlvdb_free(dda_db);
-		return NULL;
-	}
-
-	struct crypto_hash *ch;
-	ch = crypto_hash_open(dad[2]);
-	if (!ch) {
-		free(dad);
-		free(ddol_data);
-		tlvdb_free(dda_db);
-		return NULL;
-	}
-
-	crypto_hash_write(ch, dad + 1, dad_len - 22);
-	crypto_hash_write(ch, ddol_data, ddol_data_len);
-
+	struct tlvdb *idn_db = emv_pki_recover_idn(pk, dda_db, ddol_data, ddol_data_len);
 	free(ddol_data);
-
-	if (memcmp(dad + dad_len - 21, crypto_hash_read(ch), 20)) {
-		crypto_hash_close(ch);
-		free(dad);
-		tlvdb_free(dda_db);
-		return NULL;
-	}
-
-	crypto_hash_close(ch);
-
-	if (dad[3] < 2 || dad[3] > dad_len - 25) {
-		free(dad);
-		tlvdb_free(dda_db);
-		return NULL;
-	}
-
-	size_t idn_len = dad[4];
-	if (idn_len > dad[3] - 1) {
-		free(dad);
-		tlvdb_free(dda_db);
-		return NULL;
-	}
-
-	struct tlvdb *idn_db = tlvdb_fixed(0x4c9f, idn_len, dad + 5);
 	if (!idn_db) {
-		free(dad);
 		tlvdb_free(dda_db);
 		return NULL;
 	}
-
-	free(dad);
 
 	tlvdb_add(dda_db, idn_db);
-
-	printf("DDA verified OK (IDN %zd bytes long)!\n", idn_len);
 
 	return dda_db;
 }
@@ -442,13 +309,21 @@ int main(void)
 	struct capk *icc_pk = emv_pki_recover_icc_cert(issuer_pk, s, sda_data, sda_len);
 	if (icc_pk)
 		printf("ICC PK recovered!\n");
-	struct tlvdb *dac_db = perform_sda(issuer_pk, s, sda_data, sda_len);
+	struct tlvdb *dac_db = emv_pki_recover_dac(issuer_pk, s, sda_data, sda_len);
+	if (dac_db) {
+		const struct tlv *dac_tlv = tlvdb_get(dac_db, 0x459f, NULL);
+		printf("SDA verified OK (%02hhx:%02hhx)!\n", dac_tlv->value[0], dac_tlv->value[1]);
+		tlvdb_add(s, dac_db);
+	}
 	struct tlvdb *idn_db = perform_dda(icc_pk, s, sc);
+	if (idn_db) {
+		const struct tlv *idn_tlv = tlvdb_get(idn_db, 0x4c9f, NULL);
+		printf("DDA verified OK (IDN %zd bytes long)!\n", idn_tlv->len);
+		tlvdb_add(s, idn_db);
+	}
 	capk_free(pk);
 	capk_free(issuer_pk);
 	capk_free(icc_pk);
-	tlvdb_add(s, dac_db);
-	tlvdb_add(s, idn_db);
 
 	free(sda_data);
 
