@@ -137,11 +137,14 @@ int main(void)
 	if (!t)
 		return 1;
 	if ((e = tlvdb_get(t, 0x80, NULL)) != NULL) {
-		struct tlvdb *t1, *t2;
-		t1 = tlvdb_fixed(0x82, 2, e->value);
-		t2 = tlvdb_fixed(0x94, e->len - 2, e->value+2);
-		tlvdb_add(s, t1);
-		tlvdb_add(s, t2);
+		const unsigned char gpo_dol_value[] = {
+			0x82, 0x02, /* AIP */
+			0x94, 0x00, /* AFL */
+		};
+		const struct tlv gpo_dol = {0x0, sizeof(gpo_dol_value), gpo_dol_value};
+		struct tlvdb *gpo_db = dol_parse(&gpo_dol, e->value, e->len);
+		tlvdb_add(s, t);
+		t = gpo_db;
 	}
 	tlvdb_add(s, t);
 
