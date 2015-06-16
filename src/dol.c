@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-static size_t dol_calculate_len(const struct tlv *tlv)
+static size_t dol_calculate_len(const struct tlv *tlv, size_t data_len)
 {
 	if (!tlv)
 		return 0;
@@ -25,6 +25,10 @@ static size_t dol_calculate_len(const struct tlv *tlv)
 			return 0;
 
 		count += taglen;
+
+		/* Last tag can be of variable length */
+		if (taglen == 0 && left == 0)
+			count = data_len;
 	}
 
 	return count;
@@ -39,9 +43,16 @@ unsigned char *dol_process(const struct tlv *tlv, const struct tlvdb *tlvdb, siz
 
 	const unsigned char *buf = tlv->value;
 	size_t left = tlv->len;
-	size_t res_len = dol_calculate_len(tlv);
-	unsigned char *res = malloc(res_len);
+	size_t res_len = dol_calculate_len(tlv, 0);
+	unsigned char *res;
 	size_t pos = 0;
+
+	if (!res_len) {
+		*len = 0;
+		return NULL;
+	}
+
+	res = malloc(res_len);
 
 	while (left) {
 		tlv_tag_t tag = tlv_parse_tag(&buf, &left);
@@ -77,7 +88,7 @@ struct tlvdb *dol_parse(const struct tlv *tlv, const unsigned char *data, size_t
 
 	const unsigned char *buf = tlv->value;
 	size_t left = tlv->len;
-	size_t res_len = dol_calculate_len(tlv);
+	size_t res_len = dol_calculate_len(tlv, data_len);
 	size_t pos = 0;
 	struct tlvdb *db = NULL;
 
@@ -92,6 +103,10 @@ struct tlvdb *dol_parse(const struct tlv *tlv, const unsigned char *data, size_t
 			tlvdb_free(db);
 			return NULL;
 		}
+
+		/* Last tag can be of variable length */
+		if (taglen == 0 && left == 0)
+			taglen = res_len - pos;
 
 		struct tlvdb *tag_db = tlvdb_fixed(tag, taglen, data + pos);
 		if (!db)
