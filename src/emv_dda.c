@@ -102,7 +102,7 @@ static struct tlv default_ddol_tlv = {.tag = 0x499f, .len = 3, .value = default_
 static struct tlvdb *perform_dda(const struct capk *pk, const struct tlvdb *db, struct sc *sc)
 {
 	const struct tlv *e;
-	const struct tlv *ddol_tlv = tlvdb_get(db, 0x499f, NULL);
+	const struct tlv *ddol_tlv = tlvdb_get(db, 0x9f49, NULL);
 
 	if (!pk)
 		return NULL;
@@ -287,7 +287,7 @@ int main(void)
 		}
 
 	}
-	const struct tlv *sdatl_tlv = tlvdb_get(s, 0x4a9f, NULL);
+	const struct tlv *sdatl_tlv = tlvdb_get(s, 0x9f4a, NULL);
 	if (sdatl_tlv) {
 		const struct tlv *aip_tlv = tlvdb_get(s, 0x82, NULL);
 		if (sdatl_tlv->len == 1 && sdatl_tlv->value[0] == 0x82 && aip_tlv) {
@@ -312,13 +312,13 @@ int main(void)
 		printf("ICC PK recovered!\n");
 	struct tlvdb *dac_db = emv_pki_recover_dac(issuer_pk, s, sda_data, sda_len);
 	if (dac_db) {
-		const struct tlv *dac_tlv = tlvdb_get(dac_db, 0x459f, NULL);
+		const struct tlv *dac_tlv = tlvdb_get(dac_db, 0x9f45, NULL);
 		printf("SDA verified OK (%02hhx:%02hhx)!\n", dac_tlv->value[0], dac_tlv->value[1]);
 		tlvdb_add(s, dac_db);
 	}
 	struct tlvdb *idn_db = perform_dda(icc_pk, s, sc);
 	if (idn_db) {
-		const struct tlv *idn_tlv = tlvdb_get(idn_db, 0x4c9f, NULL);
+		const struct tlv *idn_tlv = tlvdb_get(idn_db, 0x9f4c, NULL);
 		printf("DDA verified OK (IDN %zd bytes long)!\n", idn_tlv->len);
 		tlvdb_add(s, idn_db);
 	}

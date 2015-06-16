@@ -196,8 +196,8 @@ int main(void)
 
 	tlvdb_visit(s, print_cb, NULL);
 
-	const struct tlv *logent_tlv = tlvdb_get(s, 0x4d9f, NULL);
-	const struct tlv *logent_dol = tlvdb_get(s, 0x4f9f, NULL);
+	const struct tlv *logent_tlv = tlvdb_get(s, 0x9f4d, NULL);
+	const struct tlv *logent_dol = tlvdb_get(s, 0x9f4f, NULL);
 	if (logent_tlv && logent_tlv->len == 2 && logent_dol) {
 		for (i = 1; i <= logent_tlv->value[1]; i++) {
 			unsigned short sw;
