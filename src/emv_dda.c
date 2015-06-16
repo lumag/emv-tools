@@ -93,7 +93,7 @@ static struct tlvdb *docmd(struct sc *sc,
 
 static struct tlvdb *get_data(struct sc *sc, tlv_tag_t tag)
 {
-	return docmd(sc, 0x80, 0xca, tag & 0xff, tag >> 8, 0, NULL);
+	return docmd(sc, 0x80, 0xca, tag >> 8, tag & 0xff, 0, NULL);
 }
 
 static const unsigned char default_ddol_value[] = {0x9f, 0x37, 0x04};
@@ -328,10 +328,10 @@ int main(void)
 
 	free(sda_data);
 
-	tlvdb_add(s, get_data(sc, 0x369f));
-	tlvdb_add(s, get_data(sc, 0x139f));
-	tlvdb_add(s, get_data(sc, 0x179f));
-	tlvdb_add(s, get_data(sc, 0x4f9f));
+	tlvdb_add(s, get_data(sc, 0x9f36));
+	tlvdb_add(s, get_data(sc, 0x9f13));
+	tlvdb_add(s, get_data(sc, 0x9f17));
+	tlvdb_add(s, get_data(sc, 0x9f4f));
 
 	printf("Final\n");
 	tlvdb_visit(s, print_cb, NULL);
