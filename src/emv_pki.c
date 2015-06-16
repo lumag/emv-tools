@@ -8,26 +8,26 @@
 #include <stdlib.h>
 #include <string.h>
 
-static struct tlv empty_rem_tlv = {.tag = 0x92, .len = 0, .value = NULL};
+static struct tlv empty_tlv = {.tag = 0x0, .len = 0, .value = NULL};
 
-static struct capk *emv_pki_decode_message_2(const struct capk *enc_pk,
+static unsigned char *emv_pki_decode_message(const struct capk *enc_pk,
+		uint8_t msgtype,
+		size_t *len,
 		const struct tlv *cert_tlv,
 		const struct tlv *exp_tlv,
-		const struct tlv *rem_tlv)
+		const struct tlv *rem_tlv,
+		unsigned char *add_data, size_t add_data_len
+		)
 {
 	struct crypto_pk *kcp;
 	unsigned char *data;
 	size_t data_len;
-	size_t pk_len;
 
 	if (!enc_pk)
 		return NULL;
 
-	if (!cert_tlv || !exp_tlv)
+	if (!cert_tlv || !exp_tlv || !rem_tlv)
 		return NULL;
-
-	if (!rem_tlv)
-		rem_tlv = &empty_rem_tlv;
 
 	if (cert_tlv->len != enc_pk->mlen)
 		return NULL;
@@ -41,7 +41,7 @@ static struct capk *emv_pki_decode_message_2(const struct capk *enc_pk,
 	data = crypto_pk_encrypt(kcp, cert_tlv->value, cert_tlv->len, &data_len);
 	crypto_pk_close(kcp);
 
-	if (data[data_len-1] != 0xbc || data[0] != 0x6a || data[1] != 0x02) {
+	if (data[data_len-1] != 0xbc || data[0] != 0x6a || data[1] != msgtype) {
 		free(data);
 		return NULL;
 	}
@@ -56,6 +56,7 @@ static struct capk *emv_pki_decode_message_2(const struct capk *enc_pk,
 	crypto_hash_write(ch, data + 1, data_len - 22);
 	crypto_hash_write(ch, rem_tlv->value, rem_tlv->len);
 	crypto_hash_write(ch, exp_tlv->value, exp_tlv->len);
+	crypto_hash_write(ch, add_data, add_data_len);
 
 	if (memcmp(data + data_len - 21, crypto_hash_read(ch), 20)) {
 		crypto_hash_close(ch);
@@ -64,6 +65,30 @@ static struct capk *emv_pki_decode_message_2(const struct capk *enc_pk,
 	}
 
 	crypto_hash_close(ch);
+
+	*len = data_len;
+
+	return data;
+}
+
+
+static struct capk *emv_pki_decode_message_2(const struct capk *enc_pk,
+		const struct tlv *cert_tlv,
+		const struct tlv *exp_tlv,
+		const struct tlv *rem_tlv)
+{
+	unsigned char *data;
+	size_t data_len;
+	size_t pk_len;
+
+	data = emv_pki_decode_message(enc_pk, 2, &data_len,
+			cert_tlv,
+			exp_tlv,
+			rem_tlv ? rem_tlv : &empty_tlv,
+			NULL, 0);
+	if (!data)
+		return NULL;
+
 
 	/* Perform the rest of checks here */
 
@@ -102,59 +127,22 @@ static struct capk *emv_pki_decode_message_4(const struct capk *enc_pk,
 		const struct tlv *cert_tlv,
 		const struct tlv *exp_tlv,
 		const struct tlv *rem_tlv,
-		unsigned char *sda_data, size_t sda_len
+		unsigned char *add_data, size_t add_data_len
 		)
 {
-	struct crypto_pk *kcp;
 	unsigned char *data;
 	size_t data_len;
 	size_t pk_len;
 
-	if (!enc_pk)
+	data = emv_pki_decode_message(enc_pk, 4, &data_len,
+			cert_tlv,
+			exp_tlv,
+			rem_tlv ? rem_tlv : &empty_tlv,
+			add_data, add_data_len);
+
+	if (!data)
 		return NULL;
 
-	if (!cert_tlv || !exp_tlv)
-		return NULL;
-
-	if (!rem_tlv)
-		rem_tlv = &empty_rem_tlv;
-
-	if (cert_tlv->len != enc_pk->mlen)
-		return NULL;
-
-	kcp = crypto_pk_open(enc_pk->pk_algo,
-			enc_pk->modulus, enc_pk->mlen,
-			enc_pk->exp, enc_pk->elen);
-	if (!kcp)
-		return NULL;
-
-	data = crypto_pk_encrypt(kcp, cert_tlv->value, cert_tlv->len, &data_len);
-	crypto_pk_close(kcp);
-
-	if (data[data_len-1] != 0xbc || data[0] != 0x6a || data[1] != 0x04) {
-		free(data);
-		return NULL;
-	}
-
-	struct crypto_hash *ch;
-	ch = crypto_hash_open(enc_pk->hash_algo);
-	if (!ch) {
-		free(data);
-		return NULL;
-	}
-
-	crypto_hash_write(ch, data + 1, data_len - 22);
-	crypto_hash_write(ch, rem_tlv->value, rem_tlv->len);
-	crypto_hash_write(ch, exp_tlv->value, exp_tlv->len);
-	crypto_hash_write(ch, sda_data, sda_len);
-
-	if (memcmp(data + data_len - 21, crypto_hash_read(ch), 20)) {
-		crypto_hash_close(ch);
-		free(data);
-		return NULL;
-	}
-
-	crypto_hash_close(ch);
 
 	/* Perform the rest of checks here */
 
@@ -196,13 +184,13 @@ struct capk *emv_pki_recover_issuer_cert(const struct capk *pk, struct tlvdb *db
 			tlvdb_get(db, 0x92, NULL));
 }
 
-struct capk *emv_pki_recover_icc_cert(const struct capk *pk, struct tlvdb *db, unsigned char *sda_data, size_t sda_len)
+struct capk *emv_pki_recover_icc_cert(const struct capk *pk, struct tlvdb *db, unsigned char *sda_data, size_t sda_data_len)
 {
 	return emv_pki_decode_message_4(pk,
 			tlvdb_get(db, 0x469f, NULL),
 			tlvdb_get(db, 0x479f, NULL),
 			tlvdb_get(db, 0x489f, NULL),
-			sda_data, sda_len);
+			sda_data, sda_data_len);
 }
 
 struct capk *emv_pki_recover_icc_pe_cert(const struct capk *pk, struct tlvdb *db)
