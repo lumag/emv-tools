@@ -149,7 +149,7 @@ static struct emv_tag emv_tags[] = {
 	{ 0x9f35, "Terminal Type" },
 	{ 0x9f36, "Application Transaction Counter (ATC)" },
 	{ 0x9f37, "Unpredictable Number" },
-	{ 0x9f37, "Processing Options Data Object List (PDOL)", EMV_TAG_DOL },
+	{ 0x9f38, "Processing Options Data Object List (PDOL)", EMV_TAG_DOL },
 	{ 0x9f42, "Application Currency Code", EMV_TAG_NUMERIC },
 	{ 0x9f44, "Application Currency Exponent", EMV_TAG_NUMERIC },
 	{ 0x9f45, "Data Authentication Code" },
