@@ -131,7 +131,7 @@ static unsigned char *sc_command_t1(struct sc *sc,
 {
 	unsigned char buf[4 + 1 + dlen + 1];
 	size_t len = 0;
-	size_t osize = 512;
+	size_t osize = 256 + 2;
 	size_t ret;
 	unsigned char *obuf;
 
@@ -146,7 +146,7 @@ static unsigned char *sc_command_t1(struct sc *sc,
 		len += dlen + 1;
 	}
 	if (olen)
-		buf[len++] = 0;
+		buf[len++] = 0; /* 256 bytes max */
 
 	obuf = malloc(osize);
 
