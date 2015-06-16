@@ -201,3 +201,51 @@ struct capk *emv_pki_recover_icc_pe_cert(const struct capk *pk, struct tlvdb *db
 			tlvdb_get(db, 0x2f9f, NULL),
 			NULL, 0);
 }
+
+struct tlvdb *emv_pki_recover_dac(const struct capk *enc_pk, const struct tlvdb *db, unsigned char *sda_data, size_t sda_data_len)
+{
+	size_t data_len;
+	unsigned char *data = emv_pki_decode_message(enc_pk, 3, &data_len,
+			tlvdb_get(db, 0x93, NULL),
+			&empty_tlv,
+			&empty_tlv,
+			sda_data, sda_data_len);
+
+	if (!data)
+		return NULL;
+
+	struct tlvdb *dac_db = tlvdb_fixed(0x459f, 2, data+3);
+
+	free(data);
+
+	return dac_db;
+}
+
+struct tlvdb *emv_pki_recover_idn(const struct capk *enc_pk, const struct tlvdb *db, unsigned char *dyn_data, size_t dyn_data_len)
+{
+	size_t data_len;
+	unsigned char *data = emv_pki_decode_message(enc_pk, 5, &data_len,
+			tlvdb_get(db, 0x4b9f, NULL),
+			&empty_tlv,
+			&empty_tlv,
+			dyn_data, dyn_data_len);
+
+	if (!data)
+		return NULL;
+
+	if (data[3] < 2 || data[3] > data_len - 25) {
+		free(data);
+		return NULL;
+	}
+
+	size_t idn_len = data[4];
+	if (idn_len > data[3] - 1) {
+		free(data);
+		return NULL;
+	}
+
+	struct tlvdb *idn_db = tlvdb_fixed(0x4c9f, idn_len, data + 5);
+	free(data);
+
+	return idn_db;
+}
