@@ -170,6 +170,25 @@ int main(void)
 
 	}
 
+	/* Generate AC asking for AAC */
+	size_t crm_data_len;
+	unsigned char *crm_data = dol_process(tlvdb_get(s, 0x8c, NULL), s, &crm_data_len);
+	t = docmd(sc, 0x80, 0xae, 0x00, 0x00, crm_data_len, crm_data);
+	if ((e = tlvdb_get(t, 0x80, NULL)) != NULL) {
+		/* CID, ATC, AC, IAD */
+		const unsigned char ac_dol_value[] = {
+			0x9f, 0x27, 0x01, /* CID */
+			0x9f, 0x36, 0x02, /* ATC */
+			0x9f, 0x26, 0x08, /* AC */
+			0x9f, 0x10, 0x00, /* IAD */
+		};
+		const struct tlv ac_dol = {0x0, sizeof(ac_dol_value), ac_dol_value};
+		struct tlvdb *ac_db = dol_parse(&ac_dol, e->value, e->len);
+		tlvdb_add(s, t);
+		t = ac_db;
+	}
+	tlvdb_add(s, t);
+
 	tlvdb_add(s, get_data(sc, 0x369f));
 	tlvdb_add(s, get_data(sc, 0x139f));
 	tlvdb_add(s, get_data(sc, 0x179f));
