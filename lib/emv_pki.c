@@ -7,26 +7,27 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 
-static struct tlv empty_tlv = {.tag = 0x0, .len = 0, .value = NULL};
+static const unsigned char empty_tlv_value[] = {};
+static const struct tlv empty_tlv = {.tag = 0x0, .len = 0, .value = empty_tlv_value};
 
 static unsigned char *emv_pki_decode_message(const struct capk *enc_pk,
 		uint8_t msgtype,
 		size_t *len,
 		const struct tlv *cert_tlv,
-		const struct tlv *exp_tlv,
-		const struct tlv *rem_tlv,
-		unsigned char *add_data, size_t add_data_len
+		... /* A list of buffer-len pairs, end with NULL buffer */
 		)
 {
 	struct crypto_pk *kcp;
 	unsigned char *data;
 	size_t data_len;
+	va_list vl;
 
 	if (!enc_pk)
 		return NULL;
 
-	if (!cert_tlv || !exp_tlv || !rem_tlv)
+	if (!cert_tlv)
 		return NULL;
 
 	if (cert_tlv->len != enc_pk->mlen)
@@ -54,9 +55,18 @@ static unsigned char *emv_pki_decode_message(const struct capk *enc_pk,
 	}
 
 	crypto_hash_write(ch, data + 1, data_len - 22);
-	crypto_hash_write(ch, rem_tlv->value, rem_tlv->len);
-	crypto_hash_write(ch, exp_tlv->value, exp_tlv->len);
-	crypto_hash_write(ch, add_data, add_data_len);
+
+	va_start(vl, cert_tlv);
+	while (true) {
+		size_t add_data_len;
+		const unsigned char *add_data = va_arg(vl, const unsigned char *);
+		if (!add_data)
+			break;
+
+		add_data_len = va_arg(vl, size_t);
+		crypto_hash_write(ch, add_data, add_data_len);
+	}
+	va_end(vl);
 
 	if (memcmp(data + data_len - 21, crypto_hash_read(ch), 20)) {
 		crypto_hash_close(ch);
@@ -81,10 +91,16 @@ static struct capk *emv_pki_decode_message_2(const struct capk *enc_pk,
 	size_t data_len;
 	size_t pk_len;
 
+	if (!cert_tlv || !exp_tlv)
+		return NULL;
+
+	if (!rem_tlv)
+		rem_tlv = &empty_tlv;
+
 	data = emv_pki_decode_message(enc_pk, 2, &data_len,
 			cert_tlv,
-			exp_tlv,
-			rem_tlv ? rem_tlv : &empty_tlv,
+			rem_tlv->value, rem_tlv->len,
+			exp_tlv->value, exp_tlv->len,
 			NULL, 0);
 	if (!data)
 		return NULL;
@@ -134,11 +150,18 @@ static struct capk *emv_pki_decode_message_4(const struct capk *enc_pk,
 	size_t data_len;
 	size_t pk_len;
 
+	if (!cert_tlv || !exp_tlv)
+		return NULL;
+
+	if (!rem_tlv)
+		rem_tlv = &empty_tlv;
+
 	data = emv_pki_decode_message(enc_pk, 4, &data_len,
 			cert_tlv,
-			exp_tlv,
-			rem_tlv ? rem_tlv : &empty_tlv,
-			add_data, add_data_len);
+			rem_tlv->value, rem_tlv->len,
+			exp_tlv->value, exp_tlv->len,
+			add_data, add_data_len,
+			NULL, 0);
 
 	if (!data)
 		return NULL;
@@ -207,9 +230,8 @@ struct tlvdb *emv_pki_recover_dac(const struct capk *enc_pk, const struct tlvdb 
 	size_t data_len;
 	unsigned char *data = emv_pki_decode_message(enc_pk, 3, &data_len,
 			tlvdb_get(db, 0x93, NULL),
-			&empty_tlv,
-			&empty_tlv,
-			sda_data, sda_data_len);
+			sda_data, sda_data_len,
+			NULL, 0);
 
 	if (!data)
 		return NULL;
@@ -226,9 +248,8 @@ struct tlvdb *emv_pki_recover_idn(const struct capk *enc_pk, const struct tlvdb 
 	size_t data_len;
 	unsigned char *data = emv_pki_decode_message(enc_pk, 5, &data_len,
 			tlvdb_get(db, 0x9f4b, NULL),
-			&empty_tlv,
-			&empty_tlv,
-			dyn_data, dyn_data_len);
+			dyn_data, dyn_data_len,
+			NULL, 0);
 
 	if (!data)
 		return NULL;
