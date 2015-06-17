@@ -1,10 +1,13 @@
 *.a
 *.gz
+*.la
+*.lo
 *.log
 *.o
 *.swp
 *.trs
 .deps/
+.libs/
 aclocal.m4
 autom4te.cache/
 autoscan.log
@@ -16,6 +19,7 @@ config.log
 config.status
 configure
 configure.scan
+libtool
 Makefile.in
 Makefile
 stamp-h1
