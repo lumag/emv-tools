@@ -2,8 +2,8 @@
 #include <config.h>
 #endif
 
-#include "dol.h"
-#include "tlv.h"
+#include "openemv/dol.h"
+#include "openemv/tlv.h"
 
 #include <stdlib.h>
 #include <string.h>

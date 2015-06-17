@@ -2,8 +2,8 @@
 #include <config.h>
 #endif
 
-#include "capk.h"
-#include "crypto_backend.h"
+#include "openemv/capk.h"
+#include "openemv/crypto.h"
 
 #include <stdio.h>
 #include <stdlib.h>

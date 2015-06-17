@@ -1,8 +1,8 @@
 #ifndef EMV_PKI_H
 #define EMV_PKI_H
 
-#include "capk.h"
-#include "tlv.h"
+#include "openemv/capk.h"
+#include "openemv/tlv.h"
 
 #include <stddef.h>
 

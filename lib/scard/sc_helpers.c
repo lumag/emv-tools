@@ -2,8 +2,8 @@
 #include <config.h>
 #endif
 
-#include "scard.h"
-#include "sc_helpers.h"
+#include "openemv/scard.h"
+#include "openemv/sc_helpers.h"
 
 #include <string.h>
 #include <stdlib.h>

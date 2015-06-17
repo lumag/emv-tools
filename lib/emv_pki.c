@@ -2,8 +2,8 @@
 #include <config.h>
 #endif
 
-#include "emv_pki.h"
-#include "crypto_backend.h"
+#include "openemv/emv_pki.h"
+#include "openemv/crypto.h"
 
 #include <stdlib.h>
 #include <string.h>

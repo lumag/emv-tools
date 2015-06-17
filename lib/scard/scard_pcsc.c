@@ -2,7 +2,7 @@
 #include <config.h>
 #endif
 
-#include "scard.h"
+#include "openemv/scard.h"
 
 #include <stdlib.h>
 #include <string.h>

@@ -1,5 +1,5 @@
-#ifndef CRYPTO_BACKEND_H
-#define CRYPTO_BACKEND_H
+#ifndef CRYPTO_H
+#define CRYPTO_H
 
 #include <stdbool.h>
 #include <stddef.h>

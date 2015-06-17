@@ -2,11 +2,11 @@
 #include <config.h>
 #endif
 
-#include "scard.h"
-#include "sc_helpers.h"
-#include "tlv.h"
-#include "emv_tags.h"
-#include "dol.h"
+#include "openemv/scard.h"
+#include "openemv/sc_helpers.h"
+#include "openemv/tlv.h"
+#include "openemv/emv_tags.h"
+#include "openemv/dol.h"
 
 #include <stdio.h>
 #include <stdlib.h>

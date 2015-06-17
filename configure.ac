@@ -4,7 +4,7 @@
 AC_PREREQ([2.68])
 AC_INIT([emv-tools],[0.1],[dbaryshkov@gmail.com])
 AC_CONFIG_AUX_DIR([build-aux])
-AC_CONFIG_SRCDIR([src/tlv.c])
+AC_CONFIG_SRCDIR([lib/tlv.c])
 AC_CONFIG_HEADERS([config.h])
 AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE([foreign -Wall -Werror])
@@ -40,6 +40,10 @@ AC_CHECK_FUNCS([memset])
 
 AC_CONFIG_FILES([
 		 Makefile
+		 lib/Makefile
+		 lib/include/Makefile
+		 lib/crypto/Makefile
+		 lib/scard/Makefile
 		 src/Makefile
 		 ])
 AC_OUTPUT
