@@ -18,17 +18,17 @@ static size_t dol_calculate_len(const struct tlv *tlv, size_t data_len)
 	size_t count = 0;
 
 	while (left) {
-		tlv_tag_t tag = tlv_parse_tag(&buf, &left);
-		size_t taglen = tlv_parse_len(&buf, &left);
-
-		if (tag == TLV_TAG_INVALID || taglen == TLV_LEN_INVALID)
+		struct tlv *tlv = tlv_parse_tl(&buf, &left);
+		if (!tlv)
 			return 0;
 
-		count += taglen;
+		count += tlv->len;
 
 		/* Last tag can be of variable length */
-		if (taglen == 0 && left == 0)
+		if (tlv->len == 0 && left == 0)
 			count = data_len;
+
+		free(tlv);
 	}
 
 	return count;
@@ -55,25 +55,25 @@ unsigned char *dol_process(const struct tlv *tlv, const struct tlvdb *tlvdb, siz
 	res = malloc(res_len);
 
 	while (left) {
-		tlv_tag_t tag = tlv_parse_tag(&buf, &left);
-		size_t taglen = tlv_parse_len(&buf, &left);
-
-		if (tag == TLV_TAG_INVALID || taglen == TLV_LEN_INVALID || pos + taglen > res_len) {
+		struct tlv *cur_tlv = tlv_parse_tl(&buf, &left);
+		if (!cur_tlv || pos + cur_tlv->len > res_len) {
+			free(cur_tlv);
 			free(res);
 			return NULL;
 		}
 
-		const struct tlv *tag_tlv = tlvdb_get(tlvdb, tag, NULL);
+		const struct tlv *tag_tlv = tlvdb_get(tlvdb, tlv_tag(cur_tlv), NULL);
 		if (!tag_tlv) {
-			memset(res + pos, 0, taglen);
-		} else if (tag_tlv->len > taglen) {
-			memcpy(res + pos, tag_tlv->value, taglen);
+			memset(res + pos, 0, cur_tlv->len);
+		} else if (tag_tlv->len > cur_tlv->len) {
+			memcpy(res + pos, tag_tlv->value, cur_tlv->len);
 		} else {
 			// FIXME: cn data should be padded with 0xFF !!!
 			memcpy(res + pos, tag_tlv->value, tag_tlv->len);
-			memset(res + pos + tag_tlv->len, 0, taglen - tag_tlv->len);
+			memset(res + pos + tag_tlv->len, 0, cur_tlv->len - tag_tlv->len);
 		}
-		pos += taglen;
+		pos += cur_tlv->len;
+		free(cur_tlv);
 	}
 
 	*len = pos;
@@ -96,25 +96,25 @@ struct tlvdb *dol_parse(const struct tlv *tlv, const unsigned char *data, size_t
 		return NULL;
 
 	while (left) {
-		tlv_tag_t tag = tlv_parse_tag(&buf, &left);
-		size_t taglen = tlv_parse_len(&buf, &left);
-
-		if (tag == TLV_TAG_INVALID || taglen == TLV_LEN_INVALID || pos + taglen > res_len) {
+		struct tlv *cur_tlv = tlv_parse_tl(&buf, &left);
+		if (!cur_tlv || pos + cur_tlv->len > res_len) {
+			free(cur_tlv);
 			tlvdb_free(db);
 			return NULL;
 		}
 
 		/* Last tag can be of variable length */
-		if (taglen == 0 && left == 0)
-			taglen = res_len - pos;
+		if (cur_tlv->len == 0 && left == 0)
+			cur_tlv->len = res_len - pos;
 
-		struct tlvdb *tag_db = tlvdb_fixed(tag, taglen, data + pos);
+		struct tlvdb *tag_db = tlvdb_fixed(cur_tlv->tag, cur_tlv->len, data + pos);
 		if (!db)
 			db = tag_db;
 		else
 			tlvdb_add(db, tag_db);
 
-		pos += taglen;
+		pos += cur_tlv->len;
+		free(cur_tlv);
 	}
 
 	return db;
