@@ -20,6 +20,7 @@ config.status
 configure
 configure.scan
 libtool
+m4/*.m4
 Makefile.in
 Makefile
 stamp-h1
