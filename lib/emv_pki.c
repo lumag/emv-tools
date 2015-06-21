@@ -12,7 +12,7 @@
 static const unsigned char empty_tlv_value[] = {};
 static const struct tlv empty_tlv = {.tag = 0x0, .len = 0, .value = empty_tlv_value};
 
-static unsigned char *emv_pki_decode_message(const struct capk *enc_pk,
+static unsigned char *emv_pki_decode_message(const struct emv_pk *enc_pk,
 		uint8_t msgtype,
 		size_t *len,
 		const struct tlv *cert_tlv,
@@ -82,7 +82,7 @@ static unsigned char *emv_pki_decode_message(const struct capk *enc_pk,
 }
 
 
-static struct capk *emv_pki_decode_message_2(const struct capk *enc_pk,
+static struct emv_pk *emv_pki_decode_message_2(const struct emv_pk *enc_pk,
 		const struct tlv *cert_tlv,
 		const struct tlv *exp_tlv,
 		const struct tlv *rem_tlv)
@@ -121,7 +121,7 @@ static struct capk *emv_pki_decode_message_2(const struct capk *enc_pk,
 		return NULL;
 	}
 
-	struct capk *pk = capk_new(pk_len, exp_tlv->len);
+	struct emv_pk *pk = emv_pk_new(pk_len, exp_tlv->len);
 
 	memcpy(pk->rid, pk->rid, 5);
 	pk->index = pk->index;
@@ -139,7 +139,7 @@ static struct capk *emv_pki_decode_message_2(const struct capk *enc_pk,
 	return pk;
 }
 
-static struct capk *emv_pki_decode_message_4(const struct capk *enc_pk,
+static struct emv_pk *emv_pki_decode_message_4(const struct emv_pk *enc_pk,
 		const struct tlv *cert_tlv,
 		const struct tlv *exp_tlv,
 		const struct tlv *rem_tlv,
@@ -180,7 +180,7 @@ static struct capk *emv_pki_decode_message_4(const struct capk *enc_pk,
 		return NULL;
 	}
 
-	struct capk *pk = capk_new(pk_len, exp_tlv->len);
+	struct emv_pk *pk = emv_pk_new(pk_len, exp_tlv->len);
 
 	memcpy(pk->rid, pk->rid, 5);
 	pk->index = pk->index;
@@ -199,7 +199,7 @@ static struct capk *emv_pki_decode_message_4(const struct capk *enc_pk,
 	return pk;
 }
 
-struct capk *emv_pki_recover_issuer_cert(const struct capk *pk, struct tlvdb *db)
+struct emv_pk *emv_pki_recover_issuer_cert(const struct emv_pk *pk, struct tlvdb *db)
 {
 	return emv_pki_decode_message_2(pk,
 			tlvdb_get(db, 0x90, NULL),
@@ -207,7 +207,7 @@ struct capk *emv_pki_recover_issuer_cert(const struct capk *pk, struct tlvdb *db
 			tlvdb_get(db, 0x92, NULL));
 }
 
-struct capk *emv_pki_recover_icc_cert(const struct capk *pk, struct tlvdb *db, unsigned char *sda_data, size_t sda_data_len)
+struct emv_pk *emv_pki_recover_icc_cert(const struct emv_pk *pk, struct tlvdb *db, unsigned char *sda_data, size_t sda_data_len)
 {
 	return emv_pki_decode_message_4(pk,
 			tlvdb_get(db, 0x9f46, NULL),
@@ -216,7 +216,7 @@ struct capk *emv_pki_recover_icc_cert(const struct capk *pk, struct tlvdb *db, u
 			sda_data, sda_data_len);
 }
 
-struct capk *emv_pki_recover_icc_pe_cert(const struct capk *pk, struct tlvdb *db)
+struct emv_pk *emv_pki_recover_icc_pe_cert(const struct emv_pk *pk, struct tlvdb *db)
 {
 	return emv_pki_decode_message_4(pk,
 			tlvdb_get(db, 0x9f2d, NULL),
@@ -225,7 +225,7 @@ struct capk *emv_pki_recover_icc_pe_cert(const struct capk *pk, struct tlvdb *db
 			NULL, 0);
 }
 
-struct tlvdb *emv_pki_recover_dac(const struct capk *enc_pk, const struct tlvdb *db, unsigned char *sda_data, size_t sda_data_len)
+struct tlvdb *emv_pki_recover_dac(const struct emv_pk *enc_pk, const struct tlvdb *db, unsigned char *sda_data, size_t sda_data_len)
 {
 	size_t data_len;
 	unsigned char *data = emv_pki_decode_message(enc_pk, 3, &data_len,
@@ -243,7 +243,7 @@ struct tlvdb *emv_pki_recover_dac(const struct capk *enc_pk, const struct tlvdb 
 	return dac_db;
 }
 
-struct tlvdb *emv_pki_recover_idn(const struct capk *enc_pk, const struct tlvdb *db, unsigned char *dyn_data, size_t dyn_data_len)
+struct tlvdb *emv_pki_recover_idn(const struct emv_pk *enc_pk, const struct tlvdb *db, unsigned char *dyn_data, size_t dyn_data_len)
 {
 	size_t data_len;
 	unsigned char *data = emv_pki_decode_message(enc_pk, 5, &data_len,
@@ -290,7 +290,7 @@ static bool tlv_hash(void *data, const struct tlv *tlv)
 	return true;
 }
 
-struct tlvdb *emv_pki_perform_cda(const struct capk *enc_pk, const struct tlvdb *db,
+struct tlvdb *emv_pki_perform_cda(const struct emv_pk *enc_pk, const struct tlvdb *db,
 		const struct tlvdb *this_db,
 		unsigned char *pdol_data, size_t pdol_data_len,
 		unsigned char *crm1_data, size_t crm1_data_len,

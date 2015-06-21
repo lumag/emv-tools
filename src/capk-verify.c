@@ -2,7 +2,7 @@
 #include <config.h>
 #endif
 
-#include "openemv/capk.h"
+#include "openemv/emv_pk.h"
 #include "openemv/crypto.h"
 
 #include <stdio.h>
@@ -35,7 +35,7 @@ int main(int argc, char **argv) {
 		char buf[BUFSIZ];
 		if (fgets(buf, sizeof(buf), f) == NULL)
 			break;
-		struct capk *pk = capk_parse_pk(buf);
+		struct emv_pk *pk = emv_pk_parse_pk(buf);
 		if (!pk)
 			continue;
 		fprintf(stderr, "Verifying CA PK for %02hhx:%02hhx:%02hhx:%02hhx:%02hhx IDX %02hhx %zd bits...",
@@ -46,18 +46,18 @@ int main(int argc, char **argv) {
 				pk->rid[4],
 				pk->index,
 				pk->mlen * 8);
-		if (capk_verify(pk)) {
+		if (emv_pk_verify(pk)) {
 			fprintf(stderr, "OK\n");
 			if (argc > 2 && argv[2][0] == 'v') {
 				unsigned char *c;
-				c = capk_dump_pk(pk);
+				c = emv_pk_dump_pk(pk);
 				if (c)
 					printf("%s\n", c);
 				free(c);
 			}
 		} else
 			fprintf(stderr, "Failed!\n");
-		capk_free(pk);
+		emv_pk_free(pk);
 	}
 
 	return 0;

@@ -6,7 +6,7 @@
 #include "openemv/sc_helpers.h"
 #include "openemv/tlv.h"
 #include "openemv/emv_tags.h"
-#include "openemv/capk.h"
+#include "openemv/emv_pk.h"
 #include "openemv/crypto.h"
 #include "openemv/dol.h"
 #include "openemv/emv_pki.h"
@@ -99,7 +99,7 @@ static struct tlvdb *get_data(struct sc *sc, tlv_tag_t tag)
 static const unsigned char default_ddol_value[] = {0x9f, 0x37, 0x04};
 static struct tlv default_ddol_tlv = {.tag = 0x499f, .len = 3, .value = default_ddol_value };
 
-static struct tlvdb *perform_dda(const struct capk *pk, const struct tlvdb *db, struct sc *sc)
+static struct tlvdb *perform_dda(const struct emv_pk *pk, const struct tlvdb *db, struct sc *sc)
 {
 	const struct tlv *e;
 	const struct tlv *ddol_tlv = tlvdb_get(db, 0x9f49, NULL);
@@ -140,7 +140,7 @@ static struct tlvdb *perform_dda(const struct capk *pk, const struct tlvdb *db, 
 	return dda_db;
 }
 
-static struct capk *get_ca_pk(struct tlvdb *db)
+static struct emv_pk *get_ca_pk(struct tlvdb *db)
 {
 	const struct tlv *df_tlv = tlvdb_get(db, 0x84, NULL);
 	const struct tlv *caidx_tlv = tlvdb_get(db, 0x8f, NULL);
@@ -159,11 +159,11 @@ static struct capk *get_ca_pk(struct tlvdb *db)
 		char buf[BUFSIZ];
 		if (fgets(buf, sizeof(buf), f) == NULL)
 			break;
-		struct capk *pk = capk_parse_pk(buf);
+		struct emv_pk *pk = emv_pk_parse_pk(buf);
 		if (!pk)
 			continue;
 		if (memcmp(pk->rid, df_tlv->value, 5) || pk->index != caidx_tlv->value[0]) {
-			capk_free(pk);
+			emv_pk_free(pk);
 			continue;
 		}
 		printf("Verifying CA PK for %02hhx:%02hhx:%02hhx:%02hhx:%02hhx IDX %02hhx %zd bits...",
@@ -174,13 +174,13 @@ static struct capk *get_ca_pk(struct tlvdb *db)
 				pk->rid[4],
 				pk->index,
 				pk->mlen * 8);
-		if (capk_verify(pk)) {
+		if (emv_pk_verify(pk)) {
 			printf("OK\n");
 			return pk;
 		}
 
 		printf("Failed!\n");
-		capk_free(pk);
+		emv_pk_free(pk);
 		return NULL;
 	}
 
@@ -303,11 +303,11 @@ int main(void)
 	}
 
 
-	struct capk *pk = get_ca_pk(s);
-	struct capk *issuer_pk = emv_pki_recover_issuer_cert(pk, s);
+	struct emv_pk *pk = get_ca_pk(s);
+	struct emv_pk *issuer_pk = emv_pki_recover_issuer_cert(pk, s);
 	if (issuer_pk)
 		printf("Issuer PK recovered!\n");
-	struct capk *icc_pk = emv_pki_recover_icc_cert(issuer_pk, s, sda_data, sda_len);
+	struct emv_pk *icc_pk = emv_pki_recover_icc_cert(issuer_pk, s, sda_data, sda_len);
 	if (icc_pk)
 		printf("ICC PK recovered!\n");
 	struct tlvdb *dac_db = emv_pki_recover_dac(issuer_pk, s, sda_data, sda_len);
@@ -322,9 +322,9 @@ int main(void)
 		printf("DDA verified OK (IDN %zd bytes long)!\n", idn_tlv->len);
 		tlvdb_add(s, idn_db);
 	}
-	capk_free(pk);
-	capk_free(issuer_pk);
-	capk_free(icc_pk);
+	emv_pk_free(pk);
+	emv_pk_free(issuer_pk);
+	emv_pk_free(icc_pk);
 
 	free(sda_data);
 

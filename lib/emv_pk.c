@@ -2,7 +2,7 @@
 #include <config.h>
 #endif
 
-#include "openemv/capk.h"
+#include "openemv/emv_pk.h"
 #include "openemv/crypto.h"
 
 #include <stdio.h>
@@ -20,7 +20,7 @@
 
 #define TOHEX(v) ((v) < 10 ? (v) + '0' : (v) - 10 + 'a')
 
-static ssize_t capk_read_bin(char *buf, unsigned char *bin, size_t size, size_t *read)
+static ssize_t emv_pk_read_bin(char *buf, unsigned char *bin, size_t size, size_t *read)
 {
 	size_t left = size;
 	char *p = buf;
@@ -59,7 +59,7 @@ static ssize_t capk_read_bin(char *buf, unsigned char *bin, size_t size, size_t 
 	return (p - buf);
 }
 
-static ssize_t capk_read_ymv(char *buf, unsigned *ymv)
+static ssize_t emv_pk_read_ymv(char *buf, unsigned *ymv)
 {
 	int i;
 	unsigned char temp[3];
@@ -96,7 +96,7 @@ static ssize_t capk_read_ymv(char *buf, unsigned *ymv)
 	return (p - buf);
 }
 
-static ssize_t capk_read_string(char *buf, char *str, size_t size)
+static ssize_t emv_pk_read_string(char *buf, char *str, size_t size)
 {
 	char *p = buf;
 	while (*p && *p == ' ')
@@ -124,28 +124,28 @@ static ssize_t capk_read_string(char *buf, char *str, size_t size)
 }
 
 
-struct capk *capk_parse_pk(char *buf)
+struct emv_pk *emv_pk_parse_pk(char *buf)
 {
-	struct capk *r = calloc(1, sizeof(*r));
+	struct emv_pk *r = calloc(1, sizeof(*r));
 	ssize_t l;
 	char temp[10];
 
-	l = capk_read_bin(buf, r->rid, 5, NULL);
+	l = emv_pk_read_bin(buf, r->rid, 5, NULL);
 	if (l <= 0)
 		goto out;
 	buf += l;
 
-	l = capk_read_bin(buf, &r->index, 1, NULL);
+	l = emv_pk_read_bin(buf, &r->index, 1, NULL);
 	if (l <= 0)
 		goto out;
 	buf += l;
 
-	l = capk_read_ymv(buf, &r->expire);
+	l = emv_pk_read_ymv(buf, &r->expire);
 	if (l <= 0)
 		goto out;
 	buf += l;
 
-	l = capk_read_string(buf, temp, sizeof(temp));
+	l = emv_pk_read_string(buf, temp, sizeof(temp));
 	if (l <= 0)
 		goto out;
 	buf += l;
@@ -155,18 +155,18 @@ struct capk *capk_parse_pk(char *buf)
 	else
 		goto out;
 
-	l = capk_read_bin(buf, r->exp, sizeof(r->exp), &r->elen);
+	l = emv_pk_read_bin(buf, r->exp, sizeof(r->exp), &r->elen);
 	if (l <= 0)
 		goto out;
 	buf += l;
 
 	r->modulus = malloc(2048/8);
-	l = capk_read_bin(buf, r->modulus, 2048/8, &r->mlen);
+	l = emv_pk_read_bin(buf, r->modulus, 2048/8, &r->mlen);
 	if (l <= 0)
 		goto out2;
 	buf += l;
 
-	l = capk_read_string(buf, temp, sizeof(temp));
+	l = emv_pk_read_string(buf, temp, sizeof(temp));
 	if (l <= 0)
 		goto out2;
 	buf += l;
@@ -176,7 +176,7 @@ struct capk *capk_parse_pk(char *buf)
 	else
 		goto out2;
 
-	l = capk_read_bin(buf, r->hash, 20, NULL);
+	l = emv_pk_read_bin(buf, r->hash, 20, NULL);
 	if (l <= 0)
 		goto out2;
 	buf += l;
@@ -190,7 +190,7 @@ out:
 	return NULL;
 }
 
-static size_t capk_write_bin(unsigned char *out, size_t outlen, const unsigned char *buf, size_t len)
+static size_t emv_pk_write_bin(unsigned char *out, size_t outlen, const unsigned char *buf, size_t len)
 {
 	int i;
 	size_t pos = 0;
@@ -212,7 +212,7 @@ static size_t capk_write_bin(unsigned char *out, size_t outlen, const unsigned c
 	return pos;
 }
 
-static size_t capk_write_str(unsigned char *out, size_t outlen, const char *str)
+static size_t emv_pk_write_str(unsigned char *out, size_t outlen, const char *str)
 {
 	size_t len = strlen(str);
 
@@ -226,7 +226,7 @@ static size_t capk_write_str(unsigned char *out, size_t outlen, const char *str)
 	return len;
 }
 
-unsigned char *capk_dump_pk(const struct capk *pk)
+unsigned char *emv_pk_dump_pk(const struct emv_pk *pk)
 {
 	size_t outsize = 1024; /* should be enough */
 	unsigned char *out = malloc(outsize); /* should be enough */
@@ -236,12 +236,12 @@ unsigned char *capk_dump_pk(const struct capk *pk)
 	if (!out)
 		return NULL;
 
-	rc = capk_write_bin(out + outpos, outsize - outpos, pk->rid, 5);
+	rc = emv_pk_write_bin(out + outpos, outsize - outpos, pk->rid, 5);
 	if (rc == 0)
 		goto err;
 	outpos += rc;
 
-	rc = capk_write_bin(out + outpos, outsize - outpos, &pk->index, 1);
+	rc = emv_pk_write_bin(out + outpos, outsize - outpos, &pk->index, 1);
 	if (rc == 0)
 		goto err;
 	outpos += rc;
@@ -257,7 +257,7 @@ unsigned char *capk_dump_pk(const struct capk *pk)
 	out[outpos++] = ' ';
 
 	if (pk->pk_algo == PK_RSA) {
-		rc = capk_write_str(out + outpos, outsize - outpos, "rsa");
+		rc = emv_pk_write_str(out + outpos, outsize - outpos, "rsa");
 		if (rc == 0)
 			goto err;
 		outpos += rc;
@@ -271,18 +271,18 @@ unsigned char *capk_dump_pk(const struct capk *pk)
 		out[outpos++] = TOHEX(pk->pk_algo & 0xf);
 	}
 
-	rc = capk_write_bin(out + outpos, outsize - outpos, pk->exp, pk->elen);
+	rc = emv_pk_write_bin(out + outpos, outsize - outpos, pk->exp, pk->elen);
 	if (rc == 0)
 		goto err;
 	outpos += rc;
 
-	rc = capk_write_bin(out + outpos, outsize - outpos, pk->modulus, pk->mlen);
+	rc = emv_pk_write_bin(out + outpos, outsize - outpos, pk->modulus, pk->mlen);
 	if (rc == 0)
 		goto err;
 	outpos += rc;
 
 	if (pk->hash_algo == HASH_SHA_1) {
-		rc = capk_write_str(out + outpos, outsize - outpos, "sha1");
+		rc = emv_pk_write_str(out + outpos, outsize - outpos, "sha1");
 		if (rc == 0)
 			goto err;
 		outpos += rc;
@@ -297,7 +297,7 @@ unsigned char *capk_dump_pk(const struct capk *pk)
 	}
 
 
-	rc = capk_write_bin(out + outpos, outsize - outpos, pk->hash, 20);
+	rc = emv_pk_write_bin(out + outpos, outsize - outpos, pk->hash, 20);
 	if (rc == 0)
 		goto err;
 	outpos += rc;
@@ -311,7 +311,7 @@ err:
 	return NULL;
 }
 
-bool capk_verify(const struct capk *pk)
+bool emv_pk_verify(const struct emv_pk *pk)
 {
 	struct crypto_hash *ch = crypto_hash_open(pk->hash_algo);
 	if (!ch)
@@ -333,9 +333,9 @@ bool capk_verify(const struct capk *pk)
 	return r;
 }
 
-struct capk *capk_new(size_t modlen, size_t explen)
+struct emv_pk *emv_pk_new(size_t modlen, size_t explen)
 {
-	struct capk *pk;
+	struct emv_pk *pk;
 
 	/* Not supported ATM */
 	if (explen > 3)
@@ -357,7 +357,7 @@ struct capk *capk_new(size_t modlen, size_t explen)
 	return pk;
 }
 
-void capk_free(struct capk *pk)
+void emv_pk_free(struct emv_pk *pk)
 {
 	if (!pk)
 		return;

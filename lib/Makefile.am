@@ -3,8 +3,8 @@ SUBDIRS = include crypto scard
 noinst_LTLIBRARIES = libopenemv.la
 
 libopenemv_la_SOURCES = \
-	capk.c \
 	dol.c \
+	emv_pk.c \
 	emv_pki.c \
 	emv_tags.c \
 	tlv.c
