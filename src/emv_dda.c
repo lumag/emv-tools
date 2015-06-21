@@ -306,10 +306,30 @@ int main(void)
 	struct emv_pk *pk = get_ca_pk(s);
 	struct emv_pk *issuer_pk = emv_pki_recover_issuer_cert(pk, s);
 	if (issuer_pk)
-		printf("Issuer PK recovered!\n");
+		printf("Issuer PK recovered! RID %02hhx:%02hhx:%02hhx:%02hhx:%02hhx IDX %02hhx CSN %02hhx:%02hhx:%02hhx\n",
+				issuer_pk->rid[0],
+				issuer_pk->rid[1],
+				issuer_pk->rid[2],
+				issuer_pk->rid[3],
+				issuer_pk->rid[4],
+				issuer_pk->index,
+				issuer_pk->serial[0],
+				issuer_pk->serial[1],
+				issuer_pk->serial[2]
+				);
 	struct emv_pk *icc_pk = emv_pki_recover_icc_cert(issuer_pk, s, sda_data, sda_len);
 	if (icc_pk)
-		printf("ICC PK recovered!\n");
+		printf("ICC PK recovered! RID %02hhx:%02hhx:%02hhx:%02hhx:%02hhx IDX %02hhx CSN %02hhx:%02hhx:%02hhx\n",
+				icc_pk->rid[0],
+				icc_pk->rid[1],
+				icc_pk->rid[2],
+				icc_pk->rid[3],
+				icc_pk->rid[4],
+				icc_pk->index,
+				icc_pk->serial[0],
+				icc_pk->serial[1],
+				icc_pk->serial[2]
+				);
 	struct tlvdb *dac_db = emv_pki_recover_dac(issuer_pk, s, sda_data, sda_len);
 	if (dac_db) {
 		const struct tlv *dac_tlv = tlvdb_get(dac_db, 0x9f45, NULL);
