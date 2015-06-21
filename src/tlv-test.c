@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <string.h>
 
 static void dump(const unsigned char *ptr, size_t len)
 {
@@ -41,7 +42,7 @@ static bool print_cb(void *data, const struct tlv *tlv)
 	return true;
 }
 
-int main(void) {
+static int parse_test(void) {
 	struct {
 		size_t len;
 		const unsigned char buf[256];
@@ -82,6 +83,51 @@ int main(void) {
 		}
 		tlvdb_free(t);
 	}
+
+	return 0;
+}
+
+static int encode_test(void)
+{
+	struct {
+		struct tlv tlv;
+		size_t len;
+		unsigned char *value;
+	} tests[] = {
+		{ {0x83, 0x00, NULL}, 2, (unsigned char *)"\x83\x00"},
+		{ {0x83, 0x01, (unsigned char *)"Z"}, 3, (unsigned char *)"\x83\x01Z"},
+		{ {0x83, 0x80, (unsigned char *)"ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ"}, 0x83, (unsigned char *)"\x83\x81\x80ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ"},
+		{ {0x029f, 0x80, (unsigned char *)"ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ"}, 0x84, (unsigned char *)"\x9f\x02\x81\x80ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ"},
+	};
+
+	int i;
+
+	for (i = 0; i < sizeof(tests)/sizeof(tests[0]); i++) {
+		printf("Encode Test %d\n", i);
+		size_t len;
+		unsigned char *out;
+
+		out = tlv_encode(&tests[i].tlv, &len);
+		if (len != tests[i].len) {
+			printf("Len mismatch\n");
+			exit(1);
+		}
+
+		if (memcmp(out, tests[i].value, len)) {
+			printf("Data mismatch\n");
+			exit(1);
+		}
+
+		free(out);
+	}
+
+	return 0;
+}
+
+int main(void)
+{
+	parse_test();
+	encode_test();
 
 	return 0;
 }
