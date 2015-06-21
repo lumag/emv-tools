@@ -25,6 +25,7 @@ Makefile
 stamp-h1
 
 src/emv_dda
+src/emv_cl_cda
 src/emv_dump
 src/capk-verify
 src/tlv-test
