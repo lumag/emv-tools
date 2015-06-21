@@ -188,6 +188,7 @@ int main(void)
 		t = ac_db;
 	}
 	tlvdb_add(s, t);
+	free(crm_data);
 
 	tlvdb_add(s, get_data(sc, 0x9f36));
 	tlvdb_add(s, get_data(sc, 0x9f13));
