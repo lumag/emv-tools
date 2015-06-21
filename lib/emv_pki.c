@@ -270,3 +270,80 @@ struct tlvdb *emv_pki_recover_idn(const struct capk *enc_pk, const struct tlvdb 
 
 	return idn_db;
 }
+
+static bool tlv_hash(void *data, const struct tlv *tlv)
+{
+	struct crypto_hash *ch = data;
+	size_t tag_len;
+	unsigned char *tag;
+
+	if (tlv->tag & 0x20)
+		return true;
+
+	if (tlv_tag(tlv) == 0x9f4b)
+		return true;
+
+	tag = tlv_encode(tlv, &tag_len);
+	crypto_hash_write(ch, tag, tag_len);
+	free(tag);
+
+	return true;
+}
+
+struct tlvdb *emv_pki_perform_cda(const struct capk *enc_pk, const struct tlvdb *db,
+		const struct tlvdb *this_db,
+		unsigned char *pdol_data, size_t pdol_data_len,
+		unsigned char *crm1_data, size_t crm1_data_len,
+		unsigned char *crm2_data, size_t crm2_data_len)
+{
+	const struct tlv *un_tlv = tlvdb_get(db, 0x9f37, NULL);
+	const struct tlv *cid_tlv = tlvdb_get(this_db, 0x9f27, NULL);
+	size_t data_len;
+	unsigned char *data = emv_pki_decode_message(enc_pk, 5, &data_len,
+			tlvdb_get(this_db, 0x9f4b, NULL),
+			un_tlv->value, un_tlv->len,
+			NULL, 0);
+	if (!data)
+		return NULL;
+
+	if (data[3] < 30 || data[3] > data_len - 25) {
+		free(data);
+		return NULL;
+	}
+
+	if (!cid_tlv || cid_tlv->len != 1 || cid_tlv->value[0] != data[5 + data[4]]) {
+		free(data);
+		return NULL;
+	}
+
+	struct crypto_hash *ch;
+	ch = crypto_hash_open(enc_pk->hash_algo);
+	if (!ch) {
+		free(data);
+		return NULL;
+	}
+
+	crypto_hash_write(ch, pdol_data, pdol_data_len);
+	crypto_hash_write(ch, crm1_data, crm1_data_len);
+	crypto_hash_write(ch, crm2_data, crm2_data_len);
+
+	tlvdb_visit(this_db, tlv_hash, ch);
+
+	if (memcmp(data + 5 + data[4] + 1 + 8, crypto_hash_read(ch), 20)) {
+		crypto_hash_close(ch);
+		free(data);
+		return NULL;
+	}
+	crypto_hash_close(ch);
+
+	size_t idn_len = data[4];
+	if (idn_len > data[3] - 1) {
+		free(data);
+		return NULL;
+	}
+
+	struct tlvdb *idn_db = tlvdb_fixed(0x4c9f, idn_len, data + 5);
+	free(data);
+
+	return idn_db;
+}
