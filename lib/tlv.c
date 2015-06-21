@@ -85,6 +85,27 @@ size_t tlv_parse_len(const unsigned char **buf, size_t *len)
 	return l;
 }
 
+struct tlv *tlv_parse_tl(const unsigned char **buf, size_t *len)
+{
+	struct tlv *tlv = malloc(sizeof(*tlv));
+
+	tlv->value = 0;
+
+	tlv->tag = tlv_parse_tag(buf, len);
+	if (tlv->tag == TLV_TAG_INVALID) {
+		free(tlv);
+		return NULL;
+	}
+
+	tlv->len = tlv_parse_len(buf, len);
+	if (tlv->len == TLV_LEN_INVALID) {
+		free(tlv);
+		return NULL;
+	}
+
+	return tlv;
+}
+
 static struct tlvdb *tlvdb_parse_children(struct tlvdb *parent);
 
 static bool tlvdb_parse_one(struct tlvdb *tlvdb,

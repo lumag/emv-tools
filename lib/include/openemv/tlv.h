@@ -36,7 +36,7 @@ const struct tlv *tlvdb_get(const struct tlvdb *tlvdb, tlv_tag_t tag, const stru
 
 tlv_tag_t tlv_parse_tag(const unsigned char **buf, size_t *len);
 size_t tlv_parse_len(const unsigned char **buf, size_t *len);
-
+struct tlv *tlv_parse_tl(const unsigned char **buf, size_t *len);
 unsigned char *tlv_encode(const struct tlv *tlv, size_t *len);
 
 #endif
