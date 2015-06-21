@@ -13,9 +13,11 @@
 #define TLV_TAG_COMPLEX		0x20
 #define TLV_TAG_VALUE_MASK	0x1f
 #define TLV_TAG_VALUE_CONT	0x1f
+#define TLV_TAG_INVALID		0
 
 #define TLV_LEN_LONG		0x80
 #define TLV_LEN_MASK		0x7f
+#define TLV_LEN_INVALID		(~0)
 
 #define container_of(ptr, type, member) ({			\
 	const typeof( ((type *)0)->member ) *__mptr = (ptr);	\
@@ -34,7 +36,7 @@ struct tlvdb_root {
 	unsigned char buf[0];
 };
 
-tlv_tag_t tlv_parse_tag(const unsigned char **buf, size_t *len)
+static tlv_tag_t tlv_parse_tag(const unsigned char **buf, size_t *len)
 {
 	tlv_tag_t tag;
 
@@ -56,7 +58,7 @@ tlv_tag_t tlv_parse_tag(const unsigned char **buf, size_t *len)
 	return tag;
 }
 
-size_t tlv_parse_len(const unsigned char **buf, size_t *len)
+static size_t tlv_parse_len(const unsigned char **buf, size_t *len)
 {
 	size_t l;
 
