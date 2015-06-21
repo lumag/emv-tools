@@ -7,6 +7,7 @@
 struct emv_pk {
 	unsigned char rid[5];
 	unsigned char index;
+	unsigned char serial[3];
 	unsigned char hash_algo;
 	unsigned char pk_algo;
 	unsigned char hash[20];
