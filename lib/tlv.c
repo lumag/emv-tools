@@ -262,3 +262,46 @@ const struct tlv *tlvdb_get(const struct tlvdb *tlvdb, tlv_tag_t tag, const stru
 
 	return NULL;
 }
+
+unsigned char *tlv_encode(const struct tlv *tlv, size_t *len)
+{
+	size_t size = tlv->len;
+	unsigned char *data;
+	size_t pos;
+
+	if (tlv->tag > 0x100)
+		size += 2;
+	else
+		size += 1;
+
+	if (tlv->len > 0x7f)
+		size += 2;
+	else
+		size += 1;
+
+	data = malloc(size);
+	if (!data) {
+		*len = 0;
+		return NULL;
+	}
+
+	pos = 0;
+
+	if (tlv->tag > 0x100) {
+		data[pos++] = tlv->tag & 0xff;
+		data[pos++] = tlv->tag >> 8;
+	} else
+		data[pos++] = tlv->tag;
+
+	if (tlv->len > 0x7f) {
+		data[pos++] = 0x81;
+		data[pos++] = tlv->len;
+	} else
+		data[pos++] = tlv->len;
+
+	memcpy(data + pos, tlv->value, tlv->len);
+	pos += tlv->len;
+
+	*len = pos;
+	return data;
+}
