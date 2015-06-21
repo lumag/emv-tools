@@ -123,8 +123,8 @@ static struct emv_pk *emv_pki_decode_message_2(const struct emv_pk *enc_pk,
 
 	struct emv_pk *pk = emv_pk_new(pk_len, exp_tlv->len);
 
-	memcpy(pk->rid, pk->rid, 5);
-	pk->index = pk->index;
+	memcpy(pk->rid, enc_pk->rid, 5);
+	pk->index = enc_pk->index;
 
 	pk->hash_algo = data[11];
 	pk->pk_algo = data[12];
@@ -182,8 +182,8 @@ static struct emv_pk *emv_pki_decode_message_4(const struct emv_pk *enc_pk,
 
 	struct emv_pk *pk = emv_pk_new(pk_len, exp_tlv->len);
 
-	memcpy(pk->rid, pk->rid, 5);
-	pk->index = pk->index;
+	memcpy(pk->rid, enc_pk->rid, 5);
+	pk->index = enc_pk->index;
 
 	pk->hash_algo = data[17];
 	pk->pk_algo = data[18];
