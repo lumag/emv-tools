@@ -134,7 +134,7 @@ static bool tlvdb_parse_one(struct tlvdb *tlvdb,
 	*tmp += tlvdb->tag.len;
 	*left -= tlvdb->tag.len;
 
-	if ((tlvdb->tag.tag & TLV_TAG_COMPLEX)/* && (tlvdb->tag.len != 0)*/) {
+	if ((tlvdb->tag.tag & TLV_TAG_COMPLEX) && (tlvdb->tag.len != 0)) {
 		tlvdb->children = tlvdb_parse_children(tlvdb);
 		if (!tlvdb->children)
 			goto err;
