@@ -100,7 +100,7 @@ static unsigned char *sc_command_t0(struct sc *sc,
 			return NULL;
 		}
 
-		if (opos + cmdbuf[4] > osize) {
+		if (opos + cmdbuf[4] + 2 > osize) {
 			scard_raise_error(sc, SCARD_CARD);
 			free(obuf);
 			if (olen)
