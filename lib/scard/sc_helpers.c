@@ -205,9 +205,9 @@ unsigned char *sc_command(struct sc *sc,
 		if (olen)
 			*olen = 0;
 		return NULL;
-	case SC_PROTO_T0:
+	case SCARD_PROTO_T0:
 		return sc_command_t0(sc, cla, ins, p1, p2, dlen, data, psw, olen);
-	case SC_PROTO_T1:
+	case SCARD_PROTO_T1:
 		return sc_command_t1(sc, cla, ins, p1, p2, dlen, data, psw, olen);
 	}
 }

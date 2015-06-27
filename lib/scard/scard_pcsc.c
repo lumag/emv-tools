@@ -16,7 +16,7 @@ struct sc {
 	LPSTR rfunc;
 	LPSTR mszReaders;
 	LPCSCARD_IO_REQUEST pioSendPci;
-	WORD wProto;
+	enum scard_proto wProto;
 };
 
 #define CHECK(sc, ret, func, ...) \
@@ -123,15 +123,15 @@ void scard_connect(struct sc *sc, unsigned idx)
 	{
 	case SCARD_PROTOCOL_T0:
 		sc->pioSendPci = SCARD_PCI_T0;
-		sc->wProto = SC_PROTO_T0;
+		sc->wProto = SCARD_PROTO_T0;
 		break;
 
 	case SCARD_PROTOCOL_T1:
 		sc->pioSendPci = SCARD_PCI_T1;
-		sc->wProto = SC_PROTO_T1;
+		sc->wProto = SCARD_PROTO_T1;
 		break;
 	default:
-		sc->wProto = SC_PROTO_INVALID;
+		sc->wProto = SCARD_PROTO_INVALID;
 		SCardDisconnect(sc->hCard, SCARD_LEAVE_CARD);
 		CHECK(sc, , _SCardInvalidProtocol);
 	}
@@ -139,9 +139,9 @@ void scard_connect(struct sc *sc, unsigned idx)
 
 void scard_disconnect(struct sc *sc)
 {
-	if (sc->wProto != SC_PROTO_INVALID) {
+	if (sc->wProto != SCARD_PROTO_INVALID) {
 		CHECK(sc, ,SCardDisconnect, sc->hCard, SCARD_RESET_CARD);
-		sc->wProto = SC_PROTO_INVALID;
+		sc->wProto = SCARD_PROTO_INVALID;
 	}
 }
 
@@ -180,7 +180,7 @@ void scard_raise_error(struct sc *sc, int type)
 int scard_getproto(struct sc *sc)
 {
 	if (!sc)
-		return SC_PROTO_INVALID;
+		return SCARD_PROTO_INVALID;
 
 	return sc->wProto;
 }
