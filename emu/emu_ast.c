@@ -1,0 +1,119 @@
+#include "emu_ast.h"
+
+#include <stdlib.h>
+#include <string.h>
+
+struct emu_value {
+	struct emu_value *next;
+
+	size_t len;
+	unsigned char value[];
+};
+
+struct emu_property {
+	struct emu_property *next;
+
+	char *name;
+	struct emu_value *value;
+};
+
+static unsigned char hexdigit(char c)
+{
+	if (c >= 'A' && c <= 'F')
+		return c - 'A' + 10;
+	if (c >= 'a' && c <= 'f')
+		return c - 'a' + 10;
+	return c - '0';
+}
+
+struct emu_value *value_new(char *buf)
+{
+	size_t i, len;
+	struct emu_value *v;
+
+	len = strlen(buf) / 2;
+
+	v = malloc(sizeof(*v) + len);
+	v->len = len;
+	v->next = NULL;
+
+	for (i = 0; i < len; i++) {
+		v->value[i] = (hexdigit(buf[2*i]) << 8) | hexdigit(buf[2*i+1]);
+	}
+
+	free(buf);
+
+	return v;
+}
+
+struct emu_value *value_append(struct emu_value *first, struct emu_value *add)
+{
+	struct emu_value *p = first;
+
+	while (p->next)
+		p = p->next;
+
+	p->next = add;
+
+	return first;
+}
+
+void value_free(struct emu_value *first)
+{
+	struct emu_value *next;
+
+	while (first) {
+		next = first->next;
+		free(first);
+		first = next;
+	}
+}
+
+struct emu_property *property_new(char *name, struct emu_value *value)
+{
+	struct emu_property *prop = malloc(sizeof(*prop));
+
+	prop->next = NULL;
+	prop->name = name;
+	prop->value = value;
+
+	return prop;
+}
+
+struct emu_property *property_append(struct emu_property *first, struct emu_property *add)
+{
+	struct emu_property *p = first;
+
+	while (p->next)
+		p = p->next;
+
+	p->next = add;
+
+	return first;
+}
+
+void property_dump(struct emu_property *first, FILE *f)
+{
+	while (first->next) {
+		fprintf(f, "\"%s\", ", first->name);
+		first = first->next;
+	}
+
+	fprintf(f, "\"%s\"", first->name);
+}
+
+void property_free(struct emu_property *first)
+{
+	struct emu_property *next;
+
+	while (first) {
+		next = first->next;
+
+		free(first->name);
+		value_free(first->value);
+		free(first);
+
+		first = next;
+	}
+}
+

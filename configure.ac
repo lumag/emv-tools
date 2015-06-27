@@ -18,6 +18,8 @@ AM_PROG_CC_C_O
 AC_PROG_RANLIB
 AM_PROG_AR
 LT_INIT
+AM_PROG_LEX
+AC_PROG_YACC
 
 AC_DEFUN([C_FLAG_CHECK],
 [dnl
@@ -62,6 +64,7 @@ AC_CHECK_FUNCS([memset])
 
 AC_CONFIG_FILES([
 		 Makefile
+		 emu/Makefile
 		 lib/Makefile
 		 lib/include/Makefile
 		 lib/crypto/Makefile
