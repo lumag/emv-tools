@@ -23,7 +23,7 @@ static unsigned char *sc_command_t0(struct sc *sc,
 	unsigned char cmdbuf[5] = {cla, ins, p1, p2, 0};
 	unsigned short force_sw = 0;
 	size_t opos = 0;
-	size_t osize = 512;
+	size_t osize = 256 + 2;
 	size_t ret;
 	unsigned char *obuf;
 
