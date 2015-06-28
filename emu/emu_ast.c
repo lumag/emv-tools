@@ -21,6 +21,10 @@ struct emu_property {
 	struct emu_value *value;
 };
 
+struct emu_df {
+	struct emu_property *props;
+};
+
 static unsigned char hexdigit(char c)
 {
 	if (c >= 'A' && c <= 'F')
@@ -121,3 +125,17 @@ void property_free(struct emu_property *first)
 	}
 }
 
+struct emu_df *df_new(struct emu_property *props)
+{
+	struct emu_df *df = malloc(sizeof(*df));
+
+	df->props = props;
+
+	return df;
+}
+
+void df_free(struct emu_df *df)
+{
+	property_free(df->props);
+	free(df);
+}

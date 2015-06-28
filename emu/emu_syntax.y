@@ -19,13 +19,15 @@ static void yyerror(char *msg);
 	char *str;
 	struct emu_value *val;
 	struct emu_property *prop;
+	struct emu_df *df;
 }
 
 %locations
 %token EQ LBRACE RBRACE SEMICOLON COMMA
 %token <str> STRING VALUE
 %type <val> values
-%type <prop> property properties df
+%type <prop> property properties
+%type <df> df
 
 %define api.pure true
 
@@ -37,10 +39,10 @@ static void yyerror(char *msg);
 
 %%
 
-file: df { property_free($1); }
+file: df { df_free($1); }
     ;
 
-df: LBRACE properties RBRACE SEMICOLON { $$ = $2; }
+df: LBRACE properties RBRACE SEMICOLON { $$ = df_new($2); }
   ;
 
 properties: property {$$ = $1; }
