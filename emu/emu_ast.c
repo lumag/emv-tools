@@ -65,6 +65,9 @@ struct emu_value *value_append(struct emu_value *first, struct emu_value *add)
 {
 	struct emu_value *p = first;
 
+	if (!first)
+		return add;
+
 	while (p->next)
 		p = p->next;
 
@@ -117,6 +120,9 @@ struct emu_property *property_append(struct emu_property *first, struct emu_prop
 {
 	struct emu_property *p = first;
 
+	if (!first)
+		return add;
+
 	while (p->next)
 		p = p->next;
 
@@ -127,6 +133,11 @@ struct emu_property *property_append(struct emu_property *first, struct emu_prop
 
 void property_dump(const struct emu_property *first, FILE *f)
 {
+	if (!first) {
+		fprintf(f, "EMPTY");
+		return;
+	}
+
 	while (first->next) {
 		fprintf(f, "\"%s\", ", first->name);
 		first = first->next;
@@ -161,6 +172,9 @@ struct emu_df *df_new(struct emu_property *props)
 
 void df_free(struct emu_df *df)
 {
+	if (!df)
+		return;
+
 	property_free(df->props);
 	free(df);
 }
