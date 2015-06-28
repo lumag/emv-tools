@@ -25,6 +25,14 @@ struct emu_df {
 	struct emu_property *props;
 };
 
+static void dump_buffer_simple(const unsigned char *ptr, size_t len, FILE *f)
+{
+	int i;
+
+	for (i = 0; i < len; i ++)
+		fprintf(f, "%s%02hhx", i ? " " : "", ptr[i]);
+}
+
 static unsigned char hexdigit(char c)
 {
 	if (c >= 'A' && c <= 'F')
@@ -74,6 +82,24 @@ void value_free(struct emu_value *first)
 		free(first);
 		first = next;
 	}
+}
+
+void value_dump(const struct emu_value *first, FILE *f)
+{
+	if (!first) {
+		fprintf(f, "EMPTY");
+		return;
+	}
+
+	fprintf(f, "<");
+	while (first->next) {
+		dump_buffer_simple(first->value, first->len, f);
+		fprintf(f, ">, <");
+		first = first->next;
+	}
+
+	dump_buffer_simple(first->value, first->len, f);
+	fprintf(f, ">");
 }
 
 struct emu_property *property_new(char *name, struct emu_value *value)

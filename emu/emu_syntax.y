@@ -32,6 +32,7 @@ static void yyerror(YYLTYPE *yylloc, struct emu_df **pdf, char *msg);
 %define api.pure true
 
 %printer { fprintf (yyoutput, "%s", $$ ); } STRING VALUE
+%printer { value_dump($$, yyoutput); } values
 %printer { property_dump($$, yyoutput); } properties property
 %destructor { free($$); } STRING VALUE
 %destructor { value_free($$); } values

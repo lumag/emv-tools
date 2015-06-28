@@ -9,6 +9,7 @@ struct emu_df;
 
 struct emu_value *value_new(char *buf);
 struct emu_value *value_append(struct emu_value *first, struct emu_value *add);
+void value_dump(const struct emu_value *first, FILE *f);
 void value_free(struct emu_value *first);
 
 struct emu_property *property_new(char *name, struct emu_value *value);
