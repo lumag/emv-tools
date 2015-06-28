@@ -1,4 +1,8 @@
 %{
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "emu_syntax.h"
 
 #define LOC_STEP yylloc->last_column += strlen(yytext)

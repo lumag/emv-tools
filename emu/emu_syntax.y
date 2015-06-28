@@ -1,4 +1,8 @@
 %{
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "emu_syntax.h"
 #include "emu_ast.h"
 
