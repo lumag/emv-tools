@@ -45,9 +45,8 @@ struct emu_value *value_new(char *buf)
 	v->len = len;
 	v->next = NULL;
 
-	for (i = 0; i < len; i++) {
-		v->value[i] = (hexdigit(buf[2*i]) << 8) | hexdigit(buf[2*i+1]);
-	}
+	for (i = 0; i < len; i++)
+		v->value[i] = (hexdigit(buf[2*i]) << 4) | hexdigit(buf[2*i+1]);
 
 	free(buf);
 
