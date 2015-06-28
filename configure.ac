@@ -47,20 +47,25 @@ PKG_CHECK_MODULES([PCSC], [libpcsclite])
 AM_PATH_LIBGCRYPT
 
 # Checks for header files.
-AC_CHECK_HEADERS([stdint.h stdlib.h string.h stddef.h])
+AC_FUNC_ALLOCA
+AC_CHECK_HEADERS([inttypes.h libintl.h malloc.h stddef.h stdint.h stdlib.h string.h unistd.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL
 AC_C_INLINE
 AC_TYPE_SIZE_T
 AC_TYPE_SSIZE_T
+AC_TYPE_INT8_T
+AC_TYPE_INT16_T
+AC_TYPE_INT32_T
+AC_TYPE_UINT8_T
 AC_TYPE_UINT16_T
 AC_TYPE_UINT32_T
 
 # Checks for library functions.
 AC_FUNC_MALLOC
 AC_FUNC_REALLOC
-AC_CHECK_FUNCS([memset])
+AC_CHECK_FUNCS([memset strdup])
 
 AC_CONFIG_FILES([
 		 Makefile
