@@ -12,7 +12,7 @@
 extern int yylex(YYSTYPE * yylval_param,YYLTYPE * yylloc_param );
 extern void yyset_in (FILE *  in_str );
 
-static void yyerror(char *msg);
+static void yyerror(YYLTYPE *yylloc, struct emu_df **pdf, char *msg);
 %}
 
 %union {
@@ -36,10 +36,11 @@ static void yyerror(char *msg);
 %destructor { free($$); } STRING VALUE
 %destructor { value_free($$); } values
 %destructor { property_free($$); } properties property
+%parse-param { struct emu_df **pdf }
 
 %%
 
-file: df { df_free($1); }
+file: df { *pdf = $1; }
     ;
 
 df: LBRACE properties RBRACE SEMICOLON { $$ = df_new($2); }
@@ -60,7 +61,7 @@ values: VALUE { $$ = value_new($1); }
 %%
 static bool had_errors = false;
 
-static void yyerror(char *msg)
+static void yyerror(YYLTYPE *yylloc, struct emu_df **pdf, char *msg)
 {
 	fprintf(stderr, "Syntax error: %s\n", msg);
 
@@ -79,7 +80,12 @@ int main(int argc, char **argv)
 
 	yyset_in(f);
 
-	int ret = yyparse();
+	struct emu_df *df;
+
+	int ret = yyparse(&df);
+
+	if (!ret)
+		df_free(df);
 
 	if (f != stdin)
 		fclose(f);
