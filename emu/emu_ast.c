@@ -125,7 +125,7 @@ struct emu_property *property_append(struct emu_property *first, struct emu_prop
 	return first;
 }
 
-void property_dump(struct emu_property *first, FILE *f)
+void property_dump(const struct emu_property *first, FILE *f)
 {
 	while (first->next) {
 		fprintf(f, "\"%s\", ", first->name);
