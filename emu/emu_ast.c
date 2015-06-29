@@ -3,6 +3,7 @@
 #endif
 
 #include "emu_ast.h"
+#include "dump.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -24,14 +25,6 @@ struct emu_property {
 struct emu_df {
 	struct emu_property *props;
 };
-
-static void dump_buffer_simple(const unsigned char *ptr, size_t len, FILE *f)
-{
-	int i;
-
-	for (i = 0; i < len; i ++)
-		fprintf(f, "%s%02hhx", i ? " " : "", ptr[i]);
-}
 
 static unsigned char hexdigit(char c)
 {
