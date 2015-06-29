@@ -25,6 +25,11 @@ Makefile.in
 Makefile
 stamp-h1
 
+emu/emu
+emu/emu_lex.c
+emu/emu_syntax.c
+emu/emu_syntax.h
+
 src/emv_dda
 src/emv_cl_cda
 src/emv_dump
