@@ -10,13 +10,9 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-static bool had_errors = false;
-
 void yyerror(YYLTYPE *yylloc, const char *name, struct emu_df **pdf, char *msg)
 {
 	fprintf(stderr, "%s:%d:%d: %s\n", name, yylloc->first_line, yylloc->first_column, msg);
-
-	had_errors = true;
 }
 
 int main(int argc, char **argv)
@@ -30,9 +26,6 @@ int main(int argc, char **argv)
 	ret = yyparse(argc == 1 ? "-" : argv[1], &df);
 	if (ret)
 		return ret;
-
-	if (had_errors)
-		return 3;
 
 	const struct emu_property *prop = df_get_property(df, "name");
 	if (!prop)

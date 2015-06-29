@@ -54,7 +54,7 @@
 
 %%
 
-file: df { *pdf = $1; }
+file: df { if (yynerrs) YYABORT; *pdf = $1; }
     ;
 
 df: LBRACE properties RBRACE SEMICOLON { $$ = df_new($2); }
