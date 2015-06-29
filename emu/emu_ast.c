@@ -3,7 +3,7 @@
 #endif
 
 #include "emu_ast.h"
-#include "dump.h"
+#include "openemv/dump.h"
 
 #include <stdlib.h>
 #include <string.h>

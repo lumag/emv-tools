@@ -5,7 +5,7 @@
 #include "emu_syntax.h"
 #include "emu_ast.h"
 #include "emu_glue.h"
-#include "dump.h"
+#include "openemv/dump.h"
 
 #include <stdio.h>
 #include <stdbool.h>

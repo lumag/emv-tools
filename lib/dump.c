@@ -2,7 +2,7 @@
 #include <config.h>
 #endif
 
-#include "dump.h"
+#include "openemv/dump.h"
 
 #include <stdio.h>
 

@@ -4,6 +4,7 @@ noinst_LTLIBRARIES = libopenemv.la
 
 libopenemv_la_SOURCES = \
 	dol.c \
+	dump.c \
 	emv_pk.c \
 	emv_pki.c \
 	emv_tags.c \
