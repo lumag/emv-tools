@@ -3,31 +3,12 @@
 #endif
 
 #include "openemv/tlv.h"
+#include "openemv/dump.h"
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
-
-static void dump(const unsigned char *ptr, size_t len)
-{
-	int i, j;
-
-	for (i = 0; i < len; i += 16) {
-		printf("\t%02x:", i);
-		for (j = 0; j < 16; j++) {
-			if (i + j < len)
-				printf(" %02hhx", ptr[i + j]);
-			else
-				printf("   ");
-		}
-		printf(" |");
-		for (j = 0; j < 16 && i + j < len; j++) {
-			printf("%c", (ptr[i+j] >= 0x20 && ptr[i+j] < 0x7f) ? ptr[i+j] : '.' );
-		}
-		printf("\n");
-	}
-}
 
 static bool print_cb(void *data, const struct tlv *tlv)
 {
@@ -37,7 +18,7 @@ static bool print_cb(void *data, const struct tlv *tlv)
 	}
 	printf("Tag %4hx %02zx:\n", tlv->tag, tlv->len);
 
-	dump(tlv->value, tlv->len);
+	dump_buffer(tlv->value, tlv->len, stdout);
 
 	return true;
 }

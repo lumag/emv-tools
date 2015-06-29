@@ -10,36 +10,17 @@
 #include "openemv/crypto.h"
 #include "openemv/dol.h"
 #include "openemv/emv_pki.h"
+#include "openemv/dump.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-static void dump(const unsigned char *ptr, size_t len)
-{
-	int i, j;
-
-	for (i = 0; i < len; i += 16) {
-		printf("\t%02x:", i);
-		for (j = 0; j < 16; j++) {
-			if (i + j < len)
-				printf(" %02hhx", ptr[i + j]);
-			else
-				printf("   ");
-		}
-		printf(" |");
-		for (j = 0; j < 16 && i + j < len; j++) {
-			printf("%c", (ptr[i+j] >= 0x20 && ptr[i+j] < 0x7f) ? ptr[i+j] : '.' );
-		}
-		printf("\n");
-	}
-}
-
 static bool print_cb(void *data, const struct tlv *tlv)
 {
 //	if (tlv->tag & 0x20) return true;
 	emv_tag_dump(tlv, stdout);
-	dump(tlv->value, tlv->len);
+	dump_buffer(tlv->value, tlv->len, stdout);
 	return true;
 }
 
@@ -283,7 +264,7 @@ int main(void)
 	/* Generate AC asking for TC/CDA, then check CDA */
 	size_t crm_data_len;
 	unsigned char *crm_data = dol_process(tlvdb_get(s, 0x8c, NULL), s, &crm_data_len);
-	dump(crm_data, crm_data_len);
+	dump_buffer(crm_data, crm_data_len, stdout);
 	t = docmd(sc, 0x80, 0xae, 0x50, 0x00, crm_data_len, crm_data);
 	if ((e = tlvdb_get(t, 0x80, NULL)) != NULL) {
 		/* CID, ATC, AC, IAD */
