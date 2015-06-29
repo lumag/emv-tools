@@ -8,11 +8,12 @@
 
 #include <stdio.h>
 #include <stdbool.h>
+#include <string.h>
 
 extern int yylex(YYSTYPE * yylval_param,YYLTYPE * yylloc_param );
 extern void yyset_in (FILE *  in_str );
 
-static void yyerror(YYLTYPE *yylloc, struct emu_df **pdf, char *msg);
+static void yyerror(YYLTYPE *yylloc, const char *name, struct emu_df **pdf, char *msg);
 %}
 
 %union {
@@ -37,7 +38,24 @@ static void yyerror(YYLTYPE *yylloc, struct emu_df **pdf, char *msg);
 %destructor { free($$); } STRING VALUE
 %destructor { value_free($$); } values
 %destructor { property_free($$); } properties property
-%parse-param { struct emu_df **pdf }
+%parse-param {const char *name}
+%parse-param {struct emu_df **pdf}
+
+%initial-action {
+	FILE * f;
+
+	if (!strcmp(name, "-"))
+		f = stdin;
+	else
+		f = fopen(name, "r");
+
+	if (!f) {
+		perror("fopen");
+		YYABORT;
+	}
+
+	yyset_in(f);
+}
 
 %%
 
@@ -62,34 +80,29 @@ values: VALUE { $$ = value_new($1); }
 %%
 static bool had_errors = false;
 
-static void yyerror(YYLTYPE *yylloc, struct emu_df **pdf, char *msg)
+static void yyerror(YYLTYPE *yylloc, const char *name, struct emu_df **pdf, char *msg)
 {
-	fprintf(stderr, "Syntax error: %s\n", msg);
+	fprintf(stderr, "%s:%d:%d: %s\n", name, yylloc->first_line, yylloc->first_column, msg);
 
 	had_errors = true;
 }
 
 int main(int argc, char **argv)
 {
+	struct emu_df *df;
+	int ret;
+
 	if (argc > 2)
 		return 5;
 
-	FILE *f = (argc == 1) ? stdin : fopen(argv[1], "r");
-	if (!f) {
-		perror("fopen");
-	}
+	ret = yyparse(argc == 1 ? "-" : argv[1], &df);
+	if (ret)
+		return ret;
 
-	yyset_in(f);
+	if (had_errors)
+		return 3;
 
-	struct emu_df *df;
+	df_free(df);
 
-	int ret = yyparse(&df);
-
-	if (!ret)
-		df_free(df);
-
-	if (f != stdin)
-		fclose(f);
-
-	return ret ? ret : (had_errors ? 3 : 0);
+	return 0;
 }
