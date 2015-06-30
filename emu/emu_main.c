@@ -10,22 +10,26 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-void yyerror(YYLTYPE *yylloc, const char *name, struct emu_df **pdf, char *msg)
+void yyerror(YYLTYPE *yylloc, const char *name, struct emu_card **pcard, char *msg)
 {
 	fprintf(stderr, "%s:%d:%d: %s\n", name, yylloc->first_line, yylloc->first_column, msg);
 }
 
 int main(int argc, char **argv)
 {
-	struct emu_df *df;
+	struct emu_card *card;
 	int ret;
 
 	if (argc > 2)
 		return 5;
 
-	ret = yyparse(argc == 1 ? "-" : argv[1], &df);
+	ret = yyparse(argc == 1 ? "-" : argv[1], &card);
 	if (ret)
 		return ret;
+
+	const struct emu_df *df = card_get_df(card);
+	if (!df)
+		return 8;
 
 	const struct emu_property *prop = df_get_property(df, "name");
 	if (!prop)
@@ -40,7 +44,7 @@ int main(int argc, char **argv)
 
 	dump_buffer(buf, buf_len, stdout);
 
-	df_free(df);
+	card_free(card);
 
 	return 0;
 }

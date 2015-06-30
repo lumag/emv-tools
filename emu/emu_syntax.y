@@ -9,6 +9,13 @@
 
 #include <stdio.h>
 #include <string.h>
+
+struct emu_card {
+	struct emu_df *df;
+};
+
+static struct emu_card *card_new(struct emu_df *df);
+
 %}
 
 %union {
@@ -34,7 +41,7 @@
 %destructor { value_free($$); } values
 %destructor { property_free($$); } properties property
 %parse-param {const char *name}
-%parse-param {struct emu_df **pdf}
+%parse-param {struct emu_card **pcard}
 
 %initial-action {
 	FILE * f;
@@ -52,9 +59,13 @@
 	yyset_in(f);
 }
 
+%code requires {
+struct emu_card;
+}
+
 %%
 
-file: df { if (yynerrs) YYABORT; *pdf = $1; }
+file: df { struct emu_card *card; if (yynerrs) YYABORT; card = card_new($1); if (!card) YYABORT; *pcard = card;}
     ;
 
 df: LBRACE properties RBRACE SEMICOLON { $$ = df_new($2); }
@@ -73,3 +84,24 @@ values: VALUE { $$ = value_new($1); }
 	;
 
 %%
+static struct emu_card *card_new(struct emu_df *df)
+{
+	struct emu_card *card = malloc(sizeof(*card));
+
+	card->df = df;
+
+	return card;
+}
+
+void card_free(struct emu_card *card)
+{
+	df_free(card->df);
+	free(card);
+}
+
+const struct emu_df *card_get_df(const struct emu_card *card)
+{
+	struct emu_df *df = card->df;
+
+	return df;
+}
