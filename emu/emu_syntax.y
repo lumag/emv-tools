@@ -124,9 +124,21 @@ struct emu_card *card_parse(const char *fname)
 	return card;
 }
 
-const struct emu_df *card_get_df(const struct emu_card *card)
+const struct emu_df *card_get_df(const struct emu_card *card, const unsigned char *name, size_t len)
 {
 	struct emu_df *df = card->df;
+
+	if (len == 0)
+		return df;
+
+	size_t buf_len;
+	const unsigned char *buf = df_get_value(df, "name", 1, &buf_len);
+
+	if (len > buf_len)
+		return NULL;
+
+	if (memcmp(buf, name, len))
+		return NULL;
 
 	return df;
 }

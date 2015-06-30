@@ -20,7 +20,7 @@ int main(int argc, char **argv)
 	if (!card)
 		return 1;
 
-	const struct emu_df *df = card_get_df(card);
+	const struct emu_df *df = card_get_df(card, NULL, 0);
 	if (!df)
 		return 1;
 
