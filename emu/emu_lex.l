@@ -9,7 +9,7 @@
 #define LOC_ITEM do { yylloc->first_column = yylloc->last_column; yylloc->first_line = yylloc->last_line; LOC_STEP; } while (0)
 #define LOC_NEWLINE do { yylloc->last_column = 1; ++yylloc->last_line; } while (0)
 
-#define VALUE_BUF_SIZE 512
+#define VALUE_BUF_SIZE (2 * 256 + 1)
 
 static void init_value(YYSTYPE *yylval)
 {
