@@ -113,6 +113,17 @@ void card_free(struct emu_card *card)
 	free(card);
 }
 
+struct emu_card *card_parse(const char *fname)
+{
+	struct emu_card *card;
+	int ret = yyparse(fname, &card);
+
+	if (ret)
+		return NULL;
+
+	return card;
+}
+
 const struct emu_df *card_get_df(const struct emu_card *card)
 {
 	struct emu_df *df = card->df;
