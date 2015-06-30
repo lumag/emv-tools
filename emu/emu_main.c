@@ -10,11 +10,6 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-void yyerror(YYLTYPE *yylloc, const char *name, struct emu_card **pcard, char *msg)
-{
-	fprintf(stderr, "%s:%d:%d: %s\n", name, yylloc->first_line, yylloc->first_column, msg);
-}
-
 int main(int argc, char **argv)
 {
 	struct emu_card *card;

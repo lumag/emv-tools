@@ -3,7 +3,6 @@
 #include <config.h>
 #endif
 
-#include "emu_syntax.h"
 #include "emu_ast.h"
 #include "emu_glue.h"
 
@@ -63,6 +62,16 @@ static struct emu_card *card_new(struct emu_df *df);
 struct emu_card;
 }
 
+%code provides {
+#include <stdio.h>
+extern int yylex(YYSTYPE * yylval_param, YYLTYPE * yylloc_param );
+extern void yyset_in(FILE *  in_str );
+}
+
+%code {
+static void yyerror(YYLTYPE *yylloc, const char *name, struct emu_card **pcard, char *msg);
+}
+
 %%
 
 file: df { struct emu_card *card; if (yynerrs) YYABORT; card = card_new($1); if (!card) YYABORT; *pcard = card;}
@@ -84,6 +93,11 @@ values: VALUE { $$ = value_new($1); }
 	;
 
 %%
+static void yyerror(YYLTYPE *yylloc, const char *name, struct emu_card **pcard, char *msg)
+{
+	fprintf(stderr, "%s:%d:%d: %s\n", name, yylloc->first_line, yylloc->first_column, msg);
+}
+
 static struct emu_card *card_new(struct emu_df *df)
 {
 	struct emu_card *card = malloc(sizeof(*card));

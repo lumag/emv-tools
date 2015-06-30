@@ -4,7 +4,6 @@
 #endif
 
 #include "emu_syntax.h"
-#include "emu_glue.h"
 
 #define LOC_STEP yylloc->last_column += strlen(yytext)
 #define LOC_ITEM do { yylloc->first_column = yylloc->last_column; yylloc->first_line = yylloc->last_line; LOC_STEP; } while (0)
