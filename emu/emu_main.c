@@ -36,6 +36,8 @@ int main(int argc, char **argv)
 	const unsigned char *buf = value_get(value, &buf_len);
 
 	dump_buffer(buf, buf_len, stdout);
+	buf = df_get_value(df, "name", 1, &buf_len);
+	dump_buffer(buf, buf_len, stdout);
 
 	card_free(card);
 

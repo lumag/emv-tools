@@ -23,4 +23,19 @@ struct emu_df *df_new(struct emu_property *props);
 void df_free(struct emu_df *df);
 const struct emu_property *df_get_property(const struct emu_df *df, const char *name);
 
+static inline const unsigned char *df_get_value(const struct emu_df *df, const char *name, unsigned n, size_t *plen)
+{
+	const struct emu_property *prop = df_get_property(df, name);
+	if (!prop)
+		return NULL;
+
+	const struct emu_value *value = property_get_value(prop, n);
+	if (!value)
+		return NULL;
+
+	const unsigned char *buf = value_get(value, plen);
+
+	return buf;
+}
+
 #endif
