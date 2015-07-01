@@ -32,7 +32,7 @@ static uint16_t emu_command_select(struct emu_card *card, uint8_t p1, uint8_t p2
 		return emu_error(card, ret, ret_len, 0x6a82);
 
 	*ret = df_get_value(df, "fci", 1, ret_len);
-	if (!ret)
+	if (!*ret)
 		return emu_error(card, ret, ret_len, 0x6a80);
 
 	return 0x9000;
@@ -72,7 +72,7 @@ static uint16_t emu_command_emv_generate_ac(struct emu_card *card, uint8_t p1, u
 		return emu_error(card, ret, ret_len, 0x6a82);
 
 	*ret = df_get_value(df, "ac", 1, ret_len);
-	if (!ret)
+	if (!*ret)
 		return emu_error(card, ret, ret_len, 0x6a80);
 
 	return 0x9000;
@@ -90,7 +90,7 @@ static uint16_t emu_command_emv_get_processing_options(struct emu_card *card, ui
 		return emu_error(card, ret, ret_len, 0x6a82);
 
 	*ret = df_get_value(df, "gpo", 1, ret_len);
-	if (!ret)
+	if (!*ret)
 		return emu_error(card, ret, ret_len, 0x6a80);
 
 	return 0x9000;
