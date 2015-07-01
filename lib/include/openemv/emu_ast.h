@@ -26,12 +26,16 @@ const struct emu_property *df_get_property(const struct emu_df *df, const char *
 static inline const unsigned char *df_get_value(const struct emu_df *df, const char *name, unsigned n, size_t *plen)
 {
 	const struct emu_property *prop = df_get_property(df, name);
-	if (!prop)
+	if (!prop) {
+		*plen = 0;
 		return NULL;
+	}
 
 	const struct emu_value *value = property_get_value(prop, n);
-	if (!value)
+	if (!value) {
+		*plen = 0;
 		return NULL;
+	}
 
 	const unsigned char *buf = value_get(value, plen);
 
