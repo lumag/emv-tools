@@ -47,7 +47,7 @@ struct sc *scard_init(void)
 
 	sc->mszReaders = calloc(dwReaders, sizeof(char));
 	if (!sc->mszReaders) {
-		scard_shutdown(&sc);
+		scard_shutdown(sc);
 		return NULL;
 	}
 	CHECK(sc, sc, SCardListReaders, sc->hContext, NULL, sc->mszReaders, &dwReaders);
@@ -56,11 +56,9 @@ struct sc *scard_init(void)
 	return sc;
 }
 
-void scard_shutdown(struct sc **psc)
+void scard_shutdown(struct sc *sc)
 {
-	struct sc *sc = *psc;
-
-	scard_disconnect(*psc);
+	scard_disconnect(sc);
 
 #ifdef SCARD_AUTOALLOCATE
 	CHECK(sc, , SCardFreeMemory, sc->hContext, sc->mszReaders);
@@ -72,7 +70,6 @@ void scard_shutdown(struct sc **psc)
 	CHECK(sc, , SCardReleaseContext, sc->hContext);
 
 	free(sc);
-	*psc = NULL;
 }
 
 bool scard_is_error(struct sc *sc)

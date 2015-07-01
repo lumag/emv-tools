@@ -7,7 +7,7 @@
 struct sc;
 
 struct sc *scard_init(void);
-void scard_shutdown(struct sc **psc);
+void scard_shutdown(struct sc *sc);
 
 enum scard_error {
 	SCARD_NO_ERROR = 0,

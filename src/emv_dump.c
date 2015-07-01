@@ -202,11 +202,7 @@ int main(void)
 		printf("%s\n", scard_error(sc));
 		return 1;
 	}
-	scard_shutdown(&sc);
-	if (scard_is_error(sc)) {
-		printf("%s\n", scard_error(sc));
-		return 1;
-	}
+	scard_shutdown(sc);
 
 	return 0;
 }
