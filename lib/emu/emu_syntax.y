@@ -3,8 +3,8 @@
 #include <config.h>
 #endif
 
-#include "emu_ast.h"
-#include "emu_glue.h"
+#include "openemv/emu_ast.h"
+#include "openemv/emu_glue.h"
 
 #include <stdio.h>
 #include <string.h>

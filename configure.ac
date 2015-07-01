@@ -73,6 +73,7 @@ AC_CONFIG_FILES([
 		 lib/Makefile
 		 lib/include/Makefile
 		 lib/crypto/Makefile
+		 lib/emu/Makefile
 		 lib/scard/Makefile
 		 src/Makefile
 		 ])

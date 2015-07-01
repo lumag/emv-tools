@@ -1,4 +1,4 @@
-SUBDIRS = include crypto scard
+SUBDIRS = include crypto emu scard
 
 noinst_LTLIBRARIES = libopenemv.la
 
@@ -12,4 +12,5 @@ libopenemv_la_SOURCES = \
 libopenemv_la_CPPFLAGS = -I$(srcdir)/include
 libopenemv_la_LIBADD = \
 	crypto/libcrypto.la \
+	emu/libemu.la \
 	scard/libscard.la
