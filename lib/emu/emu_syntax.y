@@ -42,22 +42,6 @@ static struct emu_card *card_new(struct emu_df *df);
 %parse-param {const char *name}
 %parse-param {struct emu_card **pcard}
 
-%initial-action {
-	FILE * f;
-
-	if (!strcmp(name, "-"))
-		f = stdin;
-	else
-		f = fopen(name, "r");
-
-	if (!f) {
-		perror("fopen");
-		YYABORT;
-	}
-
-	yyset_in(f);
-}
-
 %code requires {
 struct emu_card;
 }
@@ -66,6 +50,8 @@ struct emu_card;
 #include <stdio.h>
 extern int yylex(YYSTYPE * yylval_param, YYLTYPE * yylloc_param );
 extern void yyset_in(FILE *  in_str );
+extern FILE *yyget_in(void);
+extern int yylex_destroy(void);
 }
 
 %code {
@@ -116,7 +102,25 @@ void card_free(struct emu_card *card)
 struct emu_card *card_parse(const char *fname)
 {
 	struct emu_card *card;
-	int ret = yyparse(fname, &card);
+	int ret;
+	FILE * f;
+
+	if (!strcmp(fname, "-")) {
+		f = stdin;
+		fname = "<stdin>";
+	} else
+		f = fopen(fname, "r");
+
+	if (!f) {
+		perror("fopen");
+		return NULL;
+	}
+
+	yyset_in(f);
+	ret = yyparse(fname, &card);
+	if (f != stdin)
+		fclose(f);
+	yylex_destroy();
 
 	if (ret)
 		return NULL;
