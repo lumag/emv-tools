@@ -107,7 +107,6 @@ AC_CHECK_FUNCS([memset strdup])
 
 AC_CONFIG_FILES([
 		 Makefile
-		 emu/Makefile
 		 lib/Makefile
 		 lib/include/Makefile
 		 lib/crypto/Makefile
