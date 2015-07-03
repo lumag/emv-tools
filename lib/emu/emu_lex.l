@@ -17,13 +17,13 @@ static void init_value(YYSTYPE *yylval)
 	yylval->str[0] = '\0';
 }
 
-static void expand_value(YYSTYPE *yylval, char *yytext)
+static void expand_value(YYSTYPE *yylval, char *text)
 {
 	size_t len = strlen(yylval->str);
 
 	if (len + 3 < VALUE_BUF_SIZE) {
-		yylval->str[len++] = yytext[0];
-		yylval->str[len++] = yytext[1];
+		yylval->str[len++] = text[0];
+		yylval->str[len++] = text[1];
 		yylval->str[len++] = '\0';
 	}
 }
@@ -34,6 +34,7 @@ static void expand_value(YYSTYPE *yylval, char *yytext)
 %option bison-bridge bison-locations
 %option warn
 %option nodefault
+%option reentrant
 
 %s value
 

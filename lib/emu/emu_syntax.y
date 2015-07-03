@@ -14,6 +14,8 @@ struct emu_card {
 };
 
 static struct emu_card *card_new(struct emu_df *df);
+typedef void* yyscan_t;
+static int yyparse (yyscan_t scanner, const char *name, struct emu_card **pcard);
 
 %}
 
@@ -39,8 +41,10 @@ static struct emu_card *card_new(struct emu_df *df);
 %destructor { free($$); } STRING VALUE
 %destructor { value_free($$); } values
 %destructor { property_free($$); } properties property
+%parse-param {yyscan_t scanner}
 %parse-param {const char *name}
 %parse-param {struct emu_card **pcard}
+%lex-param {scanner}
 
 %code requires {
 struct emu_card;
@@ -48,14 +52,14 @@ struct emu_card;
 
 %code provides {
 #include <stdio.h>
-extern int yylex(YYSTYPE * yylval_param, YYLTYPE * yylloc_param );
-extern void yyset_in(FILE *  in_str );
-extern FILE *yyget_in(void);
-extern int yylex_destroy(void);
+extern int yylex(YYSTYPE * yylval_param, YYLTYPE * yylloc_param, yyscan_t scanner);
+extern int yylex_init (yyscan_t* scanner);
+extern void yyset_in  (FILE * in_str ,yyscan_t yyscanner );
+extern int yylex_destroy (yyscan_t yyscanner );
 }
 
 %code {
-static void yyerror(YYLTYPE *yylloc, const char *name, struct emu_card **pcard, char *msg);
+static void yyerror(YYLTYPE *yylloc, yyscan_t scanner, const char *name, struct emu_card **pcard, char *msg);
 }
 
 %%
@@ -79,7 +83,7 @@ values: VALUE { $$ = value_new($1); }
 	;
 
 %%
-static void yyerror(YYLTYPE *yylloc, const char *name, struct emu_card **pcard, char *msg)
+static void yyerror(YYLTYPE *yylloc, yyscan_t scanner, const char *name, struct emu_card **pcard, char *msg)
 {
 	fprintf(stderr, "%s:%d:%d: %s\n", name, yylloc->first_line, yylloc->first_column, msg);
 }
@@ -104,6 +108,7 @@ struct emu_card *card_parse(const char *fname)
 	struct emu_card *card;
 	int ret;
 	FILE * f;
+	yyscan_t scanner;
 
 	if (!strcmp(fname, "-")) {
 		f = stdin;
@@ -116,11 +121,16 @@ struct emu_card *card_parse(const char *fname)
 		return NULL;
 	}
 
-	yyset_in(f);
-	ret = yyparse(fname, &card);
+	ret = yylex_init(&scanner);
+	if (ret) {
+		perror("yylex_init");
+		return NULL;
+	}
+	yyset_in(f, scanner);
+	ret = yyparse(scanner, fname, &card);
 	if (f != stdin)
 		fclose(f);
-	yylex_destroy();
+	yylex_destroy(scanner);
 
 	if (ret)
 		return NULL;
