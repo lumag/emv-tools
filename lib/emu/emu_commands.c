@@ -6,6 +6,7 @@
 #include "openemv/emu_glue.h"
 
 #include <stdint.h>
+#include <string.h>
 
 static uint16_t emu_error(struct emu_card *card, const unsigned char **ret, size_t *ret_len, uint16_t sw)
 {
@@ -18,6 +19,35 @@ static uint16_t emu_error(struct emu_card *card, const unsigned char **ret, size
 static uint16_t emu_command_ins_not_supported(struct emu_card *card, uint8_t p1, uint8_t p2, size_t lc, const unsigned char *data, const unsigned char **ret, size_t *ret_len)
 {
 	return emu_error(card, ret, ret_len, 0x6d00);
+}
+
+static uint16_t emu_command_verify(struct emu_card *card, uint8_t p1, uint8_t p2, size_t lc, const unsigned char *data, const unsigned char **ret, size_t *ret_len)
+{
+	const struct emu_df *df;
+	size_t pb_len;
+	const unsigned char *pb;
+
+	if (p1 != 0 || p2 != 0x80)
+		return emu_error(card, ret, ret_len, 0x6a86);
+
+	df = card_get_df(card, NULL, 0); // FIXME
+	if (!df)
+		return emu_error(card, ret, ret_len, 0x6a82);
+
+	pb = df_get_value(df, "pinblock", 1, &pb_len);
+	if (!pb || pb_len != 8)
+		return emu_error(card, ret, ret_len, 0x6a81);
+
+	if (lc != 8)
+		return emu_error(card, ret, ret_len, 0x6700);
+
+	if (memcmp(pb, data, lc))
+		return emu_error(card, ret, ret_len, 0x63c3);
+
+	*ret = NULL;
+	*ret_len = 0;
+
+	return 0x9000;
 }
 
 static uint16_t emu_command_select(struct emu_card *card, uint8_t p1, uint8_t p2, size_t lc, const unsigned char *data, const unsigned char **ret, size_t *ret_len)
@@ -118,6 +148,8 @@ static uint16_t emu_command_emv_get_data(struct emu_card *card, uint8_t p1, uint
 static uint16_t emu_command_cla_00(struct emu_card *card, uint8_t ins, uint8_t p1, uint8_t p2, size_t lc, const unsigned char *data, const unsigned char **ret, size_t *ret_len)
 {
 	switch (ins) {
+	case 0x20:
+		return emu_command_verify(card, p1, p2, lc, data, ret, ret_len);
 	case 0xa4:
 		return emu_command_select(card, p1, p2, lc, data, ret, ret_len);
 	case 0xb2:
