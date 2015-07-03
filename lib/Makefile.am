@@ -8,6 +8,7 @@ libopenemv_la_SOURCES = \
 	emv_pk.c \
 	emv_pki.c \
 	emv_tags.c \
+	pinpad.c \
 	tlv.c
 libopenemv_la_CPPFLAGS = -I$(srcdir)/include
 libopenemv_la_LIBADD = \
