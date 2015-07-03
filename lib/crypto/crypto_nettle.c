@@ -113,6 +113,7 @@ unsigned char *crypto_pk_encrypt(struct crypto_pk *cp, const unsigned char *buf,
 	}
 	nettle_mpz_get_str_256(datasize, out + cp->key.size - datasize, data);
 	memset(out, 0, cp->key.size - datasize);
+	mpz_clear(data);
 
 	*clen = cp->key.size;
 
