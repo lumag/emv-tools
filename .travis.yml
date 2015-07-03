@@ -5,7 +5,7 @@ compiler:
 before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -y libpcsclite-dev libgcrypt11-dev
-script: autoreconf -vfi && mkdir -p build && cd build && ../configure && make && make check
+script: autoreconf -vfi && mkdir -p build && cd build && ../configure --enable-scard-emu && make && make check
 before_deploy:
   - cd build && make distcheck
   - export RELEASE_PKG_FILE=$(ls *.tar.*)
