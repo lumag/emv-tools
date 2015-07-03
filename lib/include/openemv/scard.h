@@ -6,7 +6,7 @@
 
 struct sc;
 
-struct sc *scard_init(void);
+struct sc *scard_init(const char *driver);
 void scard_shutdown(struct sc *sc);
 
 enum scard_error {

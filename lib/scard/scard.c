@@ -5,9 +5,16 @@
 #include "openemv/scard.h"
 #include "scard_backend.h"
 
-struct sc *scard_init()
+#include <string.h>
+
+struct sc *scard_init(const char *driver)
 {
-	return scard_pcsc_init();
+	if (!strcmp(driver, "pcsc"))
+		return scard_pcsc_init();
+	else if (!strcmp(driver, "emu"))
+		return scard_emu_init();
+	else
+		return NULL;
 }
 
 void scard_shutdown(struct sc *sc)
