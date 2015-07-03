@@ -4,61 +4,52 @@
 
 #include "openemv/scard.h"
 
+#include "scard_backend.h"
+
 #include <stdlib.h>
 #include <string.h>
 #include <winscard.h>
 //#undef SCARD_AUTOALLOCATE
 
-struct sc {
+struct sc_pcsc {
+	struct sc sc;
 	SCARDCONTEXT hContext;
 	SCARDHANDLE hCard;
 	LONG rv;
 	LPSTR rfunc;
 	LPSTR mszReaders;
 	LPCSCARD_IO_REQUEST pioSendPci;
-	enum scard_proto wProto;
 };
+
+static int scard_pcsc_get_error(LONG rv)
+{
+	switch (rv) {
+	case SCARD_S_SUCCESS:
+		return SCARD_NO_ERROR;
+	case SCARD_E_NO_MEMORY:
+		return SCARD_MEMORY;
+	case SCARD_E_INVALID_PARAMETER:
+	case SCARD_E_INVALID_VALUE:
+		return SCARD_PARAMETER;
+	default:
+		return SCARD_CARD;
+	}
+}
 
 #define CHECK(sc, ret, func, ...) \
 	do { \
-		(sc)->rv = func(__VA_ARGS__); \
-		if ((sc)->rv != SCARD_S_SUCCESS) { \
+		(sc)->sc.error = scard_pcsc_get_error(func(__VA_ARGS__)); \
+		if ((sc)->sc.error != SCARD_S_SUCCESS) { \
 			(sc)->rfunc = #func; \
 			return ret; \
 		} \
 	} while (0)
 
-struct sc *scard_init(void)
+static void scard_pcsc_shutdown(struct sc *_sc)
 {
-	struct sc *sc = calloc(1, sizeof(*sc));
-	DWORD dwReaders;
+	struct sc_pcsc *sc = container_of(_sc, struct sc_pcsc, sc);
 
-	if (!sc)
-		return NULL;
-
-	CHECK(sc, sc, SCardEstablishContext, SCARD_SCOPE_SYSTEM, NULL, NULL, &sc->hContext);
-
-#ifdef SCARD_AUTOALLOCATE
-	dwReaders = SCARD_AUTOALLOCATE;
-
-	CHECK(sc, sc, SCardListReaders, sc->hContext, NULL, (LPSTR)&sc->mszReaders, &dwReaders);
-#else
-	CHECK(sc, sc, SCardListReaders, sc->hContext, NULL, NULL, &dwReaders);
-
-	sc->mszReaders = calloc(dwReaders, sizeof(char));
-	if (!sc->mszReaders) {
-		scard_shutdown(sc);
-		return NULL;
-	}
-	CHECK(sc, sc, SCardListReaders, sc->hContext, NULL, sc->mszReaders, &dwReaders);
-#endif
-
-	return sc;
-}
-
-void scard_shutdown(struct sc *sc)
-{
-	scard_disconnect(sc);
+	scard_disconnect(_sc);
 
 #ifdef SCARD_AUTOALLOCATE
 	CHECK(sc, , SCardFreeMemory, sc->hContext, sc->mszReaders);
@@ -72,24 +63,12 @@ void scard_shutdown(struct sc *sc)
 	free(sc);
 }
 
-bool scard_is_error(struct sc *sc)
-{
-	return sc && (sc->rv != SCARD_S_SUCCESS);
-}
-
-#include "stdio.h"
-const char *scard_error(struct sc *sc)
-{
-	printf("%s: %s\n", sc->rfunc, pcsc_stringify_error(sc->rv));
-	return "\n"; // FIXME
-}
-
 static LONG _SCardInvalidProtocol(void)
 {
 	return SCARD_E_INVALID_VALUE;
 }
 
-static LONG _SCardGetReader(struct sc *sc, unsigned idx, LPSTR *pReader)
+static LONG _SCardGetReader(struct sc_pcsc *sc, unsigned idx, LPSTR *pReader)
 {
 	LPSTR r = sc->mszReaders;
 
@@ -106,8 +85,10 @@ static LONG _SCardGetReader(struct sc *sc, unsigned idx, LPSTR *pReader)
 	return SCARD_S_SUCCESS;
 }
 
-void scard_connect(struct sc *sc, unsigned idx)
+static void scard_pcsc_connect(struct sc *_sc, unsigned idx)
 {
+	struct sc_pcsc *sc = container_of(_sc, struct sc_pcsc, sc);
+
 	DWORD dwActiveProtocol;
 	LPSTR r;
 
@@ -120,32 +101,36 @@ void scard_connect(struct sc *sc, unsigned idx)
 	{
 	case SCARD_PROTOCOL_T0:
 		sc->pioSendPci = SCARD_PCI_T0;
-		sc->wProto = SCARD_PROTO_T0;
+		_sc->proto = SCARD_PROTO_T0;
 		break;
 
 	case SCARD_PROTOCOL_T1:
 		sc->pioSendPci = SCARD_PCI_T1;
-		sc->wProto = SCARD_PROTO_T1;
+		_sc->proto = SCARD_PROTO_T1;
 		break;
 	default:
-		sc->wProto = SCARD_PROTO_INVALID;
+		_sc->proto = SCARD_PROTO_INVALID;
 		SCardDisconnect(sc->hCard, SCARD_LEAVE_CARD);
 		CHECK(sc, , _SCardInvalidProtocol);
 	}
 }
 
-void scard_disconnect(struct sc *sc)
+static void scard_pcsc_disconnect(struct sc *_sc)
 {
-	if (sc->wProto != SCARD_PROTO_INVALID) {
+	struct sc_pcsc *sc = container_of(_sc, struct sc_pcsc, sc);
+
+	if (_sc->proto != SCARD_PROTO_INVALID) {
 		CHECK(sc, ,SCardDisconnect, sc->hCard, SCARD_RESET_CARD);
-		sc->wProto = SCARD_PROTO_INVALID;
+		_sc->proto = SCARD_PROTO_INVALID;
 	}
 }
 
-size_t scard_transmit(struct sc *sc,
+static size_t scard_pcsc_transmit(struct sc *_sc,
 		const unsigned char *inbuf, size_t inlen,
 		unsigned char *outbuf, size_t outlen)
 {
+	struct sc_pcsc *sc = container_of(_sc, struct sc_pcsc, sc);
+
 	DWORD dwRecvLength = outlen;
 	CHECK(sc, 0, SCardTransmit, sc->hCard, sc->pioSendPci,
 			inbuf, inlen, NULL, outbuf, &dwRecvLength);
@@ -153,42 +138,35 @@ size_t scard_transmit(struct sc *sc,
 	return dwRecvLength;
 }
 
-void scard_raise_error(struct sc *sc, int type)
+struct sc *scard_pcsc_init(void)
 {
-	switch (type) {
-	case SCARD_NO_ERROR:
-		sc->rv = SCARD_S_SUCCESS;
-		break;
-	case SCARD_CARD:
-		sc->rv = SCARD_F_COMM_ERROR;
-		break;
-	case SCARD_MEMORY:
-		sc->rv = SCARD_E_NO_MEMORY;
-		break;
-	case SCARD_PARAMETER:
-		sc->rv = SCARD_E_INVALID_PARAMETER;
-		break;
-	default:
-		sc->rv = SCARD_E_INVALID_PARAMETER;
-		break;
-	}
-}
+	struct sc_pcsc *sc = calloc(1, sizeof(*sc));
+	DWORD dwReaders;
 
-int scard_getproto(struct sc *sc)
-{
 	if (!sc)
-		return SCARD_PROTO_INVALID;
+		return NULL;
 
-	return sc->wProto;
-}
+	sc->sc.shutdown = scard_pcsc_shutdown;
+	sc->sc.connect = scard_pcsc_connect;
+	sc->sc.disconnect = scard_pcsc_disconnect;
+	sc->sc.transmit = scard_pcsc_transmit;
 
-#ifdef WIN32
-static char *pcsc_stringify_error(LONG rv)
-{
+	CHECK(sc, &sc->sc, SCardEstablishContext, SCARD_SCOPE_SYSTEM, NULL, NULL, &sc->hContext);
 
-	static char out[20];
-	sprintf_s(out, sizeof(out), "0x%08X", rv);
+#ifdef SCARD_AUTOALLOCATE
+	dwReaders = SCARD_AUTOALLOCATE;
 
-	return out;
-}
+	CHECK(sc, &sc->sc, SCardListReaders, sc->hContext, NULL, (LPSTR)&sc->mszReaders, &dwReaders);
+#else
+	CHECK(sc, &sc->sc, SCardListReaders, sc->hContext, NULL, NULL, &dwReaders);
+
+	sc->mszReaders = calloc(dwReaders, sizeof(char));
+	if (!sc->mszReaders) {
+		scard_pcsc_shutdown(&sc->sc);
+		return NULL;
+	}
+	CHECK(sc, &sc->sc, SCardListReaders, sc->hContext, NULL, sc->mszReaders, &dwReaders);
 #endif
+
+	return &sc->sc;
+}

@@ -1,6 +1,7 @@
 noinst_LTLIBRARIES = libscard.la
 
 libscard_la_SOURCES = \
+	scard.c scard_backend.h \
 	sc_helpers.c
 libscard_la_CPPFLAGS = -I$(srcdir)/../include
 libscard_la_LIBADD =
