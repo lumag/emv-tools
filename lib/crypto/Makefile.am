@@ -4,6 +4,8 @@ libcrypto_la_SOURCES =
 libcrypto_la_CPPFLAGS = -I$(srcdir)/../include
 libcrypto_la_LIBADD =
 
+if CRYPTO_LIBGCRYPT
 libcrypto_la_SOURCES += crypto_gcrypt.c
 libcrypto_la_CPPFLAGS += $(LIBGCRYPT_CFLAGS)
 libcrypto_la_LIBADD += $(LIBGCRYPT_LIBS)
+endif

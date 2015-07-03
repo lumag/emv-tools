@@ -64,7 +64,15 @@ AS_IF([test "x$enable_scard_emu" != "xno"],
       [AC_DEFINE([ENABLE_SCARD_EMU], [1], [Define if you enable EMU smart card interface])])
 AM_CONDITIONAL([SCARD_EMU], [test "x$enable_scard_emu" != "xno"])
 
-AM_PATH_LIBGCRYPT
+AC_ARG_ENABLE([crypto-libgcrypt],
+	    [AS_HELP_STRING([--disable-crypto-libgcrypt],
+			    [disable support for libgcrypt crypto library])],
+			    [],
+			    [with_libgcrypt=yes])
+AS_IF([test "x$enable_libgcrypt" != "xno"],
+      [AM_PATH_LIBGCRYPT
+       AC_DEFINE([ENABLE_CRYPTO_LIBGCRYPT], [1], [Define if you enable libgcrypt crypto library])])
+AM_CONDITIONAL([CRYPTO_LIBGCRYPT], [test "x$enable_libgcrypt" != "xno"])
 
 # Checks for header files.
 AC_FUNC_ALLOCA
