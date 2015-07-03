@@ -15,6 +15,7 @@
 int main(int argc, char **argv) {
 	FILE *f;
 	const char *fname;
+	int rc = 0;
 
 	if (!crypto_be_init())
 		exit(2);
@@ -55,10 +56,12 @@ int main(int argc, char **argv) {
 					printf("%s\n", c);
 				free(c);
 			}
-		} else
+		} else {
 			fprintf(stderr, "Failed!\n");
+			rc = 1;
+		}
 		emv_pk_free(pk);
 	}
 
-	return 0;
+	return rc;
 }
