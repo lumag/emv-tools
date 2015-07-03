@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <nettle/sha1.h>
+#include <nettle/sha.h>
 #include <nettle/bignum.h>
 #include <nettle/rsa.h>
 
