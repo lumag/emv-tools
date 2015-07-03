@@ -146,7 +146,7 @@ static uint16_t emu_command_cla_not_supported(struct emu_card *card, uint8_t ins
 	return emu_error(card, ret, ret_len, 0x6e00);
 }
 
-uint16_t emu_command(struct emu_card *card, uint8_t cla, uint8_t ins, uint8_t p1, uint8_t p2, const unsigned char **ret, size_t *ret_len)
+uint16_t emu_command(struct emu_card *card, uint8_t cla, uint8_t ins, uint8_t p1, uint8_t p2, size_t lc, const unsigned char *data, const unsigned char **ret, size_t *ret_len)
 {
 	switch (cla) {
 	case 0x00:

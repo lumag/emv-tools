@@ -101,7 +101,7 @@ static size_t scard_emu_transmit(struct sc *_sc,
 		return 0;
 	}
 
-	sw = emu_command(sc->card, cla, ins, p1, p2, &ret, &retlen);
+	sw = emu_command(sc->card, cla, ins, p1, p2, lc, lc ? inbuf + 5 : NULL, &ret, &retlen);
 
 	if (retlen > le) {
 		ret = NULL;
