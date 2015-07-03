@@ -17,7 +17,22 @@ struct sc {
 	const typeof( ((type *)0)->member ) *__mptr = (ptr);	\
         (type *)( (char *)__mptr - offsetof(type,member) );})
 
+#ifdef ENABLE_SCARD_PCSC
 struct sc *scard_pcsc_init(void);
+#else
+static inline struct sc *scard_pcsc_init(void)
+{
+	return NULL;
+}
+#endif
+
+#ifdef ENABLE_SCARD_EMU
 struct sc *scard_emu_init(void);
+#else
+static inline struct sc *scard_emu_init(void)
+{
+	return NULL;
+}
+#endif
 
 #endif

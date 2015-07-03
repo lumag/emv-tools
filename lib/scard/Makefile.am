@@ -6,10 +6,14 @@ libscard_la_SOURCES = \
 libscard_la_CPPFLAGS = -I$(srcdir)/../include
 libscard_la_LIBADD =
 
+if SCARD_PCSC
 libscard_la_SOURCES += \
 	scard_pcsc.c
 libscard_la_CPPFLAGS += $(PCSC_CFLAGS)
 libscard_la_LIBADD += $(PCSC_LIBS)
+endif
 
+if SCARD_EMU
 libscard_la_SOURCES += \
 	scard_emu.c
+endif

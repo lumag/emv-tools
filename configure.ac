@@ -43,7 +43,25 @@ C_FLAG_CHECK([-Wmissing-prototypes])
 C_FLAG_CHECK([-Wformat=2])
 
 # Checks for libraries.
-PKG_CHECK_MODULES([PCSC], [libpcsclite])
+AC_ARG_ENABLE([scard-pcsc],
+	      [AS_HELP_STRING([--disable-scard-pcsc],
+			      [disable support for PCSC smart card interface])],
+			      [],
+			      [enable_scard_pcsc=yes])
+AS_IF([test "x$enable_scard_pcsc" != "xno"],
+      [PKG_CHECK_MODULES([PCSC], [libpcsclite])
+       AC_DEFINE([ENABLE_SCARD_PCSC], [1], [Define if you enable PCSC smart card interface])])
+AM_CONDITIONAL([SCARD_PCSC], [test "x$enable_scard_pcsc" != "xno"])
+
+AC_ARG_ENABLE([scard-emu],
+	      [AS_HELP_STRING([--enable-scard-emu],
+			      [disable support for emulated smart card interface])],
+			      [],
+			      [enable_scard_emu=no])
+AS_IF([test "x$enable_scard_emu" != "xno"],
+      [AC_DEFINE([ENABLE_SCARD_EMU], [1], [Define if you enable EMU smart card interface])])
+AM_CONDITIONAL([SCARD_EMU], [test "x$enable_scard_emu" != "xno"])
+
 AM_PATH_LIBGCRYPT
 
 # Checks for header files.
