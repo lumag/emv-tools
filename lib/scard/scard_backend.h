@@ -18,5 +18,6 @@ struct sc {
         (type *)( (char *)__mptr - offsetof(type,member) );})
 
 struct sc *scard_pcsc_init(void);
+struct sc *scard_emu_init(void);
 
 #endif

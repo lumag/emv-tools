@@ -10,3 +10,6 @@ libscard_la_SOURCES += \
 	scard_pcsc.c
 libscard_la_CPPFLAGS += $(PCSC_CFLAGS)
 libscard_la_LIBADD += $(PCSC_LIBS)
+
+libscard_la_SOURCES += \
+	scard_emu.c
