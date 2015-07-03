@@ -11,6 +11,7 @@
 #include "openemv/dol.h"
 #include "openemv/emv_pki.h"
 #include "openemv/dump.h"
+#include "openemv/pinpad.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -77,6 +78,17 @@ static struct tlvdb *get_data(struct sc *sc, tlv_tag_t tag)
 	return docmd(sc, 0x80, 0xca, tag >> 8, tag & 0xff, 0, NULL);
 }
 
+static bool verify(struct sc *sc, uint8_t pb_type, const unsigned char *pb, size_t pb_len)
+{
+	unsigned short sw;
+
+	docmd_int(sc, 0x00, 0x20, 0x00, pb_type, pb_len, pb, &sw, NULL);
+
+	printf("PIN VERIFY, type %02hhx, SW %04hx\n", pb_type, sw);
+
+	return sw == 0x9000 ? true : false;
+}
+
 static const unsigned char default_ddol_value[] = {0x9f, 0x37, 0x04};
 static struct tlv default_ddol_tlv = {.tag = 0x499f, .len = 3, .value = default_ddol_value };
 
@@ -119,6 +131,69 @@ static struct tlvdb *perform_dda(const struct emv_pk *pk, const struct tlvdb *db
 	tlvdb_add(dda_db, idn_db);
 
 	return dda_db;
+}
+
+static bool verify_offline_clear(struct tlvdb *db, struct sc *sc)
+{
+	size_t pb_len;
+	unsigned char *pb;
+
+	pb = pinpad_enter(&pb_len);
+	if (!pb)
+		return false;
+
+	return verify(sc, 0x80, pb, pb_len);
+}
+
+static bool verify_offline_enc(struct tlvdb *db, struct sc *sc, struct emv_pk *pk)
+{
+	size_t pb_len;
+	unsigned char *pb;
+	bool ret;
+
+	if (!pk)
+		return false;
+
+	pb = pinpad_enter(&pb_len);
+	if (!pb)
+		return false;
+
+	unsigned short sw;
+	size_t outlen;
+	unsigned char *outbuf;
+
+	outbuf = docmd_int(sc, 0x00, 0x84, 0x00, 0x00, 0, NULL, &sw, &outlen);
+	if (sw != 0x9000)
+		return false;
+
+	dump_buffer(outbuf, outlen, stdout);
+	if (outlen != 8)
+		return false;
+
+	size_t pinbuf_len = pk->mlen;
+	unsigned char pinbuf[pinbuf_len];
+
+	pinbuf[0] = 0x7f;
+	memcpy(pinbuf+1, pb, 8);
+	memcpy(pinbuf+9, outbuf, 8);
+	/* Should be random */
+	memset(pinbuf+17, 0x5a, pinbuf_len - 17);
+
+	free(outbuf);
+
+	struct crypto_pk *kcp;
+	kcp = crypto_pk_open(pk->pk_algo,
+			pk->modulus, pk->mlen,
+			pk->exp, pk->elen);
+	if (!kcp)
+		return false;
+
+	outbuf = crypto_pk_encrypt(kcp, pinbuf, pinbuf_len, &outlen);
+	crypto_pk_close(kcp);
+	ret = verify(sc, 0x88, outbuf, outlen);
+	free(outbuf);
+
+	return ret;
 }
 
 static struct emv_pk *get_ca_pk(struct tlvdb *db)
@@ -330,6 +405,14 @@ int main(void)
 		tlvdb_add(s, idn_db);
 	}
 
+	/* Only PTC read should happen before VERIFY */
+	tlvdb_add(s, get_data(sc, 0x9f17));
+
+	if (!icc_pk)
+		verify_offline_clear(s, sc);
+	else
+		verify_offline_enc(s, sc, icc_pk);
+
 #define TAG(tag, len, value...) tlvdb_add(s, tlvdb_fixed(tag, len, (unsigned char[]){value}))
 	TAG(0x029f, 6, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
 	TAG(0x1a9f, 2, 0x06, 0x43);
@@ -394,7 +477,6 @@ int main(void)
 
 	tlvdb_add(s, get_data(sc, 0x9f36));
 	tlvdb_add(s, get_data(sc, 0x9f13));
-	tlvdb_add(s, get_data(sc, 0x9f17));
 	tlvdb_add(s, get_data(sc, 0x9f4f));
 
 	printf("Final\n");
