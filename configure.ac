@@ -69,20 +69,20 @@ AC_ARG_ENABLE([crypto-libgcrypt],
 			    [disable support for libgcrypt crypto library])],
 			    [],
 			    [with_libgcrypt=yes])
-AS_IF([test "x$enable_libgcrypt" != "xno"],
+AS_IF([test "x$enable_crypto_libgcrypt" != "xno"],
       [AM_PATH_LIBGCRYPT
        AC_DEFINE([ENABLE_CRYPTO_LIBGCRYPT], [1], [Define if you enable libgcrypt crypto library])])
-AM_CONDITIONAL([CRYPTO_LIBGCRYPT], [test "x$enable_libgcrypt" != "xno"])
+AM_CONDITIONAL([CRYPTO_LIBGCRYPT], [test "x$enable_crypto_libgcrypt" != "xno"])
 
 AC_ARG_ENABLE([crypto-nettle],
 	    [AS_HELP_STRING([--disable-crypto-nettle],
 			    [disable support for nettle crypto library])],
 			    [],
 			    [enable_nettle=yes])
-AS_IF([test "x$enable_nettle" != "xno"],
+AS_IF([test "x$enable_crypto_nettle" != "xno"],
       [PKG_CHECK_MODULES([NETTLE], [hogweed nettle])
        AC_DEFINE([ENABLE_CRYPTO_NETTLE], [1], [Define if you enable Nettle crypto library])])
-AM_CONDITIONAL([CRYPTO_NETTLE], [test "x$enable_nettle" != "xno"])
+AM_CONDITIONAL([CRYPTO_NETTLE], [test "x$enable_crypto_nettle" != "xno"])
 
 # Checks for header files.
 AC_FUNC_ALLOCA
