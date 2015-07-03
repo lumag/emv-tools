@@ -63,5 +63,7 @@ int main(int argc, char **argv) {
 		emv_pk_free(pk);
 	}
 
+	fclose(f);
+
 	return rc;
 }
