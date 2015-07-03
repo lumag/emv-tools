@@ -16,6 +16,7 @@ struct emu_card {
 static struct emu_card *card_new(struct emu_df *df);
 typedef void* yyscan_t;
 static int yyparse (yyscan_t scanner, const char *name, struct emu_card **pcard);
+#define yylex emu_lex
 
 %}
 
@@ -52,10 +53,10 @@ struct emu_card;
 
 %code provides {
 #include <stdio.h>
-extern int yylex(YYSTYPE * yylval_param, YYLTYPE * yylloc_param, yyscan_t scanner);
-extern int yylex_init (yyscan_t* scanner);
-extern void yyset_in  (FILE * in_str ,yyscan_t yyscanner );
-extern int yylex_destroy (yyscan_t yyscanner );
+extern int emu_lex(YYSTYPE * yylval_param, YYLTYPE * yylloc_param, yyscan_t scanner);
+extern int emu_lex_init (yyscan_t* scanner);
+extern void emu_set_in  (FILE * in_str ,yyscan_t yyscanner );
+extern int emu_lex_destroy (yyscan_t yyscanner );
 }
 
 %code {
@@ -121,16 +122,16 @@ struct emu_card *card_parse(const char *fname)
 		return NULL;
 	}
 
-	ret = yylex_init(&scanner);
+	ret = emu_lex_init(&scanner);
 	if (ret) {
-		perror("yylex_init");
+		perror("emu_lex_init");
 		return NULL;
 	}
-	yyset_in(f, scanner);
+	emu_set_in(f, scanner);
 	ret = yyparse(scanner, fname, &card);
 	if (f != stdin)
 		fclose(f);
-	yylex_destroy(scanner);
+	emu_lex_destroy(scanner);
 
 	if (ret)
 		return NULL;

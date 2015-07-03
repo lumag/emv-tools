@@ -35,6 +35,8 @@ static void expand_value(YYSTYPE *yylval, char *text)
 %option warn
 %option nodefault
 %option reentrant
+%option prefix="emu_"
+%option outfile="lex.yy.c"
 
 %s value
 
