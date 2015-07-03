@@ -15,12 +15,12 @@ static uint16_t emu_error(struct emu_card *card, const unsigned char **ret, size
 	return sw;
 }
 
-static uint16_t emu_command_ins_not_supported(struct emu_card *card, uint8_t p1, uint8_t p2, const unsigned char **ret, size_t *ret_len)
+static uint16_t emu_command_ins_not_supported(struct emu_card *card, uint8_t p1, uint8_t p2, size_t lc, const unsigned char *data, const unsigned char **ret, size_t *ret_len)
 {
 	return emu_error(card, ret, ret_len, 0x6d00);
 }
 
-static uint16_t emu_command_select(struct emu_card *card, uint8_t p1, uint8_t p2, const unsigned char **ret, size_t *ret_len)
+static uint16_t emu_command_select(struct emu_card *card, uint8_t p1, uint8_t p2, size_t lc, const unsigned char *data, const unsigned char **ret, size_t *ret_len)
 {
 	const struct emu_df *df;
 
@@ -38,7 +38,7 @@ static uint16_t emu_command_select(struct emu_card *card, uint8_t p1, uint8_t p2
 	return 0x9000;
 }
 
-static uint16_t emu_command_read_record(struct emu_card *card, uint8_t p1, uint8_t p2, const unsigned char **ret, size_t *ret_len)
+static uint16_t emu_command_read_record(struct emu_card *card, uint8_t p1, uint8_t p2, size_t lc, const unsigned char *data, const unsigned char **ret, size_t *ret_len)
 {
 	const struct emu_df *df;
 	char tag[6];
@@ -60,7 +60,7 @@ static uint16_t emu_command_read_record(struct emu_card *card, uint8_t p1, uint8
 	return 0x9000;
 }
 
-static uint16_t emu_command_emv_generate_ac(struct emu_card *card, uint8_t p1, uint8_t p2, const unsigned char **ret, size_t *ret_len)
+static uint16_t emu_command_emv_generate_ac(struct emu_card *card, uint8_t p1, uint8_t p2, size_t lc, const unsigned char *data, const unsigned char **ret, size_t *ret_len)
 {
 	const struct emu_df *df;
 
@@ -78,7 +78,7 @@ static uint16_t emu_command_emv_generate_ac(struct emu_card *card, uint8_t p1, u
 	return 0x9000;
 }
 
-static uint16_t emu_command_emv_get_processing_options(struct emu_card *card, uint8_t p1, uint8_t p2, const unsigned char **ret, size_t *ret_len)
+static uint16_t emu_command_emv_get_processing_options(struct emu_card *card, uint8_t p1, uint8_t p2, size_t lc, const unsigned char *data, const unsigned char **ret, size_t *ret_len)
 {
 	const struct emu_df *df;
 
@@ -96,7 +96,7 @@ static uint16_t emu_command_emv_get_processing_options(struct emu_card *card, ui
 	return 0x9000;
 }
 
-static uint16_t emu_command_emv_get_data(struct emu_card *card, uint8_t p1, uint8_t p2, const unsigned char **ret, size_t *ret_len)
+static uint16_t emu_command_emv_get_data(struct emu_card *card, uint8_t p1, uint8_t p2, size_t lc, const unsigned char *data, const unsigned char **ret, size_t *ret_len)
 {
 	const struct emu_df *df;
 	char tag[9];
@@ -115,33 +115,33 @@ static uint16_t emu_command_emv_get_data(struct emu_card *card, uint8_t p1, uint
 }
 
 
-static uint16_t emu_command_cla_00(struct emu_card *card, uint8_t ins, uint8_t p1, uint8_t p2, const unsigned char **ret, size_t *ret_len)
+static uint16_t emu_command_cla_00(struct emu_card *card, uint8_t ins, uint8_t p1, uint8_t p2, size_t lc, const unsigned char *data, const unsigned char **ret, size_t *ret_len)
 {
 	switch (ins) {
 	case 0xa4:
-		return emu_command_select(card, p1, p2, ret, ret_len);
+		return emu_command_select(card, p1, p2, lc, data, ret, ret_len);
 	case 0xb2:
-		return emu_command_read_record(card, p1, p2, ret, ret_len);
+		return emu_command_read_record(card, p1, p2, lc, data, ret, ret_len);
 	default:
-		return emu_command_ins_not_supported(card, p1, p2, ret, ret_len);
+		return emu_command_ins_not_supported(card, p1, p2, lc, data, ret, ret_len);
 	}
 }
 
-static uint16_t emu_command_cla_80(struct emu_card *card, uint8_t ins, uint8_t p1, uint8_t p2, const unsigned char **ret, size_t *ret_len)
+static uint16_t emu_command_cla_80(struct emu_card *card, uint8_t ins, uint8_t p1, uint8_t p2, size_t lc, const unsigned char *data, const unsigned char **ret, size_t *ret_len)
 {
 	switch (ins) {
 	case 0xa8:
-		return emu_command_emv_get_processing_options(card, p1, p2, ret, ret_len);
+		return emu_command_emv_get_processing_options(card, p1, p2, lc, data, ret, ret_len);
 	case 0xae:
-		return emu_command_emv_generate_ac(card, p1, p2, ret, ret_len);
+		return emu_command_emv_generate_ac(card, p1, p2, lc, data, ret, ret_len);
 	case 0xca:
-		return emu_command_emv_get_data(card, p1, p2, ret, ret_len);
+		return emu_command_emv_get_data(card, p1, p2, lc, data, ret, ret_len);
 	default:
-		return emu_command_ins_not_supported(card, p1, p2, ret, ret_len);
+		return emu_command_ins_not_supported(card, p1, p2, lc, data, ret, ret_len);
 	}
 }
 
-static uint16_t emu_command_cla_not_supported(struct emu_card *card, uint8_t ins, uint8_t p1, uint8_t p2, const unsigned char **ret, size_t *ret_len)
+static uint16_t emu_command_cla_not_supported(struct emu_card *card, uint8_t ins, uint8_t p1, uint8_t p2, size_t lc, const unsigned char *data, const unsigned char **ret, size_t *ret_len)
 {
 	return emu_error(card, ret, ret_len, 0x6e00);
 }
@@ -150,10 +150,10 @@ uint16_t emu_command(struct emu_card *card, uint8_t cla, uint8_t ins, uint8_t p1
 {
 	switch (cla) {
 	case 0x00:
-		return emu_command_cla_00(card, ins, p1, p2, ret, ret_len);
+		return emu_command_cla_00(card, ins, p1, p2, lc, data, ret, ret_len);
 	case 0x80:
-		return emu_command_cla_80(card, ins, p1, p2, ret, ret_len);
+		return emu_command_cla_80(card, ins, p1, p2, lc, data, ret, ret_len);
 	default:
-		return emu_command_cla_not_supported(card, ins, p1, p2, ret, ret_len);
+		return emu_command_cla_not_supported(card, ins, p1, p2, lc, data, ret, ret_len);
 	}
 }
