@@ -108,13 +108,19 @@ static struct emv_pk *get_ca_pk(struct tlvdb *db)
 				pk->mlen * 8);
 		if (emv_pk_verify(pk)) {
 			printf("OK\n");
+			fclose(f);
+
 			return pk;
 		}
 
 		printf("Failed!\n");
 		emv_pk_free(pk);
+		fclose(f);
+
 		return NULL;
 	}
+
+	fclose(f);
 
 	return NULL;
 }

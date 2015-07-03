@@ -157,13 +157,19 @@ static struct emv_pk *get_ca_pk(struct tlvdb *db)
 				pk->mlen * 8);
 		if (emv_pk_verify(pk)) {
 			printf("OK\n");
+			fclose(f);
+
 			return pk;
 		}
 
 		printf("Failed!\n");
 		emv_pk_free(pk);
+		fclose(f);
+
 		return NULL;
 	}
+
+	fclose(f);
 
 	return NULL;
 }
@@ -323,6 +329,63 @@ int main(void)
 		printf("DDA verified OK (IDN %zd bytes long)!\n", idn_tlv->len);
 		tlvdb_add(s, idn_db);
 	}
+
+#define TAG(tag, len, value...) tlvdb_add(s, tlvdb_fixed(tag, len, (unsigned char[]){value}))
+	TAG(0x029f, 6, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
+	TAG(0x1a9f, 2, 0x06, 0x43);
+	TAG(0x95, 5, 0x00, 0x00, 0x00, 0x00, 0x00);
+	TAG(0x2a5f, 2, 0x06, 0x43);
+	TAG(0x9a, 3, 0x14, 0x09, 0x25);
+	TAG(0x9c, 1, 0x50);
+	TAG(0x379f, 4, 0x12, 0x34, 0x57, 0x79);
+	TAG(0x359f, 2, 0x23);
+	TAG(0x349f, 3, 0x1e, 0x03, 0x00);
+#undef TAG
+
+	/* Generate ARQC */
+	size_t crm_data_len;
+	unsigned char *crm_data;
+	crm_data = dol_process(tlvdb_get(s, 0x8c, NULL), s, &crm_data_len);
+	t = docmd(sc, 0x80, 0xae, 0x80, 0x00, crm_data_len, crm_data);
+	free(crm_data);
+	if ((e = tlvdb_get(t, 0x80, NULL)) != NULL) {
+		/* CID, ATC, AC, IAD */
+		const unsigned char ac_dol_value[] = {
+			0x9f, 0x27, 0x01, /* CID */
+			0x9f, 0x36, 0x02, /* ATC */
+			0x9f, 0x26, 0x08, /* AC */
+			0x9f, 0x10, 0x00, /* IAD */
+		};
+		const struct tlv ac_dol = {0x0, sizeof(ac_dol_value), ac_dol_value};
+		struct tlvdb *ac_db = dol_parse(&ac_dol, e->value, e->len);
+		tlvdb_add(s, t);
+		t = ac_db;
+	}
+	tlvdb_add(s, t);
+
+#define TAG(tag, len, value...) tlvdb_add(s, tlvdb_fixed(tag, len, (unsigned char[]){value}))
+	TAG(0x8a, 2, 'Z', '3');
+#undef TAG
+
+	/* Generate AAC */
+	crm_data = dol_process(tlvdb_get(s, 0x8d, NULL), s, &crm_data_len);
+	t = docmd(sc, 0x80, 0xae, 0x00, 0x00, crm_data_len, crm_data);
+	free(crm_data);
+	if ((e = tlvdb_get(t, 0x80, NULL)) != NULL) {
+		/* CID, ATC, AC, IAD */
+		const unsigned char ac_dol_value[] = {
+			0x9f, 0x27, 0x01, /* CID */
+			0x9f, 0x36, 0x02, /* ATC */
+			0x9f, 0x26, 0x08, /* AC */
+			0x9f, 0x10, 0x00, /* IAD */
+		};
+		const struct tlv ac_dol = {0x0, sizeof(ac_dol_value), ac_dol_value};
+		struct tlvdb *ac_db = dol_parse(&ac_dol, e->value, e->len);
+		tlvdb_add(s, t);
+		t = ac_db;
+	}
+	tlvdb_add(s, t);
+
 	emv_pk_free(pk);
 	emv_pk_free(issuer_pk);
 	emv_pk_free(icc_pk);
