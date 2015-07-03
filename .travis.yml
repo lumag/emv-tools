@@ -5,7 +5,10 @@ compiler:
 before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -y libpcsclite-dev libgcrypt11-dev
-script: autoreconf -vfi && mkdir -p build && cd build && ../configure --enable-scard-emu && make && make check
+env:
+  - GCRYPT=yes NETTLE=no
+  - GCRYPT=no NETTLE=yes
+script: autoreconf -vfi && mkdir -p build && cd build && ../configure --enable-scard-emu --enable-crypto-libgcrypt=${GCRYPT} --enable-crypto-nettle=${NETTLE} && make && make check
 before_deploy:
   - cd build && make distcheck
   - export RELEASE_PKG_FILE=$(ls *.tar.*)
