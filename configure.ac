@@ -52,6 +52,11 @@ AC_ARG_ENABLE([scard-pcsc],
 			      [enable_scard_pcsc=yes])
 AS_IF([test "x$enable_scard_pcsc" != "xno"],
       [PKG_CHECK_MODULES([PCSC], [libpcsclite])
+       if test "x$OPENEMV_REQUIRES_PRIVATE" = "x"; then
+	       OPENEMV_REQUIRES_PRIVATE="Requires.private: libpcsclite"
+       else
+	       OPENEMV_REQUIRES_PRIVATE="${OPENEMV_REQUIRES_PRIVATE}, libpcsclite"
+       fi
        AC_DEFINE([ENABLE_SCARD_PCSC], [1], [Define if you enable PCSC smart card interface])])
 AM_CONDITIONAL([SCARD_PCSC], [test "x$enable_scard_pcsc" != "xno"])
 
@@ -71,6 +76,7 @@ AC_ARG_ENABLE([crypto-libgcrypt],
 			    [with_libgcrypt=yes])
 AS_IF([test "x$enable_crypto_libgcrypt" != "xno"],
       [AM_PATH_LIBGCRYPT
+       OPENEMV_LIBS_PRIVATE="${OPENEMV_LIBS_PRIVATE} ${LIBGCRYPT_LIBS}"
        AC_DEFINE([ENABLE_CRYPTO_LIBGCRYPT], [1], [Define if you enable libgcrypt crypto library])])
 AM_CONDITIONAL([CRYPTO_LIBGCRYPT], [test "x$enable_crypto_libgcrypt" != "xno"])
 
@@ -81,6 +87,11 @@ AC_ARG_ENABLE([crypto-nettle],
 			    [enable_nettle=yes])
 AS_IF([test "x$enable_crypto_nettle" != "xno"],
       [PKG_CHECK_MODULES([NETTLE], [hogweed nettle])
+       if test "x$OPENEMV_REQUIRES_PRIVATE" = "x"; then
+	       OPENEMV_REQUIRES_PRIVATE="Requires.private: hogweed, nettle"
+       else
+	       OPENEMV_REQUIRES_PRIVATE="${OPENEMV_REQUIRES_PRIVATE}, hogweed, nettle"
+       fi
        AC_DEFINE([ENABLE_CRYPTO_NETTLE], [1], [Define if you enable Nettle crypto library])])
 AM_CONDITIONAL([CRYPTO_NETTLE], [test "x$enable_crypto_nettle" != "xno"])
 
@@ -105,9 +116,12 @@ AC_FUNC_MALLOC
 AC_FUNC_REALLOC
 AC_CHECK_FUNCS([memset strdup])
 
+AC_SUBST(OPENEMV_LIBS_PRIVATE)
+AC_SUBST(OPENEMV_REQUIRES_PRIVATE)
 AC_CONFIG_FILES([
 		 Makefile
 		 lib/Makefile
+		 lib/openemv.pc
 		 lib/include/Makefile
 		 lib/crypto/Makefile
 		 lib/emu/Makefile

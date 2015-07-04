@@ -15,3 +15,10 @@ libopenemv_la_LIBADD = \
 	crypto/libcrypto.la \
 	emu/libemu.la \
 	scard/libscard.la
+
+# Pkg-config script.
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = openemv.pc
+DISTCLEANFILES = $(pkgconfig_DATA)
+
+openemv.pc: $(srcdir)/Makefile.in $(top_builddir)/config.status

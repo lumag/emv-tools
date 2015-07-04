@@ -1,0 +1,12 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+includedir=@includedir@
+libdir=@libdir@
+
+Name: openemv
+Description: The OpenEMV library
+Version: @PACKAGE_VERSION@
+Cflags: -I${includedir}
+Libs: -L${libdir} -lopenemv
+Libs.private: @OPENEMV_LIBS_PRIVATE@
+@OPENEMV_REQUIRES_PRIVATE@
