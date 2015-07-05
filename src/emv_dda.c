@@ -403,6 +403,19 @@ int main(void)
 				icc_pk->serial[1],
 				icc_pk->serial[2]
 				);
+	struct emv_pk *icc_pe_pk = emv_pki_recover_icc_pe_cert(issuer_pk, s);
+	if (icc_pe_pk)
+		printf("ICC PE PK recovered! RID %02hhx:%02hhx:%02hhx:%02hhx:%02hhx IDX %02hhx CSN %02hhx:%02hhx:%02hhx\n",
+				icc_pe_pk->rid[0],
+				icc_pe_pk->rid[1],
+				icc_pe_pk->rid[2],
+				icc_pe_pk->rid[3],
+				icc_pe_pk->rid[4],
+				icc_pe_pk->index,
+				icc_pe_pk->serial[0],
+				icc_pe_pk->serial[1],
+				icc_pe_pk->serial[2]
+				);
 	struct tlvdb *dac_db = emv_pki_recover_dac(issuer_pk, s, sda_data, sda_len);
 	if (dac_db) {
 		const struct tlv *dac_tlv = tlvdb_get(dac_db, 0x9f45, NULL);
@@ -419,10 +432,12 @@ int main(void)
 	/* Only PTC read should happen before VERIFY */
 	tlvdb_add(s, get_data(sc, 0x9f17));
 
-	if (!icc_pk)
-		verify_offline_clear(s, sc);
-	else
+	if (icc_pe_pk)
+		verify_offline_enc(s, sc, icc_pe_pk);
+	else if (icc_pk)
 		verify_offline_enc(s, sc, icc_pk);
+	else
+		verify_offline_clear(s, sc);
 
 #define TAG(tag, len, value...) tlvdb_add(s, tlvdb_fixed(tag, len, (unsigned char[]){value}))
 	TAG(0x029f, 6, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
@@ -483,6 +498,7 @@ int main(void)
 	emv_pk_free(pk);
 	emv_pk_free(issuer_pk);
 	emv_pk_free(icc_pk);
+	emv_pk_free(icc_pe_pk);
 
 	free(sda_data);
 
