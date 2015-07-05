@@ -25,30 +25,6 @@ static bool print_cb(void *data, const struct tlv *tlv)
 	return true;
 }
 
-static unsigned char *docmd_int(struct sc *sc,
-		unsigned char cla,
-		unsigned char ins,
-		unsigned char p1,
-		unsigned char p2,
-		size_t dlen,
-		const unsigned char *data,
-		unsigned short *sw,
-		size_t *outlen)
-{
-	unsigned char *outbuf;
-
-	printf("CMD: %02hhx %02hhx %02hhx %02hhx (%02zx)\n", cla, ins, p1, p2, dlen);
-	outbuf = sc_command(sc, cla, ins, p1, p2,
-			dlen, data, sw, outlen);
-	if (scard_is_error(sc)) {
-		printf("%s\n", scard_error(sc));
-		return NULL;
-	}
-	printf("response (%hx)\n", *sw);
-
-	return outbuf;
-}
-
 static struct tlvdb *docmd(struct sc *sc,
 		unsigned char cla,
 		unsigned char ins,
@@ -62,11 +38,12 @@ static struct tlvdb *docmd(struct sc *sc,
 	unsigned char *outbuf;
 	struct tlvdb *tlvdb = NULL;
 
-	outbuf = docmd_int(sc, cla, ins, p1, p2, dlen, data, &sw, &outlen);
+	outbuf = sc_command(sc, cla, ins, p1, p2, dlen, data, &sw, &outlen);
+	if (!outbuf)
+		return NULL;
 
-	if (sw == 0x9000) {
+	if (sw == 0x9000)
 		tlvdb = tlvdb_parse(outbuf, outlen);
-	}
 
 	free(outbuf);
 
@@ -82,7 +59,7 @@ static bool verify(struct sc *sc, uint8_t pb_type, const unsigned char *pb, size
 {
 	unsigned short sw;
 
-	docmd_int(sc, 0x00, 0x20, 0x00, pb_type, pb_len, pb, &sw, NULL);
+	sc_command(sc, 0x00, 0x20, 0x00, pb_type, pb_len, pb, &sw, NULL);
 
 	printf("PIN VERIFY, type %02hhx, SW %04hx\n", pb_type, sw);
 
@@ -166,7 +143,10 @@ static bool verify_offline_enc(struct tlvdb *db, struct sc *sc, struct emv_pk *p
 	size_t outlen;
 	unsigned char *outbuf;
 
-	outbuf = docmd_int(sc, 0x00, 0x84, 0x00, 0x00, 0, NULL, &sw, &outlen);
+	outbuf = sc_command(sc, 0x00, 0x84, 0x00, 0x00, 0, NULL, &sw, &outlen);
+	if (!outbuf)
+		return false;
+
 	if (sw != 0x9000)
 		return false;
 
@@ -335,7 +315,10 @@ int main(void)
 			size_t outlen;
 			unsigned char *outbuf;
 
-			outbuf = docmd_int(sc, 0x00, 0xb2, first, p2 | 0x04, 0, NULL, &sw, &outlen);
+			outbuf = sc_command(sc, 0x00, 0xb2, first, p2 | 0x04, 0, NULL, &sw, &outlen);
+			if (!outbuf)
+				return 1;
+
 			if (sw == 0x9000) {
 				t = tlvdb_parse(outbuf, outlen);
 				if (!t)

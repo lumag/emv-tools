@@ -24,30 +24,6 @@ static bool print_cb(void *data, const struct tlv *tlv)
 	return true;
 }
 
-static unsigned char *docmd_int(struct sc *sc,
-		unsigned char cla,
-		unsigned char ins,
-		unsigned char p1,
-		unsigned char p2,
-		size_t dlen,
-		const unsigned char *data,
-		unsigned short *sw,
-		size_t *outlen)
-{
-	unsigned char *outbuf;
-
-	printf("CMD: %02hhx %02hhx %02hhx %02hhx (%02zx)\n", cla, ins, p1, p2, dlen);
-	outbuf = sc_command(sc, cla, ins, p1, p2,
-			dlen, data, sw, outlen);
-	if (scard_is_error(sc)) {
-		printf("%s\n", scard_error(sc));
-		return NULL;
-	}
-	printf("response (%hx)\n", *sw);
-
-	return outbuf;
-}
-
 static struct tlvdb *docmd(struct sc *sc,
 		unsigned char cla,
 		unsigned char ins,
@@ -61,11 +37,12 @@ static struct tlvdb *docmd(struct sc *sc,
 	unsigned char *outbuf;
 	struct tlvdb *tlvdb = NULL;
 
-	outbuf = docmd_int(sc, cla, ins, p1, p2, dlen, data, &sw, &outlen);
+	outbuf = sc_command(sc, cla, ins, p1, p2, dlen, data, &sw, &outlen);
+	if (!outbuf)
+		return NULL;
 
-	if (sw == 0x9000) {
+	if (sw == 0x9000)
 		tlvdb = tlvdb_parse(outbuf, outlen);
-	}
 
 	free(outbuf);
 
@@ -201,7 +178,10 @@ int main(void)
 			size_t outlen;
 			unsigned char *outbuf;
 
-			outbuf = docmd_int(sc, 0x00, 0xb2, first, p2 | 0x04, 0, NULL, &sw, &outlen);
+			outbuf = sc_command(sc, 0x00, 0xb2, first, p2 | 0x04, 0, NULL, &sw, &outlen);
+			if (!outbuf)
+				return 1;
+
 			if (sw == 0x9000) {
 				t = tlvdb_parse(outbuf, outlen);
 				if (!t)
