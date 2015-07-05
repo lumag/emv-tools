@@ -287,7 +287,7 @@ static bool tlv_hash(void *data, const struct tlv *tlv)
 	size_t tag_len;
 	unsigned char *tag;
 
-	if (tlv->tag & 0x20)
+	if (tlv_is_constructed(tlv))
 		return true;
 
 	if (tlv_tag(tlv) == 0x9f4b)

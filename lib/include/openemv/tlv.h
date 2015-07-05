@@ -19,6 +19,11 @@ static inline tlv_tag_t tlv_tag(const struct tlv *tlv)
 		(tlv->tag >> 8) | (tlv->tag << 8);
 }
 
+static inline bool tlv_is_constructed(const struct tlv *tlv)
+{
+	return tlv->tag & 0x20;
+}
+
 struct tlvdb;
 typedef bool (*tlv_cb)(void *data, const struct tlv *tlv);
 

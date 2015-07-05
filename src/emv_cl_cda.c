@@ -18,7 +18,7 @@
 
 static bool print_cb(void *data, const struct tlv *tlv)
 {
-//	if (tlv->tag & 0x20) return true;
+//	if (tlv_is_constructed(tlv)) return true;
 	emv_tag_dump(tlv, stdout);
 	dump_buffer(tlv->value, tlv->len, stdout);
 	return true;
