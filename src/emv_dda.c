@@ -321,44 +321,45 @@ int main(void)
 			break; /* error */
 
 		for (; first <= last; first ++) {
-			if (p2 < (11 << 3)) {
-				t = docmd(sc, 0x00, 0xb2, first, p2 | 0x04, 0, NULL);
+			unsigned short sw;
+			size_t outlen;
+			unsigned char *outbuf;
+
+			outbuf = docmd_int(sc, 0x00, 0xb2, first, p2 | 0x04, 0, NULL, &sw, &outlen);
+			if (sw == 0x9000) {
+				t = tlvdb_parse(outbuf, outlen);
 				if (!t)
 					return 1;
-				if (sdarec) {
+			} else
+				return 1;
+
+			if (sdarec) {
+				const unsigned char *data;
+				size_t data_len;
+
+				if (p2 < (11 << 3)) {
 					const struct tlv *e = tlvdb_get(t, 0x70, NULL);
 					if (!e)
 						return 1;
-					sda_data = realloc(sda_data, sda_len + e->len);
-					memcpy(sda_data + sda_len, e->value, e->len);
-					sda_len += e->len;
-					sdarec --;
-				}
-			} else {
-				unsigned short sw;
-				size_t outlen;
-				unsigned char *outbuf;
-				outbuf = docmd_int(sc, 0x00, 0xb2, first, p2 | 0x04, 0, NULL, &sw, &outlen);
 
-				if (sw == 0x9000) {
-					t = tlvdb_parse(outbuf, outlen);
-					if (!t)
-						return 1;
-				} else
-					return 1;
-				if (sdarec) {
-					sda_data = realloc(sda_data, sda_len + outlen);
-					memcpy(sda_data + sda_len, outbuf, outlen);
-					sda_len += outlen;
-					sdarec --;
+					data = e->value;
+					data_len = e->len;
+				} else {
+					data = outbuf;
+					data_len = outlen;
 				}
 
-				free(outbuf);
+				sda_data = realloc(sda_data, sda_len + data_len);
+				memcpy(sda_data + sda_len, data, data_len);
+				sda_len += data_len;
+				sdarec --;
 			}
+
+			free(outbuf);
 			tlvdb_add(s, t);
 		}
-
 	}
+
 	const struct tlv *sdatl_tlv = tlvdb_get(s, 0x9f4a, NULL);
 	if (sdatl_tlv) {
 		const struct tlv *aip_tlv = tlvdb_get(s, 0x82, NULL);
