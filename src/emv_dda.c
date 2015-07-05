@@ -150,7 +150,6 @@ static bool verify_offline_enc(struct tlvdb *db, struct sc *sc, struct emv_pk *p
 	if (sw != 0x9000)
 		return false;
 
-	dump_buffer(outbuf, outlen, stdout);
 	if (outlen != 8)
 		return false;
 
