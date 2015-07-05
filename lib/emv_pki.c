@@ -12,6 +12,8 @@
 static const unsigned char empty_tlv_value[] = {};
 static const struct tlv empty_tlv = {.tag = 0x0, .len = 0, .value = empty_tlv_value};
 
+static size_t emv_pki_hash_psn[256] = { 0, 0, 11, 2, 17, 2, };
+
 static unsigned char *emv_pki_decode_message(const struct emv_pk *enc_pk,
 		uint8_t msgtype,
 		size_t *len,
@@ -47,8 +49,14 @@ static unsigned char *emv_pki_decode_message(const struct emv_pk *enc_pk,
 		return NULL;
 	}
 
+	size_t hash_pos = emv_pki_hash_psn[msgtype];
+	if (hash_pos == 0 || hash_pos > data_len){
+		free(data);
+		return NULL;
+	}
+
 	struct crypto_hash *ch;
-	ch = crypto_hash_open(enc_pk->hash_algo);
+	ch = crypto_hash_open(data[hash_pos]);
 	if (!ch) {
 		free(data);
 		return NULL;
