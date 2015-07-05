@@ -178,10 +178,14 @@ err:
 
 struct tlvdb *tlvdb_parse(const unsigned char *buf, size_t len)
 {
-	struct tlvdb_root *root = malloc(sizeof(*root) + len);
+	struct tlvdb_root *root;
 	const unsigned char *tmp;
 	size_t left;
 
+	if (!len || !buf)
+		return NULL;
+
+	root = malloc(sizeof(*root) + len);
 	root->len = len;
 	memcpy(root->buf, buf, len);
 
