@@ -89,9 +89,6 @@ int main(void)
 	unsigned char cmd4[] = {
 		0xa0, 0x00, 0x00, 0x00, 0x04, 0x10, 0x10,
 	};
-	unsigned char cmd5[] = {
-		0x83, 0x00,
-	};
 
 	sc = scard_init("pcsc");
 	if (!sc) {
@@ -119,7 +116,20 @@ int main(void)
 		s = docmd(sc, 0x00, 0xa4, 0x04, 0x00, sizeof(cmd4), cmd4);
 	if (!s)
 		return 1;
-	t = docmd(sc, 0x80, 0xa8, 0x00, 0x00, sizeof(cmd5), cmd5);
+
+	struct tlv pdol_data_tlv;
+	size_t pdol_data_len;
+	unsigned char *pdol_data;
+
+	pdol_data_tlv.tag = 0x83;
+	pdol_data_tlv.value = dol_process(tlvdb_get(s, 0x9f38, NULL), s, &pdol_data_tlv.len);
+	pdol_data = tlv_encode(&pdol_data_tlv, &pdol_data_len);
+	if (!pdol_data)
+		return 1;
+	free((unsigned char *)pdol_data_tlv.value);
+
+	t = docmd(sc, 0x80, 0xa8, 0x00, 0x00, pdol_data_len, pdol_data);
+	free(pdol_data);
 	if (!t)
 		return 1;
 	if ((e = tlvdb_get(t, 0x80, NULL)) != NULL) {
