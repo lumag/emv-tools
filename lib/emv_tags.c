@@ -86,7 +86,7 @@ static const struct emv_tag_bit EMV_TVR[] = {
 	EMV_BIT_FINISH,
 };
 
-static struct emv_tag emv_tags[] = {
+static const struct emv_tag emv_tags[] = {
 	{ 0x00  , "Unknown ???" },
 	{ 0x4f  , "Application Dedicated File (ADF) Name" },
 	{ 0x50  , "Application Label", EMV_TAG_STRING },
@@ -186,7 +186,7 @@ static int emv_tlv_compare(const void *a, const void *b)
 	return emv_sort_tag(tlv_tag(tlv)) - (emv_sort_tag(tag->tag));
 }
 
-static struct emv_tag *emv_get_tag(const struct tlv *tlv)
+static const struct emv_tag *emv_get_tag(const struct tlv *tlv)
 {
 	struct emv_tag *tag = bsearch(tlv, emv_tags, sizeof(emv_tags)/sizeof(emv_tags[0]),
 			sizeof(emv_tags[0]), emv_tlv_compare);
@@ -231,7 +231,7 @@ static void emv_tag_dump_dol(const struct tlv *tlv, const struct emv_tag *tag, F
 
 	while (left) {
 		struct tlv *doltlv;
-		struct emv_tag *doltag;
+		const struct emv_tag *doltag;
 
 		doltlv = tlv_parse_tl(&buf, &left);
 		if (!doltlv) {
@@ -404,7 +404,7 @@ bool emv_tag_dump(const struct tlv *tlv, FILE *f)
 		return false;
 	}
 
-	struct emv_tag *tag = emv_get_tag(tlv);
+	const struct emv_tag *tag = emv_get_tag(tlv);
 
 	fprintf(f, "Got tag %4hx len %02zx '%s':\n", tlv_tag(tlv), tlv->len, tag->name);
 
