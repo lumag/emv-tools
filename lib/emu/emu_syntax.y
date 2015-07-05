@@ -37,11 +37,11 @@ static int yyparse (yyscan_t scanner, const char *name, struct emu_card **pcard)
 %define api.pure true
 
 %printer { fprintf (yyoutput, "%s", $$ ); } STRING VALUE
-%printer { value_dump($$, yyoutput); } values
-%printer { property_dump($$, yyoutput); } properties property
+%printer { emu_value_dump($$, yyoutput); } values
+%printer { emu_property_dump($$, yyoutput); } properties property
 %destructor { free($$); } STRING VALUE
-%destructor { value_free($$); } values
-%destructor { property_free($$); } properties property
+%destructor { emu_value_free($$); } values
+%destructor { emu_property_free($$); } properties property
 %parse-param {yyscan_t scanner}
 %parse-param {const char *name}
 %parse-param {struct emu_card **pcard}
@@ -68,19 +68,19 @@ static void yyerror(YYLTYPE *yylloc, yyscan_t scanner, const char *name, struct 
 file: df { struct emu_card *card; if (yynerrs) YYABORT; card = card_new($1); if (!card) YYABORT; *pcard = card;}
     ;
 
-df: LBRACE properties RBRACE SEMICOLON { $$ = df_new($2); }
+df: LBRACE properties RBRACE SEMICOLON { $$ = emu_df_new($2); }
   ;
 
 properties: property {$$ = $1; }
-	  | properties property { $$ = property_append($1, $2); }
+	  | properties property { $$ = emu_property_append($1, $2); }
 	  | properties error {$$ = $1; }
 	;
 
-property: STRING EQ values SEMICOLON { $$ =  property_new($1, $3); }
+property: STRING EQ values SEMICOLON { $$ =  emu_property_new($1, $3); }
 	;
 
-values: VALUE { $$ = value_new($1); }
-      | values COMMA VALUE { $$ = value_append($1, value_new($3)); }
+values: VALUE { $$ = emu_value_new($1); }
+      | values COMMA VALUE { $$ = emu_value_append($1, emu_value_new($3)); }
 	;
 
 %%
@@ -100,7 +100,7 @@ static struct emu_card *card_new(struct emu_df *df)
 
 void card_free(struct emu_card *card)
 {
-	df_free(card->df);
+	emu_df_free(card->df);
 	free(card);
 }
 
@@ -147,7 +147,7 @@ const struct emu_df *card_get_df(const struct emu_card *card, const unsigned cha
 		return df;
 
 	size_t buf_len;
-	const unsigned char *buf = df_get_value(df, "name", 1, &buf_len);
+	const unsigned char *buf = emu_df_get_value(df, "name", 1, &buf_len);
 
 	if (len > buf_len)
 		return NULL;

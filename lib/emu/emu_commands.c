@@ -34,7 +34,7 @@ static uint16_t emu_command_verify(struct emu_card *card, uint8_t p1, uint8_t p2
 	if (!df)
 		return emu_error(card, ret, ret_len, 0x6a82);
 
-	pb = df_get_value(df, "pinblock", 1, &pb_len);
+	pb = emu_df_get_value(df, "pinblock", 1, &pb_len);
 	if (!pb || pb_len != 8)
 		return emu_error(card, ret, ret_len, 0x6a81);
 
@@ -61,7 +61,7 @@ static uint16_t emu_command_select(struct emu_card *card, uint8_t p1, uint8_t p2
 	if (!df)
 		return emu_error(card, ret, ret_len, 0x6a82);
 
-	*ret = df_get_value(df, "fci", 1, ret_len);
+	*ret = emu_df_get_value(df, "fci", 1, ret_len);
 	if (!*ret)
 		return emu_error(card, ret, ret_len, 0x6a80);
 
@@ -82,7 +82,7 @@ static uint16_t emu_command_read_record(struct emu_card *card, uint8_t p1, uint8
 
 	snprintf(tag, sizeof(tag), "sfi%d", p2 >> 3);
 
-	*ret = df_get_value(df, tag, p1, ret_len);
+	*ret = emu_df_get_value(df, tag, p1, ret_len);
 	if (!*ret)
 		// FIXME -- differentiate between record not present and hidden record
 		return emu_error(card, ret, ret_len, 0x6a80);
@@ -101,7 +101,7 @@ static uint16_t emu_command_emv_generate_ac(struct emu_card *card, uint8_t p1, u
 	if (!df)
 		return emu_error(card, ret, ret_len, 0x6a82);
 
-	*ret = df_get_value(df, "ac", 1, ret_len);
+	*ret = emu_df_get_value(df, "ac", 1, ret_len);
 	if (!*ret)
 		return emu_error(card, ret, ret_len, 0x6a80);
 
@@ -119,7 +119,7 @@ static uint16_t emu_command_emv_get_processing_options(struct emu_card *card, ui
 	if (!df)
 		return emu_error(card, ret, ret_len, 0x6a82);
 
-	*ret = df_get_value(df, "gpo", 1, ret_len);
+	*ret = emu_df_get_value(df, "gpo", 1, ret_len);
 	if (!*ret)
 		return emu_error(card, ret, ret_len, 0x6a80);
 
@@ -137,7 +137,7 @@ static uint16_t emu_command_emv_get_data(struct emu_card *card, uint8_t p1, uint
 
 	snprintf(tag, sizeof(tag), "data%02x%02x", p1, p2);
 
-	*ret = df_get_value(df, tag, 1, ret_len);
+	*ret = emu_df_get_value(df, tag, 1, ret_len);
 	if (!*ret)
 		return emu_error(card, ret, ret_len, 0x6a88);
 

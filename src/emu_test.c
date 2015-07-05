@@ -24,19 +24,19 @@ int main(int argc, char **argv)
 	if (!df)
 		return 1;
 
-	const struct emu_property *prop = df_get_property(df, "name");
+	const struct emu_property *prop = emu_df_get_property(df, "name");
 	if (!prop)
 		return 1;
 
-	const struct emu_value *value = property_get_value(prop, 1);
+	const struct emu_value *value = emu_property_get_value(prop, 1);
 	if (!value)
 		return 1;
 
 	size_t buf_len;
-	const unsigned char *buf = value_get(value, &buf_len);
+	const unsigned char *buf = emu_value_get(value, &buf_len);
 
 	dump_buffer(buf, buf_len, stdout);
-	buf = df_get_value(df, "name", 1, &buf_len);
+	buf = emu_df_get_value(df, "name", 1, &buf_len);
 	dump_buffer(buf, buf_len, stdout);
 
 	card_free(card);
