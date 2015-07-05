@@ -137,12 +137,16 @@ static bool verify_offline_clear(struct tlvdb *db, struct sc *sc)
 {
 	size_t pb_len;
 	unsigned char *pb;
+	bool ret;
 
 	pb = pinpad_enter(&pb_len);
 	if (!pb)
 		return false;
 
-	return verify(sc, 0x80, pb, pb_len);
+	ret = verify(sc, 0x80, pb, pb_len);
+	free(pb);
+
+	return ret;
 }
 
 static bool verify_offline_enc(struct tlvdb *db, struct sc *sc, struct emv_pk *pk)
@@ -179,6 +183,7 @@ static bool verify_offline_enc(struct tlvdb *db, struct sc *sc, struct emv_pk *p
 	/* Should be random */
 	memset(pinbuf+17, 0x5a, pinbuf_len - 17);
 
+	free(pb);
 	free(outbuf);
 
 	struct crypto_pk *kcp;
