@@ -77,5 +77,5 @@ err:
 	memset(inbuf, 0xff, sizeof(inbuf));
 	*plen = 0;
 
-	goto err;
+	return NULL;
 }
