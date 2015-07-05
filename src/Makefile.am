@@ -1,4 +1,4 @@
-AM_CFLAGS = -DEMV_DATA_DIR="\"$(pkgdatadir)\"" -I$(srcdir)/../lib/include
+AM_CPPFLAGS = -DEMV_DATA_DIR="\"$(pkgdatadir)\"" -I$(srcdir)/../lib/include
 AM_LDFLAGS = -Wl,--as-needed
 
 LDADD = ../lib/libopenemv.la
