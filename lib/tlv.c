@@ -206,6 +206,11 @@ err:
 	return NULL;
 }
 
+static void tlv_set_tag(struct tlv *tlv, tlv_tag_t tag)
+{
+	tlv->tag = tag < 0x100 ? tag : (tag >> 8) | (tag << 8);
+}
+
 struct tlvdb *tlvdb_fixed(tlv_tag_t tag, size_t len, const unsigned char *value)
 {
 	struct tlvdb_root *root = malloc(sizeof(*root) + len);
@@ -214,7 +219,7 @@ struct tlvdb *tlvdb_fixed(tlv_tag_t tag, size_t len, const unsigned char *value)
 	memcpy(root->buf, value, len);
 
 	root->db.parent = root->db.next = root->db.children = NULL;
-	root->db.tag.tag = tag;
+	tlv_set_tag(&root->db.tag, tag);
 	root->db.tag.len = len;
 	root->db.tag.value = root->buf;
 

@@ -246,7 +246,7 @@ struct tlvdb *emv_pki_recover_dac(const struct emv_pk *enc_pk, const struct tlvd
 	if (!data)
 		return NULL;
 
-	struct tlvdb *dac_db = tlvdb_fixed(0x459f, 2, data+3);
+	struct tlvdb *dac_db = tlvdb_fixed(0x9f45, 2, data+3);
 
 	free(data);
 
@@ -275,7 +275,7 @@ struct tlvdb *emv_pki_recover_idn(const struct emv_pk *enc_pk, const struct tlvd
 		return NULL;
 	}
 
-	struct tlvdb *idn_db = tlvdb_fixed(0x4c9f, idn_len, data + 5);
+	struct tlvdb *idn_db = tlvdb_fixed(0x9f4c, idn_len, data + 5);
 	free(data);
 
 	return idn_db;
@@ -352,7 +352,7 @@ struct tlvdb *emv_pki_perform_cda(const struct emv_pk *enc_pk, const struct tlvd
 		return NULL;
 	}
 
-	struct tlvdb *idn_db = tlvdb_fixed(0x4c9f, idn_len, data + 5);
+	struct tlvdb *idn_db = tlvdb_fixed(0x9f4c, idn_len, data + 5);
 	free(data);
 
 	return idn_db;

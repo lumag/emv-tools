@@ -107,7 +107,7 @@ struct tlvdb *dol_parse(const struct tlv *tlv, const unsigned char *data, size_t
 		if (cur_tlv->len == 0 && left == 0)
 			cur_tlv->len = res_len - pos;
 
-		struct tlvdb *tag_db = tlvdb_fixed(cur_tlv->tag, cur_tlv->len, data + pos);
+		struct tlvdb *tag_db = tlvdb_fixed(tlv_tag(cur_tlv), cur_tlv->len, data + pos);
 		if (!db)
 			db = tag_db;
 		else
