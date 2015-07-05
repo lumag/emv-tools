@@ -252,8 +252,11 @@ static struct emv_pk *get_ca_pk(struct tlvdb *db)
 int main(void)
 {
 	struct sc *sc;
-	unsigned char cmd4[] = {
+	unsigned char cmd3[] = {
 		0xa0, 0x00, 0x00, 0x00, 0x03, 0x10, 0x10,
+	};
+	unsigned char cmd4[] = {
+		0xa0, 0x00, 0x00, 0x00, 0x04, 0x10, 0x10,
 	};
 	unsigned char cmd5[] = {
 		0x83, 0x00,
@@ -277,7 +280,9 @@ int main(void)
 	struct tlvdb *s;
 	struct tlvdb *t;
 	const struct tlv *e;
-	s = docmd(sc, 0x00, 0xa4, 0x04, 0x00, sizeof(cmd4), cmd4);
+	s = docmd(sc, 0x00, 0xa4, 0x04, 0x00, sizeof(cmd3), cmd3);
+	if (!s)
+		s = docmd(sc, 0x00, 0xa4, 0x04, 0x00, sizeof(cmd4), cmd4);
 	if (!s)
 		return 1;
 	t = docmd(sc, 0x80, 0xa8, 0x00, 0x00, sizeof(cmd5), cmd5);
