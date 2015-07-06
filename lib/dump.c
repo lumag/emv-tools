@@ -10,6 +10,9 @@ void dump_buffer_simple(const unsigned char *ptr, size_t len, FILE *f)
 {
 	int i;
 
+	if (!f)
+		f = stdout;
+
 	for (i = 0; i < len; i ++)
 		fprintf(f, "%s%02hhx", i ? " " : "", ptr[i]);
 }
@@ -17,6 +20,9 @@ void dump_buffer_simple(const unsigned char *ptr, size_t len, FILE *f)
 void dump_buffer(const unsigned char *ptr, size_t len, FILE *f)
 {
 	int i, j;
+
+	if (!f)
+		f = stdout;
 
 	for (i = 0; i < len; i += 16) {
 		fprintf(f, "\t%02x:", i);
