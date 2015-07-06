@@ -14,7 +14,7 @@ void dump_buffer_simple(const unsigned char *ptr, size_t len, FILE *f)
 		f = stdout;
 
 	for (i = 0; i < len; i ++)
-		fprintf(f, "%s%02hhx", i ? " " : "", ptr[i]);
+		fprintf(f, "%s%02hhX", i ? " " : "", ptr[i]);
 }
 
 void dump_buffer(const unsigned char *ptr, size_t len, FILE *f)
