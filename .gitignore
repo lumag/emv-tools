@@ -34,5 +34,6 @@ src/emu_test
 src/emv_dda
 src/emv_cl_cda
 src/emv_dump
+src/emv_dump_emu
 src/capk-verify
 src/tlv-test
