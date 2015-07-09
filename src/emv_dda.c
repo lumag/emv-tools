@@ -233,15 +233,20 @@ static struct emv_pk *get_ca_pk(struct tlvdb *db)
 	return NULL;
 }
 
+const struct {
+	size_t name_len;
+	const unsigned char name[16];
+} apps[] = {
+	{ 7, {0xa0, 0x00, 0x00, 0x00, 0x03, 0x10, 0x10, }},
+	{ 7, {0xa0, 0x00, 0x00, 0x00, 0x03, 0x20, 0x10, }},
+	{ 7, {0xa0, 0x00, 0x00, 0x00, 0x04, 0x10, 0x10, }},
+	{ 0, {}},
+};
+
 int main(void)
 {
+	int i;
 	struct sc *sc;
-	unsigned char cmd3[] = {
-		0xa0, 0x00, 0x00, 0x00, 0x03, 0x10, 0x10,
-	};
-	unsigned char cmd4[] = {
-		0xa0, 0x00, 0x00, 0x00, 0x04, 0x10, 0x10,
-	};
 
 	if (!crypto_be_init())
 		exit(2);
@@ -261,9 +266,11 @@ int main(void)
 	struct tlvdb *s;
 	struct tlvdb *t;
 	const struct tlv *e;
-	s = docmd(sc, 0x00, 0xa4, 0x04, 0x00, sizeof(cmd3), cmd3);
-	if (!s)
-		s = docmd(sc, 0x00, 0xa4, 0x04, 0x00, sizeof(cmd4), cmd4);
+	for (i = 0, s = NULL; apps[i].name_len != 0; i++) {
+		s = docmd(sc, 0x00, 0xa4, 0x04, 0x00, apps[i].name_len, apps[i].name);
+		if (s)
+			break;
+	}
 	if (!s)
 		return 1;
 
@@ -297,7 +304,7 @@ int main(void)
 	e = tlvdb_get(s, 0x94, NULL);
 	if (!e)
 		return 1;
-	int i;
+
 	unsigned char *sda_data = NULL;
 	size_t sda_len = 0;
 	for (i = 0; i < e->len; i += 4) {

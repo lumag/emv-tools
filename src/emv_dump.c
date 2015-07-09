@@ -52,20 +52,20 @@ static struct tlvdb *get_data(struct sc *sc, tlv_tag_t tag)
 	return docmd(sc, 0x80, 0xca, tag >> 8, tag & 0xff, 0, NULL);
 }
 
+const struct {
+	size_t name_len;
+	const unsigned char name[16];
+} apps[] = {
+	{ 7, {0xa0, 0x00, 0x00, 0x00, 0x03, 0x10, 0x10, }},
+	{ 7, {0xa0, 0x00, 0x00, 0x00, 0x03, 0x20, 0x10, }},
+	{ 7, {0xa0, 0x00, 0x00, 0x00, 0x04, 0x10, 0x10, }},
+	{ 0, {}},
+};
+
 int main(void)
 {
+	int i;
 	struct sc *sc;
-#if 0
-	unsigned char cmd1[] = {
-		0x31, 0x50, 0x41, 0x59, 0x2e, 0x53, 0x59, 0x53, 0x2e, 0x44, 0x44, 0x46, 0x30, 0x31,
-	};
-#endif
-	unsigned char cmd3[] = {
-		0xa0, 0x00, 0x00, 0x00, 0x03, 0x10, 0x10,
-	};
-	unsigned char cmd4[] = {
-		0xa0, 0x00, 0x00, 0x00, 0x04, 0x10, 0x10,
-	};
 
 	sc = scard_init("pcsc");
 	if (!sc) {
@@ -79,18 +79,14 @@ int main(void)
 		return 1;
 	}
 
-#if 0
-	tlv_free(docmd(sc, 0x00, 0xa4, 0x04, 0x00, sizeof(cmd1), cmd1));
-	tlv_free(docmd(sc, 0x00, 0xb2, 0x01, (0x01 << 3) | 0x04, 0, NULL));
-	tlv_free(docmd(sc, 0x00, 0xb2, 0x02, (0x01 << 3) | 0x04, 0, NULL));
-#endif
-
 	struct tlvdb *s;
 	struct tlvdb *t;
 	const struct tlv *e;
-	s = docmd(sc, 0x00, 0xa4, 0x04, 0x00, sizeof(cmd3), cmd3);
-	if (!s)
-		s = docmd(sc, 0x00, 0xa4, 0x04, 0x00, sizeof(cmd4), cmd4);
+	for (i = 0, s = NULL; apps[i].name_len != 0; i++) {
+		s = docmd(sc, 0x00, 0xa4, 0x04, 0x00, apps[i].name_len, apps[i].name);
+		if (s)
+			break;
+	}
 	if (!s)
 		return 1;
 
@@ -124,7 +120,6 @@ int main(void)
 	e = tlvdb_get(s, 0x94, NULL);
 	if (!e)
 		return 1;
-	int i;
 	for (i = 0; i < e->len; i += 4) {
 		unsigned char p2 = e->value[i + 0];
 		unsigned char first = e->value[i + 1];
