@@ -31,7 +31,7 @@ static void scard_emu_connect(struct sc *_sc, unsigned idx)
 	if (idx || sc->card)
 		scard_raise_error(_sc, SCARD_PARAMETER);
 
-	sc->card = card_parse("emu/visa.emu");
+	sc->card = card_parse("src/maestro.emu");
 	if (!sc->card) {
 		scard_raise_error(_sc, SCARD_CARD);
 		return;
