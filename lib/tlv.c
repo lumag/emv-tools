@@ -51,7 +51,8 @@ static tlv_tag_t tlv_parse_tag(const unsigned char **buf, size_t *len)
 	if (*len == 0)
 		return TLV_TAG_INVALID;
 
-	tag |= **buf << 8;
+	tag <<= 8;
+	tag |= **buf;
 	--*len;
 	++*buf;
 
@@ -134,7 +135,7 @@ static bool tlvdb_parse_one(struct tlvdb *tlvdb,
 	*tmp += tlvdb->tag.len;
 	*left -= tlvdb->tag.len;
 
-	if ((tlvdb->tag.tag & TLV_TAG_COMPLEX) && (tlvdb->tag.len != 0)) {
+	if (tlv_is_constructed(&tlvdb->tag) && (tlvdb->tag.len != 0)) {
 		tlvdb->children = tlvdb_parse_children(tlvdb);
 		if (!tlvdb->children)
 			goto err;
@@ -206,11 +207,6 @@ err:
 	return NULL;
 }
 
-static void tlv_set_tag(struct tlv *tlv, tlv_tag_t tag)
-{
-	tlv->tag = tag < 0x100 ? tag : (tag >> 8) | (tag << 8);
-}
-
 struct tlvdb *tlvdb_fixed(tlv_tag_t tag, size_t len, const unsigned char *value)
 {
 	struct tlvdb_root *root = malloc(sizeof(*root) + len);
@@ -219,7 +215,7 @@ struct tlvdb *tlvdb_fixed(tlv_tag_t tag, size_t len, const unsigned char *value)
 	memcpy(root->buf, value, len);
 
 	root->db.parent = root->db.next = root->db.children = NULL;
-	tlv_set_tag(&root->db.tag, tag);
+	root->db.tag.tag = tag;
 	root->db.tag.len = len;
 	root->db.tag.value = root->buf;
 
@@ -320,8 +316,8 @@ unsigned char *tlv_encode(const struct tlv *tlv, size_t *len)
 	pos = 0;
 
 	if (tlv->tag > 0x100) {
-		data[pos++] = tlv->tag & 0xff;
 		data[pos++] = tlv->tag >> 8;
+		data[pos++] = tlv->tag & 0xff;
 	} else
 		data[pos++] = tlv->tag;
 

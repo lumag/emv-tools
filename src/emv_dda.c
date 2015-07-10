@@ -67,7 +67,7 @@ static bool verify(struct sc *sc, uint8_t pb_type, const unsigned char *pb, size
 }
 
 static const unsigned char default_ddol_value[] = {0x9f, 0x37, 0x04};
-static struct tlv default_ddol_tlv = {.tag = 0x499f, .len = 3, .value = default_ddol_value };
+static struct tlv default_ddol_tlv = {.tag = 0x9f49, .len = 3, .value = default_ddol_value };
 
 static struct tlvdb *perform_dda(const struct emv_pk *pk, const struct tlvdb *db, struct sc *sc)
 {

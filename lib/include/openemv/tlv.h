@@ -15,13 +15,13 @@ struct tlv {
 
 static inline tlv_tag_t tlv_tag(const struct tlv *tlv)
 {
-	return tlv->tag < 0x100 ? tlv->tag :
-		(tlv->tag >> 8) | (tlv->tag << 8);
+	return tlv->tag;
 }
 
 static inline bool tlv_is_constructed(const struct tlv *tlv)
 {
-	return tlv->tag & 0x20;
+	return tlv->tag < 0x100 ? tlv->tag & 0x20 :
+		tlv->tag & 0x2000;
 }
 
 struct tlvdb;
