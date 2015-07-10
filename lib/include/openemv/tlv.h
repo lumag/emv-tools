@@ -13,12 +13,6 @@ struct tlv {
 	const unsigned char *value;
 };
 
-static inline bool tlv_is_constructed(const struct tlv *tlv)
-{
-	return tlv->tag < 0x100 ? tlv->tag & 0x20 :
-		tlv->tag & 0x2000;
-}
-
 struct tlvdb;
 typedef bool (*tlv_cb)(void *data, const struct tlv *tlv);
 
@@ -33,5 +27,6 @@ const struct tlv *tlvdb_get(const struct tlvdb *tlvdb, tlv_tag_t tag, const stru
 
 struct tlv *tlv_parse_tl(const unsigned char **buf, size_t *len);
 unsigned char *tlv_encode(const struct tlv *tlv, size_t *len);
+bool tlv_is_constructed(const struct tlv *tlv);
 
 #endif

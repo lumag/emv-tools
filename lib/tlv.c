@@ -333,3 +333,8 @@ unsigned char *tlv_encode(const struct tlv *tlv, size_t *len)
 	*len = pos;
 	return data;
 }
+
+bool tlv_is_constructed(const struct tlv *tlv)
+{
+	return (tlv->tag < 0x100 ? tlv->tag : tlv->tag >> 8) & TLV_TAG_COMPLEX;
+}
