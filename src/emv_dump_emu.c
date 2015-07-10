@@ -104,11 +104,10 @@ int main(int argc, char **argv)
 
 	outbuf = sc_command(sc, 0x80, 0xa8, 0x00, 0x00, pdol_data_len, pdol_data, &sw, &outlen);
 	free(pdol_data);
-	if (sw != 0x9000)
-		return 0;
-
-	write_property(f, "gpo", outbuf, outlen);
-	free(outbuf);
+	if (sw == 0x9000) {
+		write_property(f, "gpo", outbuf, outlen);
+		free(outbuf);
+	}
 
 	fprintf(f, "\n");
 
