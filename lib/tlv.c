@@ -282,7 +282,7 @@ const struct tlv *tlvdb_get(const struct tlvdb *tlvdb, tlv_tag_t tag, const stru
 
 
 	while (tlvdb) {
-		if (tlv_tag(&tlvdb->tag) == tag)
+		if (tlvdb->tag.tag == tag)
 			return &tlvdb->tag;
 
 		tlvdb = tlvdb_next(tlvdb);

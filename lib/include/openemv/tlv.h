@@ -13,11 +13,6 @@ struct tlv {
 	const unsigned char *value;
 };
 
-static inline tlv_tag_t tlv_tag(const struct tlv *tlv)
-{
-	return tlv->tag;
-}
-
 static inline bool tlv_is_constructed(const struct tlv *tlv)
 {
 	return tlv->tag < 0x100 ? tlv->tag & 0x20 :

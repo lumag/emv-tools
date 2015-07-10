@@ -183,7 +183,7 @@ static int emv_tlv_compare(const void *a, const void *b)
 	const struct tlv *tlv = a;
 	const struct emv_tag *tag = b;
 
-	return emv_sort_tag(tlv_tag(tlv)) - (emv_sort_tag(tag->tag));
+	return emv_sort_tag(tlv->tag) - (emv_sort_tag(tag->tag));
 }
 
 static const struct emv_tag *emv_get_tag(const struct tlv *tlv)
@@ -241,7 +241,7 @@ static void emv_tag_dump_dol(const struct tlv *tlv, const struct emv_tag *tag, F
 
 		doltag = emv_get_tag(doltlv);
 
-		fprintf(f, "\tTag %4hx len %02zx ('%s')\n", tlv_tag(doltlv), doltlv->len, doltag->name);
+		fprintf(f, "\tTag %4hx len %02zx ('%s')\n", doltlv->tag, doltlv->len, doltag->name);
 		free(doltlv);
 	}
 }
@@ -406,7 +406,7 @@ bool emv_tag_dump(const struct tlv *tlv, FILE *f)
 
 	const struct emv_tag *tag = emv_get_tag(tlv);
 
-	fprintf(f, "Got tag %4hx len %02zx '%s':\n", tlv_tag(tlv), tlv->len, tag->name);
+	fprintf(f, "Got tag %4hx len %02zx '%s':\n", tlv->tag, tlv->len, tag->name);
 
 	switch (tag->type) {
 	case EMV_TAG_GENERIC:

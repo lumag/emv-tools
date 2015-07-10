@@ -290,7 +290,7 @@ static bool tlv_hash(void *data, const struct tlv *tlv)
 	if (tlv_is_constructed(tlv))
 		return true;
 
-	if (tlv_tag(tlv) == 0x9f4b)
+	if (tlv->tag == 0x9f4b)
 		return true;
 
 	tag = tlv_encode(tlv, &tag_len);
