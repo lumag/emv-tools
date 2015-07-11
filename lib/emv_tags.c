@@ -68,6 +68,7 @@ static const struct emv_tag_bit EMV_TVR[] = {
 	{ EMV_BIT(1, 5), "Card appears on terminal exception file" },
 	{ EMV_BIT(1, 4), "DDA failed" },
 	{ EMV_BIT(1, 3), "CDA failed" },
+	{ EMV_BIT(1, 2), "SDA selected" },
 	{ EMV_BIT(2, 8), "ICC and terminal have different application versions" },
 	{ EMV_BIT(2, 7), "Expired application" },
 	{ EMV_BIT(2, 6), "Application not yet effective" },
