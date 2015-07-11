@@ -38,7 +38,12 @@ static const struct emv_tag_bit EMV_AIP[] = {
 	{ EMV_BIT(1, 5), "Cardholder verification is supported" },
 	{ EMV_BIT(1, 4), "Terminal risk management is to be performed" },
 	{ EMV_BIT(1, 3), "Issuer authentication is supported" },
+	{ EMV_BIT(1, 2), "Reserved for use by the EMV Contactless Specifications" },
 	{ EMV_BIT(1, 1), "CDA supported" },
+	{ EMV_BIT(2, 8), "Reserved for use by the EMV Contactless Specifications" },
+	{ EMV_BIT(2, 7), "Reserved for use by the EMV Contactless Specifications" },
+	{ EMV_BIT(2, 6), "Reserved for use by the EMV Contactless Specifications" },
+	{ EMV_BIT(2, 1), "Reserved for use by the EMV Contactless Specifications" },
 	EMV_BIT_FINISH,
 };
 
@@ -83,6 +88,10 @@ static const struct emv_tag_bit EMV_TVR[] = {
 	{ EMV_BIT(5, 7), "Issuer authentication failed" },
 	{ EMV_BIT(5, 6), "Script processing failed before final GENERATE AC" },
 	{ EMV_BIT(5, 5), "Script processing failed after final GENERATE AC" },
+	{ EMV_BIT(5, 4), "Reserved for use by the EMV Contactless Specifications" },
+	{ EMV_BIT(5, 3), "Reserved for use by the EMV Contactless Specifications" },
+	{ EMV_BIT(5, 2), "Reserved for use by the EMV Contactless Specifications" },
+	{ EMV_BIT(5, 1), "Reserved for use by the EMV Contactless Specifications" },
 	EMV_BIT_FINISH,
 };
 
