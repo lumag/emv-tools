@@ -38,7 +38,8 @@ static void expand_value(YYSTYPE *yylval, char *text)
 %option prefix="emu_"
 %option outfile="lex.yy.c"
 
-%s value
+%x value
+%x comment
 
 HEXDIGIT [0-9A-Fa-f]
 
@@ -49,7 +50,12 @@ HEXDIGIT [0-9A-Fa-f]
 
 <value>{HEXDIGIT}{HEXDIGIT}  LOC_STEP; expand_value(yylval, yytext);
 \<	LOC_ITEM; BEGIN(value); init_value(yylval);
-\>	LOC_STEP; BEGIN(INITIAL); return VALUE;
+<value>\>	LOC_STEP; BEGIN(INITIAL); return VALUE;
+
+"/*"	LOC_STEP; BEGIN(comment);
+<comment>[^*\n]*	LOC_STEP; /* eat anything that's not a '*' */
+<comment>"*"+[^*/\n]*	LOC_STEP; /* eat up '*'s not followed by '/'s */
+<comment>"*"+"/"	LOC_ITEM; BEGIN(INITIAL);
 
 
 [a-z][a-z0-9]+  LOC_ITEM; yylval->str = strdup(yytext); return STRING;
