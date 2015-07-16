@@ -7,6 +7,7 @@
 #include "openemv/tlv.h"
 #include "openemv/dol.h"
 #include "openemv/dump.h"
+#include "openemv/emu_ast.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,16 +35,10 @@ const tlv_tag_t card_data[] = {
 	0,
 };
 
-static void write_property(FILE *f, const char *name, const unsigned char *buf, size_t len)
+static struct emu_df *read_df(FILE *f, struct sc *sc, const unsigned char *name, size_t name_len)
 {
-	fprintf(f, "\t%s = <", name);
-	dump_buffer_simple(buf, len, f);
-	fprintf(f, ">;\n");
-}
-
-static void dump_df(FILE *f, struct sc *sc, const unsigned char *name, size_t name_len)
-{
-	int i, j, k;
+	struct emu_df *df;
+	int i, j;
 	struct tlvdb *s;
 	unsigned short sw;
 	size_t outlen;
@@ -52,42 +47,44 @@ static void dump_df(FILE *f, struct sc *sc, const unsigned char *name, size_t na
 	size_t pdol_data_len;
 	unsigned char *pdol_data;
 
-
 	outbuf = sc_command(sc, 0x00, 0xa4, 0x04, 0x00, name_len, name, &sw, &outlen);
 	if (sw != 0x9000)
-		return;
+		return NULL;
 
 	s = tlvdb_parse(outbuf, outlen);
 	if (!s)
-		return;
+		return NULL;
+
+	df = emu_df_new();
 
 	pdol_data_tlv.tag = 0x83;
 	pdol_data_tlv.value = dol_process(tlvdb_get(s, 0x9f38, NULL), s, &pdol_data_tlv.len);
 	pdol_data = tlv_encode(&pdol_data_tlv, &pdol_data_len);
 	if (!pdol_data)
-		return;
+		return NULL;
 	free((unsigned char *)pdol_data_tlv.value);
 
 	tlvdb_free(s);
 
-	fprintf(f, "{\n");
+	emu_df_append(df, emu_property_new("name", emu_value_new_buf(name, name_len)));
 
-	write_property(f, "name", name, name_len);
-
-	write_property(f, "fci", outbuf, outlen);
+	emu_df_append(df, emu_property_new("fci", emu_value_new_buf(outbuf, outlen)));
 	free(outbuf);
 
 	outbuf = sc_command(sc, 0x80, 0xa8, 0x00, 0x00, pdol_data_len, pdol_data, &sw, &outlen);
 	free(pdol_data);
 	if (sw == 0x9000) {
-		write_property(f, "gpo", outbuf, outlen);
+		emu_df_append(df, emu_property_new("gpo", emu_value_new_buf(outbuf, outlen)));
 		free(outbuf);
 	}
 
-	fprintf(f, "\n");
-
 	for (i = 1; i < 31; i++) {
 		int last = 0;
+		struct emu_value *value = NULL;
+		char buf[7];
+
+		snprintf(buf, sizeof(buf), "sfi%d", i);
+
 		for (j = 1; j < 256; j++) {
 			outbuf = sc_command(sc, 0x00, 0xb2, j, (i << 3) | 4, 0, NULL, &sw, &outlen);
 			if (sw == 0x6985)
@@ -95,44 +92,30 @@ static void dump_df(FILE *f, struct sc *sc, const unsigned char *name, size_t na
 			else if (sw != 0x9000)
 				break;
 
-			if (last == 0) {
-				fprintf(f, "\tsfi%-2d = <", i);
-				last++;
-			}
+			for (; last < j - 1; last++)
+				value = emu_value_append(value, "");
 
-			for (; last < j; last++)
-				fprintf(f, ">,\n\t\t<");
-
-			for (k = 0; k < outlen; k += 16) {
-				dump_buffer_simple(outbuf + k,
-						k + 16 < outlen ? 16 : outlen - k,
-						f);
-				if (k + 16 < outlen)
-					fprintf(f, "\n\t\t ");
-			}
-
+			value = emu_value_append_buf(value, outbuf, outlen);
+			last ++;
 			free(outbuf);
 		}
-		if (last != 0)
-			fprintf(f, ">;\n");
+		if (value)
+			emu_df_append(df, emu_property_new(buf, value));
 	}
 
-	fprintf(f, "\n");
-
 	for (i = 0; card_data[i]; i++) {
+		char buf[10];
 		tlv_tag_t tag = card_data[i];
 		outbuf = sc_command(sc, 0x80, 0xca, tag >> 8, tag & 0xff, 0, NULL, &sw, &outlen);
 		if (sw != 0x9000)
 			continue;
 
-		fprintf(f, "\tdata%-4x = <", tag);
-		dump_buffer_simple(outbuf, outlen, f);
-		fprintf(f, ">;\n");
-
+		snprintf(buf, sizeof(buf), "data%x", tag);
+		emu_df_append(df, emu_property_new(buf, emu_value_new_buf(outbuf, outlen)));
 		free(outbuf);
 	}
 
-	fprintf(f, "};\n");
+	return df;
 }
 
 int main(int argc, char **argv)
@@ -140,6 +123,7 @@ int main(int argc, char **argv)
 	FILE *f;
 	int i;
 	struct sc *sc;
+	struct emu_fs *fs;
 
 	if (argc == 1 || !strcmp(argv[1], "-"))
 		f = stdout;
@@ -162,10 +146,15 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
+	fs = emu_fs_new();
 	for (i = 0; apps[i].name_len != 0; i++)
-		dump_df(f, sc, apps[i].name, apps[i].name_len);
+		emu_fs_append(fs, read_df(f, sc, apps[i].name, apps[i].name_len));
+
+	emu_fs_dump(fs, f);
 
 	fclose(f);
+
+	emu_fs_free(fs);
 
 	scard_disconnect(sc);
 	if (scard_is_error(sc)) {
