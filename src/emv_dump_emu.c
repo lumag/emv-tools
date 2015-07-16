@@ -16,10 +16,13 @@ const struct {
 	size_t name_len;
 	const unsigned char name[16];
 } apps[] = {
+	{14, {0x31, 0x50, 0x41, 0x59, 0x2E, 0x53, 0x59, 0x53, 0x2E, 0x44, 0x44, 0x46, 0x30, 0x31}},
 	{ 7, {0xa0, 0x00, 0x00, 0x00, 0x03, 0x10, 0x10, }},
 	{ 7, {0xa0, 0x00, 0x00, 0x00, 0x03, 0x20, 0x10, }},
+	{ 7, {0xa0, 0x00, 0x00, 0x00, 0x03, 0x80, 0x02, }},
 	{ 7, {0xa0, 0x00, 0x00, 0x00, 0x04, 0x10, 0x10, }},
 	{ 7, {0xa0, 0x00, 0x00, 0x00, 0x04, 0x30, 0x60, }},
+	{ 7, {0xa0, 0x00, 0x00, 0x00, 0x04, 0x80, 0x02, }},
 	{ 0, {}},
 };
 
@@ -38,66 +41,38 @@ static void write_property(FILE *f, const char *name, const unsigned char *buf, 
 	fprintf(f, ">;\n");
 }
 
-int main(int argc, char **argv)
+static void dump_df(FILE *f, struct sc *sc, const unsigned char *name, size_t name_len)
 {
-	FILE *f;
 	int i, j, k;
 	struct tlvdb *s;
-	struct sc *sc;
 	unsigned short sw;
 	size_t outlen;
 	unsigned char *outbuf;
-
-	if (argc == 1 || !strcmp(argv[1], "-"))
-		f = stdout;
-	else
-		f = fopen(argv[1], "w");
-	if (!f) {
-		perror("fopen");
-		return 1;
-	}
-
-	sc = scard_init("pcsc");
-	if (!sc) {
-		printf("Cannot init scard\n");
-		return 1;
-	}
-
-	scard_connect(sc, 0);
-	if (scard_is_error(sc)) {
-		printf("%s\n", scard_error(sc));
-		return 1;
-	}
-
-	for (i = 0; apps[i].name_len != 0; i++) {
-		outbuf = sc_command(sc, 0x00, 0xa4, 0x04, 0x00, apps[i].name_len, apps[i].name, &sw, &outlen);
-		if (sw == 0x9000)
-			break;
-	}
-
-	if (!apps[i].name_len)
-		return 1;
-
-	s = tlvdb_parse(outbuf, outlen);
-	if (!s)
-		return 1;
-
 	struct tlv pdol_data_tlv;
 	size_t pdol_data_len;
 	unsigned char *pdol_data;
+
+
+	outbuf = sc_command(sc, 0x00, 0xa4, 0x04, 0x00, name_len, name, &sw, &outlen);
+	if (sw != 0x9000)
+		return;
+
+	s = tlvdb_parse(outbuf, outlen);
+	if (!s)
+		return;
 
 	pdol_data_tlv.tag = 0x83;
 	pdol_data_tlv.value = dol_process(tlvdb_get(s, 0x9f38, NULL), s, &pdol_data_tlv.len);
 	pdol_data = tlv_encode(&pdol_data_tlv, &pdol_data_len);
 	if (!pdol_data)
-		return 1;
+		return;
 	free((unsigned char *)pdol_data_tlv.value);
 
 	tlvdb_free(s);
 
 	fprintf(f, "{\n");
 
-	write_property(f, "name", apps[i].name, apps[i].name_len);
+	write_property(f, "name", name, name_len);
 
 	write_property(f, "fci", outbuf, outlen);
 	free(outbuf);
@@ -158,6 +133,37 @@ int main(int argc, char **argv)
 	}
 
 	fprintf(f, "};\n");
+}
+
+int main(int argc, char **argv)
+{
+	FILE *f;
+	int i;
+	struct sc *sc;
+
+	if (argc == 1 || !strcmp(argv[1], "-"))
+		f = stdout;
+	else
+		f = fopen(argv[1], "w");
+	if (!f) {
+		perror("fopen");
+		return 1;
+	}
+
+	sc = scard_init("pcsc");
+	if (!sc) {
+		printf("Cannot init scard\n");
+		return 1;
+	}
+
+	scard_connect(sc, 0);
+	if (scard_is_error(sc)) {
+		printf("%s\n", scard_error(sc));
+		return 1;
+	}
+
+	for (i = 0; apps[i].name_len != 0; i++)
+		dump_df(f, sc, apps[i].name, apps[i].name_len);
 
 	fclose(f);
 
