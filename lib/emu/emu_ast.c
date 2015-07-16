@@ -23,7 +23,13 @@ struct emu_property {
 };
 
 struct emu_df {
-	struct emu_property *props;
+	struct emu_df *next;
+
+	struct emu_property *property;
+};
+
+struct emu_fs {
+	struct emu_df *df;
 };
 
 static unsigned char hexdigit(char c)
@@ -35,7 +41,7 @@ static unsigned char hexdigit(char c)
 	return c - '0';
 }
 
-struct emu_value *emu_value_new(char *buf)
+struct emu_value *emu_value_new(const char *buf)
 {
 	size_t i, len;
 	struct emu_value *v;
@@ -49,16 +55,14 @@ struct emu_value *emu_value_new(char *buf)
 	for (i = 0; i < len; i++)
 		v->value[i] = (hexdigit(buf[2*i]) << 4) | hexdigit(buf[2*i+1]);
 
-	free(buf);
-
 	return v;
 }
 
-struct emu_value *emu_value_append(struct emu_value *first, struct emu_value *add)
+static struct emu_value *emu_value_append_int(struct emu_value *value, struct emu_value *add)
 {
-	struct emu_value *p = first;
+	struct emu_value *p = value;
 
-	if (!first)
+	if (!p)
 		return add;
 
 	while (p->next)
@@ -66,148 +70,267 @@ struct emu_value *emu_value_append(struct emu_value *first, struct emu_value *ad
 
 	p->next = add;
 
-	return first;
+	return value;
 }
 
-void emu_value_free(struct emu_value *first)
+struct emu_value *emu_value_append(struct emu_value *value, const char *buf)
 {
-	struct emu_value *next;
+	return emu_value_append_int(value, emu_value_new(buf));
+}
 
-	while (first) {
-		next = first->next;
-		free(first);
-		first = next;
+struct emu_value *emu_value_new_buf(const unsigned char *buf, size_t len)
+{
+	struct emu_value *v;
+
+	v = malloc(sizeof(*v) + len);
+	v->len = len;
+	v->next = NULL;
+
+	memcpy(v->value, buf, len);
+
+	return v;
+}
+
+struct emu_value *emu_value_append_buf(struct emu_value *value, const unsigned char *buf, size_t len)
+{
+	return emu_value_append_int(value, emu_value_new_buf(buf, len));
+}
+
+void emu_value_free(struct emu_value *value)
+{
+	while (value) {
+		struct emu_value *next = value->next;
+
+		free(value);
+
+		value = next;
 	}
 }
 
-void emu_value_dump(const struct emu_value *first, FILE *f)
+static void emu_dump_buffer(const unsigned char *value, size_t len, FILE *f)
 {
-	if (!first) {
-		fprintf(f, "EMPTY");
+	size_t k;
+
+	for (k = 0; k < len; k += 16) {
+		dump_buffer_simple(value + k,
+				k + 16 < len ? 16 : len - k,
+				f);
+		if (k + 16 < len)
+			fprintf(f, "\n\t\t ");
+	}
+}
+
+void emu_value_dump(const struct emu_value *value, FILE *f)
+{
+	if (!value)
 		return;
-	}
 
 	fprintf(f, "<");
-	while (first->next) {
-		dump_buffer_simple(first->value, first->len, f);
-		fprintf(f, ">, <");
-		first = first->next;
+	while (value->next) {
+		emu_dump_buffer(value->value, value->len, f);
+		fprintf(f, ">,\n\t\t<");
+		value = value->next;
 	}
 
-	dump_buffer_simple(first->value, first->len, f);
+	emu_dump_buffer(value->value, value->len, f);
 	fprintf(f, ">");
 }
 
-const unsigned char *emu_value_get(const struct emu_value *v, size_t *plen)
+const unsigned char *emu_value_get(const struct emu_value *value, unsigned n, size_t *plen)
 {
-	if (!v) {
+	const struct emu_value *current;
+
+	for (current = value; --n && current; current = current->next)
+		;
+
+	if (!current) {
 		*plen = 0;
 
 		return NULL;
 	}
 
-	*plen = v->len;
+	*plen = current->len;
 
-	return v->value;
+	return current->value;
 }
 
-struct emu_property *emu_property_new(char *name, struct emu_value *value)
+struct emu_property *emu_property_new(const char *name, struct emu_value *value)
 {
-	struct emu_property *prop = malloc(sizeof(*prop));
+	struct emu_property *property = malloc(sizeof(*property));
 
-	prop->next = NULL;
-	prop->name = name;
-	prop->value = value;
+	property->next = NULL;
+	property->name = strdup(name);
+	property->value = value;
 
-	return prop;
+	return property;
 }
 
-struct emu_property *emu_property_append(struct emu_property *first, struct emu_property *add)
+void emu_property_dump(const struct emu_property *property, FILE *f)
 {
-	struct emu_property *p = first;
-
-	if (!first)
-		return add;
-
-	while (p->next)
-		p = p->next;
-
-	p->next = add;
-
-	return first;
-}
-
-void emu_property_dump(const struct emu_property *first, FILE *f)
-{
-	if (!first) {
-		fprintf(f, "EMPTY");
+	if (!property)
 		return;
-	}
 
-	while (first->next) {
-		fprintf(f, "\"%s\", ", first->name);
-		first = first->next;
-	}
-
-	fprintf(f, "\"%s\"", first->name);
+	fprintf(f, "%-5s = ", property->name);
+	emu_value_dump(property->value, f);
 }
 
-void emu_property_free(struct emu_property *first)
+void emu_property_free(struct emu_property *property)
 {
-	struct emu_property *next;
+	while (property) {
+		struct emu_property *next = property->next;
 
-	while (first) {
-		next = first->next;
+		free(property->name);
+		emu_value_free(property->value);
+		free(property);
 
-		free(first->name);
-		emu_value_free(first->value);
-		free(first);
-
-		first = next;
+		property = next;
 	}
 }
 
-const struct emu_value *emu_property_get_value(const struct emu_property *prop, unsigned n)
+const struct emu_value *emu_property_get_value(const struct emu_property *property)
 {
-	const struct emu_value *value;
-
-	if (!prop)
+	if (!property)
 		return NULL;
 
-	for (value = prop->value; --n && value; value = value->next)
-		;
-
-	return value;
+	return property->value;
 }
 
-struct emu_df *emu_df_new(struct emu_property *props)
+struct emu_df *emu_df_new(void)
 {
 	struct emu_df *df = malloc(sizeof(*df));
 
-	df->props = props;
+	df->property = NULL;
+	df->next = NULL;
 
 	return df;
 }
 
-void emu_df_free(struct emu_df *df)
+void emu_df_dump(const struct emu_df *df, FILE *f)
 {
+	struct emu_property *property;
+
 	if (!df)
 		return;
 
-	emu_property_free(df->props);
-	free(df);
+	fprintf(f, "{\n");
+	for (property = df->property; property; property = property->next) {
+		fprintf(f, "\t");
+		emu_property_dump(property, f);
+		fprintf(f, ";\n");
+	}
+
+	fprintf(f, "};\n");
+}
+
+void emu_df_free(struct emu_df *df)
+{
+	while (df) {
+		struct emu_df *next = df->next;
+
+		emu_property_free(df->property);
+		free(df);
+
+		df = next;
+	}
+}
+
+struct emu_df *emu_df_append(struct emu_df *df, struct emu_property *property)
+{
+	struct emu_property *p = df->property;
+
+	if (!p) {
+		df->property = property;
+		return df;
+	}
+
+	while (p->next)
+		p = p->next;
+
+	p->next = property;
+
+	return df;
 }
 
 const struct emu_property *emu_df_get_property(const struct emu_df *df, const char *name)
 {
-	const struct emu_property *prop;
+	const struct emu_property *property;
 
 	if (!df)
 		return NULL;
 
-	for (prop = df->props; prop; prop = prop->next)
-		if (!strcmp(prop->name, name))
-			return prop;
+	for (property = df->property; property; property = property->next)
+		if (!strcmp(property->name, name))
+			return property;
+
+	return NULL;
+}
+
+struct emu_fs *emu_fs_new(void)
+{
+	struct emu_fs *fs = malloc(sizeof(*fs));
+
+	fs->df = NULL;
+
+	return fs;
+}
+
+void emu_fs_dump(const struct emu_fs *fs, FILE *f)
+{
+	struct emu_df *df;
+
+	if (!fs)
+		return;
+
+	for (df = fs->df; df; df = df->next)
+		emu_df_dump(df, f);
+}
+
+void emu_fs_free(struct emu_fs *fs)
+{
+	if (!fs)
+		return;
+
+	emu_df_free(fs->df);
+	free(fs);
+}
+
+struct emu_fs *emu_fs_append(struct emu_fs *fs, struct emu_df *df)
+{
+	struct emu_df *p = fs->df;
+
+	if (!p) {
+		fs->df = df;
+		return fs;
+	}
+
+	while (p->next)
+		p = p->next;
+
+	p->next = df;
+
+	return fs;
+}
+
+const struct emu_df *emu_fs_get_df(const struct emu_fs *fs, const unsigned char *name, size_t len)
+{
+	struct emu_df *df;
+	size_t buf_len;
+	const unsigned char *buf;
+
+	if (len == 0)
+		return fs->df;
+
+	for (df = fs->df; df; df = df->next) {
+		buf = emu_df_get_value(df, "name", 1, &buf_len);
+
+		if (len > buf_len)
+			continue;
+
+		if (memcmp(buf, name, len))
+			continue;
+
+		return df;
+	}
 
 	return NULL;
 }

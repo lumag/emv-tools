@@ -4,18 +4,14 @@
 #endif
 
 #include "openemv/emu_ast.h"
-#include "openemv/emu_glue.h"
 
 #include <stdio.h>
 #include <string.h>
 
-struct emu_card {
-	struct emu_df *df;
-};
+//#define YYDEBUG 1
 
-static struct emu_card *card_new(struct emu_df *df);
 typedef void* yyscan_t;
-static int yyparse (yyscan_t scanner, const char *name, struct emu_card **pcard);
+static int yyparse (yyscan_t scanner, const char *name, struct emu_fs **pfs);
 #define yylex emu_lex
 
 %}
@@ -25,31 +21,32 @@ static int yyparse (yyscan_t scanner, const char *name, struct emu_card **pcard)
 	struct emu_value *val;
 	struct emu_property *prop;
 	struct emu_df *df;
+	struct emu_fs *fs;
 }
 
 %locations
 %token EQ LBRACE RBRACE SEMICOLON COMMA
 %token <str> STRING VALUE
 %type <val> values
-%type <prop> property properties
-%type <df> df
+%type <prop> property
+%type <df> df properties
+%type <fs> file
 
 %define api.pure true
 
 %printer { fprintf (yyoutput, "%s", $$ ); } STRING VALUE
 %printer { emu_value_dump($$, yyoutput); } values
-%printer { emu_property_dump($$, yyoutput); } properties property
+%printer { emu_property_dump($$, yyoutput); } property
+%printer { emu_df_dump($$, yyoutput); } properties df
+%printer { emu_fs_dump($$, yyoutput); } file
 %destructor { free($$); } STRING VALUE
 %destructor { emu_value_free($$); } values
-%destructor { emu_property_free($$); } properties property
+%destructor { emu_property_free($$); } property
+%destructor { emu_df_free($$); } properties df
 %parse-param {yyscan_t scanner}
 %parse-param {const char *name}
-%parse-param {struct emu_card **pcard}
+%parse-param {struct emu_fs **pfs}
 %lex-param {scanner}
-
-%code requires {
-struct emu_card;
-}
 
 %code provides {
 #include <stdio.h>
@@ -60,67 +57,45 @@ extern int emu_lex_destroy (yyscan_t yyscanner );
 }
 
 %code {
-static void yyerror(YYLTYPE *yylloc, yyscan_t scanner, const char *name, struct emu_card **pcard, char *msg);
+static void yyerror(YYLTYPE *yylloc, yyscan_t scanner, const char *name, struct emu_fs **pfs, char *msg);
 }
 
 %%
 
-file: df { struct emu_card *card; if (yynerrs) YYABORT; card = card_new($1); if (!card) YYABORT; *pcard = card;}
+file: /* empty */ { $$ = emu_fs_new(); if (!$$) YYABORT; *pfs = $$; }
+    | file df { if (yynerrs) YYABORT; $$ = emu_fs_append($1, $2); }
     ;
 
-df: LBRACE properties RBRACE SEMICOLON { $$ = emu_df_new($2); }
+df: LBRACE properties RBRACE SEMICOLON { $$ = $2; }
   ;
 
-properties: property {$$ = $1; }
-	  | properties property { $$ = emu_property_append($1, $2); }
-	  | properties error {$$ = $1; }
+properties: /* empty */ { $$ = emu_df_new(); if (!$$) YYABORT; }
+	  | properties property { $$ = emu_df_append($1, $2); }
+	  | properties error { $$ = $1; }
 	;
 
-property: STRING EQ values SEMICOLON { $$ =  emu_property_new($1, $3); }
+property: STRING EQ values SEMICOLON { $$ = emu_property_new($1, $3); free($1); }
 	;
 
-values: VALUE { $$ = emu_value_new($1); }
-      | values COMMA VALUE { $$ = emu_value_append($1, emu_value_new($3)); }
+values: VALUE { $$ = emu_value_new($1); free($1); }
+      | values COMMA VALUE { $$ = emu_value_append($1, $3); free($3); }
 	;
 
 %%
-static void yyerror(YYLTYPE *yylloc, yyscan_t scanner, const char *name, struct emu_card **pcard, char *msg)
+static void yyerror(YYLTYPE *yylloc, yyscan_t scanner, const char *name, struct emu_fs **pfs, char *msg)
 {
 	fprintf(stderr, "%s:%d:%d: %s\n", name, yylloc->first_line, yylloc->first_column, msg);
 }
 
-static struct emu_card *card_new(struct emu_df *df)
+struct emu_fs *emu_fs_parse(FILE *f, const char *fname)
 {
-	struct emu_card *card = malloc(sizeof(*card));
-
-	card->df = df;
-
-	return card;
-}
-
-void card_free(struct emu_card *card)
-{
-	emu_df_free(card->df);
-	free(card);
-}
-
-struct emu_card *card_parse(const char *fname)
-{
-	struct emu_card *card;
+	struct emu_fs *fs;
 	int ret;
-	FILE * f;
 	yyscan_t scanner;
 
-	if (!strcmp(fname, "-")) {
-		f = stdin;
-		fname = "<stdin>";
-	} else
-		f = fopen(fname, "r");
-
-	if (!f) {
-		perror("fopen");
-		return NULL;
-	}
+#if YYDEBUG
+	yydebug = 1;
+#endif
 
 	ret = emu_lex_init(&scanner);
 	if (ret) {
@@ -128,32 +103,11 @@ struct emu_card *card_parse(const char *fname)
 		return NULL;
 	}
 	emu_set_in(f, scanner);
-	ret = yyparse(scanner, fname, &card);
-	if (f != stdin)
-		fclose(f);
+	ret = yyparse(scanner, fname, &fs);
 	emu_lex_destroy(scanner);
 
 	if (ret)
 		return NULL;
 
-	return card;
-}
-
-const struct emu_df *card_get_df(const struct emu_card *card, const unsigned char *name, size_t len)
-{
-	struct emu_df *df = card->df;
-
-	if (len == 0)
-		return df;
-
-	size_t buf_len;
-	const unsigned char *buf = emu_df_get_value(df, "name", 1, &buf_len);
-
-	if (len > buf_len)
-		return NULL;
-
-	if (memcmp(buf, name, len))
-		return NULL;
-
-	return df;
+	return fs;
 }

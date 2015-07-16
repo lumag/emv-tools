@@ -20,7 +20,7 @@ static void scard_emu_shutdown(struct sc *_sc)
 	struct sc_emu *sc = container_of(_sc, struct sc_emu, sc);
 
 	if (sc->card)
-		card_free(sc->card);
+		emu_card_free(sc->card);
 	free(sc);
 }
 
@@ -31,7 +31,7 @@ static void scard_emu_connect(struct sc *_sc, unsigned idx)
 	if (idx || sc->card)
 		scard_raise_error(_sc, SCARD_PARAMETER);
 
-	sc->card = card_parse("src/maestro.emu");
+	sc->card = emu_card_parse("src/maestro.emu");
 	if (!sc->card) {
 		scard_raise_error(_sc, SCARD_CARD);
 		return;
@@ -47,7 +47,7 @@ static void scard_emu_disconnect(struct sc *_sc)
 
 	_sc->proto = SCARD_PROTO_INVALID;
 	_sc->error = SCARD_NO_ERROR;
-	card_free(sc->card);
+	emu_card_free(sc->card);
 	sc->card = NULL;
 }
 
