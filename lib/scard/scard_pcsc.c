@@ -72,6 +72,9 @@ static LONG _SCardGetReader(struct sc_pcsc *sc, unsigned idx, LPSTR *pReader)
 {
 	LPSTR r = sc->mszReaders;
 
+	if (!r)
+		return SCARD_E_UNKNOWN_READER;
+
 	while (idx && *r) {
 		r += strlen(r) + 1;
 		idx--;
