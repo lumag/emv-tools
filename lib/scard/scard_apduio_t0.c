@@ -256,7 +256,6 @@ static size_t scard_apduio_t0_transmit(struct sc *_sc,
 		unsigned char *outbuf, size_t outlen)
 {
 	struct sc_apduio_t0 *sc = container_of(_sc, struct sc_apduio_t0, sc);
-	unsigned short sw;
 	ssize_t ret;
 
 	if (outlen < 2 || inlen < 4) {
@@ -283,7 +282,6 @@ static size_t scard_apduio_t0_transmit(struct sc *_sc,
 		perror("recv");
 		return 0;
 	}
-	printf("Status: %2hhx\n", status);
 
 	return ret;
 }
