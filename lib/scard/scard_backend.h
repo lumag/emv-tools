@@ -35,4 +35,13 @@ static inline struct sc *scard_emu_init(void)
 }
 #endif
 
+#ifdef ENABLE_SCARD_APDUIO
+struct sc *scard_apduio_t0_init(void);
+#else
+static inline struct sc *scard_apduio_t0_init(void)
+{
+	return NULL;
+}
+#endif
+
 #endif

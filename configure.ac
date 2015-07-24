@@ -69,6 +69,15 @@ AS_IF([test "x$enable_scard_emu" != "xno"],
       [AC_DEFINE([ENABLE_SCARD_EMU], [1], [Define if you enable EMU smart card interface])])
 AM_CONDITIONAL([SCARD_EMU], [test "x$enable_scard_emu" != "xno"])
 
+AC_ARG_ENABLE([scard-apduio],
+	      [AS_HELP_STRING([--enable-scard-apduio],
+			      [disable support for apduiolated smart card interface])],
+			      [],
+			      [enable_scard_apduio=no])
+AS_IF([test "x$enable_scard_apduio" != "xno"],
+      [AC_DEFINE([ENABLE_SCARD_APDUIO], [1], [Define if you enable APDUIO smart card interface])])
+AM_CONDITIONAL([SCARD_APDUIO], [test "x$enable_scard_apduio" != "xno"])
+
 AC_ARG_ENABLE([crypto-libgcrypt],
 	    [AS_HELP_STRING([--disable-crypto-libgcrypt],
 			    [disable support for libgcrypt crypto library])],

@@ -17,3 +17,8 @@ if SCARD_EMU
 libscard_la_SOURCES += \
 	scard_emu.c
 endif
+
+if SCARD_APDUIO
+libscard_la_SOURCES += \
+	scard_apduio_t0.c
+endif
