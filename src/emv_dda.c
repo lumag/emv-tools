@@ -144,14 +144,10 @@ static bool verify_offline_enc(struct tlvdb *db, struct sc *sc, struct emv_pk *p
 	unsigned char *outbuf;
 
 	outbuf = sc_command(sc, 0x00, 0x84, 0x00, 0x00, 0, NULL, &sw, &outlen);
-	if (!outbuf)
+	if (sw != 0x9000 || !outbuf || outlen != 8) {
+		free(pb);
 		return false;
-
-	if (sw != 0x9000)
-		return false;
-
-	if (outlen != 8)
-		return false;
+	}
 
 	size_t pinbuf_len = pk->mlen;
 	unsigned char pinbuf[pinbuf_len];
