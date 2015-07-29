@@ -180,6 +180,9 @@ struct emu_card *emu_card_parse(const char *fname)
 	if (!card)
 		return NULL;
 
+	card->fs = NULL;
+	card->selected = NULL;
+
 	if (!strcmp(fname, "-")) {
 		f = stdin;
 		fname = "<stdin>";
@@ -188,6 +191,7 @@ struct emu_card *emu_card_parse(const char *fname)
 
 	if (!f) {
 		perror("fopen");
+		emu_card_free(card);
 		return NULL;
 	}
 
