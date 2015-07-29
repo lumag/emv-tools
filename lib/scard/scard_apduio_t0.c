@@ -163,6 +163,7 @@ static void scard_apduio_t0_connect(struct sc *_sc, unsigned idx)
 		return;
 	}
 
+	memset(&sa, 0, sizeof(sa));
 	sa.sin_family = AF_INET;
 	sa.sin_port = htons(9025);
 	ret = inet_aton("127.0.0.1", &sa.sin_addr);
