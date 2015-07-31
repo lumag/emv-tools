@@ -134,7 +134,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	sc = scard_init("pcsc");
+	sc = scard_init(NULL);
 	if (!sc) {
 		printf("Cannot init scard\n");
 		return 1;

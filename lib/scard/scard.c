@@ -2,6 +2,7 @@
 #include <config.h>
 #endif
 
+#include "openemv/config.h"
 #include "openemv/scard.h"
 #include "scard_backend.h"
 
@@ -9,7 +10,12 @@
 
 struct sc *scard_init(const char *driver)
 {
-	if (!strcmp(driver, "pcsc"))
+	if (!driver)
+		driver = openemv_config_get("scard.driver");
+
+	if (!driver)
+		return NULL;
+	else if (!strcmp(driver, "pcsc"))
 		return scard_pcsc_init();
 	else if (!strcmp(driver, "emu"))
 		return scard_emu_init();

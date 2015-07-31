@@ -68,7 +68,7 @@ int main(void)
 	int i;
 	struct sc *sc;
 
-	sc = scard_init("pcsc");
+	sc = scard_init(NULL);
 	if (!sc) {
 		printf("Cannot init scard\n");
 		return 1;

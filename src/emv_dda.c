@@ -248,7 +248,7 @@ int main(void)
 	if (!crypto_be_init())
 		exit(2);
 
-	sc = scard_init("pcsc");
+	sc = scard_init(NULL);
 	if (!sc) {
 		printf("Cannot init scard\n");
 		return 1;
