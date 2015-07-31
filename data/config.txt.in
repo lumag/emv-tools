@@ -1,0 +1,6 @@
+scard: {
+	driver = "pcsc";
+	emu: {
+		file = "@pkgdatadir@/maestro.txt";
+	};
+};

@@ -88,6 +88,7 @@ AC_CHECK_FUNCS([memset strdup])
 
 AC_CONFIG_FILES([
 		 Makefile
+		 data/Makefile
 		 lib/Makefile
 		 lib/openemv.pc
 		 lib/include/Makefile

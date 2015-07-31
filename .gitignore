@@ -27,6 +27,9 @@ Makefile
 /m4/*.m4
 /stamp-h1
 
+/data/config.txt
+/data/notinst.txt
+
 /lib/emu/emu_lex.c
 /lib/emu/emu_syntax.c
 /lib/emu/emu_syntax.h

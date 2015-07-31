@@ -1,0 +1,6 @@
+scard: {
+	driver = "emu";
+	emu: {
+		file = "@srcdir@/maestro.txt";
+	};
+};
