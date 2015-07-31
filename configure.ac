@@ -46,6 +46,9 @@ C_FLAG_CHECK([-Wmissing-prototypes])
 C_FLAG_CHECK([-Wformat=2])
 
 # Checks for libraries.
+PKG_CHECK_MODULES([CONFIG], [libconfig])
+OPENEMV_PRIVATE_PKG([libconfig])
+
 OPENEMV_MODULE([scard], [pcsc], [PCSC smart card interface], [yes],
       [PKG_CHECK_MODULES([PCSC], [libpcsclite])
        OPENEMV_PRIVATE_PKG([libpcsclite])])

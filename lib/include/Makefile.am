@@ -1,4 +1,5 @@
 nobase_include_HEADERS = \
+	openemv/config.h \
 	openemv/crypto.h \
 	openemv/dol.h \
 	openemv/dump.h \
