@@ -25,3 +25,17 @@ AM_CONDITIONAL(openemv_SUBSYS[_]openemv_NAME, [test "x$enable_$1_$2" != "xno"])d
 m4_popdef([openemv_NAME])dnl
 m4_popdef([openemv_SUBSYS])dnl
 m4_popdef([openemv_endis])])
+
+# OPENEMV_PRIVATE_PKG([pkgs])
+AC_DEFUN([OPENEMV_PRIVATE_PKG],
+[if test "x$OPENEMV_REQUIRES_PRIVATE" = "x"; then
+	OPENEMV_REQUIRES_PRIVATE="Requires.private: $1"
+else
+	OPENEMV_REQUIRES_PRIVATE="${OPENEMV_REQUIRES_PRIVATE}, $1"
+fi
+AC_SUBST([OPENEMV_REQUIRES_PRIVATE])])
+
+# OPENEMV_PRIVATE_LIBS([libs])
+AC_DEFUN([OPENEMV_PRIVATE_LIBS],
+[OPENEMV_LIBS_PRIVATE="${OPENEMV_LIBS_PRIVATE} $1"
+AC_SUBST([OPENEMV_LIBS_PRIVATE])])

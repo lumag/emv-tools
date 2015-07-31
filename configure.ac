@@ -47,11 +47,7 @@ C_FLAG_CHECK([-Wformat=2])
 # Checks for libraries.
 OPENEMV_MODULE([scard], [pcsc], [PCSC smart card interface], [yes],
       [PKG_CHECK_MODULES([PCSC], [libpcsclite])
-       if test "x$OPENEMV_REQUIRES_PRIVATE" = "x"; then
-	       OPENEMV_REQUIRES_PRIVATE="Requires.private: libpcsclite"
-       else
-	       OPENEMV_REQUIRES_PRIVATE="${OPENEMV_REQUIRES_PRIVATE}, libpcsclite"
-       fi])
+       OPENEMV_PRIVATE_PKG([libpcsclite])])
 
 OPENEMV_MODULE([scard], [emu], [emulated smart card interface], [no])
 
@@ -59,15 +55,11 @@ OPENEMV_MODULE([scard], [apduio], [APDUIO smart card interface], [no])
 
 OPENEMV_MODULE([crypto], [libgcrypt], [libgcrypt crypto library], [yes],
       [AM_PATH_LIBGCRYPT
-       OPENEMV_LIBS_PRIVATE="${OPENEMV_LIBS_PRIVATE} ${LIBGCRYPT_LIBS}"])
+       OPENEMV_PRIVATE_LIBS([${LIBGCRYPT_LIBS}])])
 
 OPENEMV_MODULE([crypto], [nettle], [nettle crypto library], [yes],
       [PKG_CHECK_MODULES([NETTLE], [hogweed nettle])
-       if test "x$OPENEMV_REQUIRES_PRIVATE" = "x"; then
-	       OPENEMV_REQUIRES_PRIVATE="Requires.private: hogweed, nettle"
-       else
-	       OPENEMV_REQUIRES_PRIVATE="${OPENEMV_REQUIRES_PRIVATE}, hogweed, nettle"
-       fi])
+       OPENEMV_PRIVATE_PKG([hogweed, nettle])])
 
 # Checks for header files.
 AC_FUNC_ALLOCA
@@ -90,8 +82,6 @@ AC_FUNC_MALLOC
 AC_FUNC_REALLOC
 AC_CHECK_FUNCS([memset strdup])
 
-AC_SUBST(OPENEMV_LIBS_PRIVATE)
-AC_SUBST(OPENEMV_REQUIRES_PRIVATE)
 AC_CONFIG_FILES([
 		 Makefile
 		 lib/Makefile
