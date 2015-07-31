@@ -2,6 +2,7 @@
 #include <config.h>
 #endif
 
+#include "openemv/config.h"
 #include "openemv/scard.h"
 #include "openemv/emu_glue.h"
 
@@ -27,11 +28,16 @@ static void scard_emu_shutdown(struct sc *_sc)
 static void scard_emu_connect(struct sc *_sc, unsigned idx)
 {
 	struct sc_emu *sc = container_of(_sc, struct sc_emu, sc);
+	const char *fname;
 
 	if (idx || sc->card)
 		scard_raise_error(_sc, SCARD_PARAMETER);
 
-	sc->card = emu_card_parse("src/maestro.emu");
+	fname = openemv_config_get("scard.emu.file");
+	if (!fname)
+		scard_raise_error(_sc, SCARD_CARD);
+
+	sc->card = emu_card_parse(fname);
 	if (!sc->card) {
 		scard_raise_error(_sc, SCARD_CARD);
 		return;

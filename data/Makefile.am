@@ -1,3 +1,5 @@
+dist_pkgdata_DATA = maestro.emu
+
 pkgsysconfdir = ${sysconfdir}/${PACKAGE}
 pkgsysconf_DATA = config.txt
 

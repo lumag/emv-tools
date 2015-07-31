@@ -8,4 +8,4 @@ check_PROGRAMS = tlv-test
 TESTS = tlv-test capk-verify
 TESTS_ENVIRONMENT = env CAPKFILE="$(srcdir)"/capk.txt
 
-dist_pkgdata_DATA = capk.txt maestro.emu
+dist_pkgdata_DATA = capk.txt
