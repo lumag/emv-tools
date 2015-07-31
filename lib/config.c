@@ -6,6 +6,7 @@
 
 #include <stdbool.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <libconfig.h>
 
 static config_t *_openemv_config;
@@ -23,6 +24,10 @@ static void openemv_init_config(void)
 		fname = OPENEMV_CONFIG_DIR "config.txt";
 	ret = config_read_file(config, fname);
 	if (ret != CONFIG_TRUE) {
+		fprintf(stderr, "%s:%d: %s\n",
+				config_error_file(config),
+				config_error_line(config),
+				config_error_text(config));
 		config_destroy(config);
 		free(config);
 	} else
