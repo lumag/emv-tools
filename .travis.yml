@@ -6,6 +6,7 @@ compiler:
 addons:
   apt:
     packages:
+      - libconfig-dev
       - libpcsclite-dev
       - libgcrypt11-dev
       - nettle-dev
