@@ -45,64 +45,29 @@ C_FLAG_CHECK([-Wmissing-prototypes])
 C_FLAG_CHECK([-Wformat=2])
 
 # Checks for libraries.
-AC_ARG_ENABLE([scard-pcsc],
-	      [AS_HELP_STRING([--disable-scard-pcsc],
-			      [disable support for PCSC smart card interface])],
-			      [],
-			      [enable_scard_pcsc=yes])
-AS_IF([test "x$enable_scard_pcsc" != "xno"],
+OPENEMV_MODULE([scard], [pcsc], [PCSC smart card interface], [yes],
       [PKG_CHECK_MODULES([PCSC], [libpcsclite])
        if test "x$OPENEMV_REQUIRES_PRIVATE" = "x"; then
 	       OPENEMV_REQUIRES_PRIVATE="Requires.private: libpcsclite"
        else
 	       OPENEMV_REQUIRES_PRIVATE="${OPENEMV_REQUIRES_PRIVATE}, libpcsclite"
-       fi
-       AC_DEFINE([ENABLE_SCARD_PCSC], [1], [Define if you enable PCSC smart card interface])])
-AM_CONDITIONAL([SCARD_PCSC], [test "x$enable_scard_pcsc" != "xno"])
+       fi])
 
-AC_ARG_ENABLE([scard-emu],
-	      [AS_HELP_STRING([--enable-scard-emu],
-			      [disable support for emulated smart card interface])],
-			      [],
-			      [enable_scard_emu=no])
-AS_IF([test "x$enable_scard_emu" != "xno"],
-      [AC_DEFINE([ENABLE_SCARD_EMU], [1], [Define if you enable EMU smart card interface])])
-AM_CONDITIONAL([SCARD_EMU], [test "x$enable_scard_emu" != "xno"])
+OPENEMV_MODULE([scard], [emu], [emulated smart card interface], [no])
 
-AC_ARG_ENABLE([scard-apduio],
-	      [AS_HELP_STRING([--enable-scard-apduio],
-			      [disable support for apduiolated smart card interface])],
-			      [],
-			      [enable_scard_apduio=no])
-AS_IF([test "x$enable_scard_apduio" != "xno"],
-      [AC_DEFINE([ENABLE_SCARD_APDUIO], [1], [Define if you enable APDUIO smart card interface])])
-AM_CONDITIONAL([SCARD_APDUIO], [test "x$enable_scard_apduio" != "xno"])
+OPENEMV_MODULE([scard], [apduio], [APDUIO smart card interface], [no])
 
-AC_ARG_ENABLE([crypto-libgcrypt],
-	    [AS_HELP_STRING([--disable-crypto-libgcrypt],
-			    [disable support for libgcrypt crypto library])],
-			    [],
-			    [with_libgcrypt=yes])
-AS_IF([test "x$enable_crypto_libgcrypt" != "xno"],
+OPENEMV_MODULE([crypto], [libgcrypt], [libgcrypt crypto library], [yes],
       [AM_PATH_LIBGCRYPT
-       OPENEMV_LIBS_PRIVATE="${OPENEMV_LIBS_PRIVATE} ${LIBGCRYPT_LIBS}"
-       AC_DEFINE([ENABLE_CRYPTO_LIBGCRYPT], [1], [Define if you enable libgcrypt crypto library])])
-AM_CONDITIONAL([CRYPTO_LIBGCRYPT], [test "x$enable_crypto_libgcrypt" != "xno"])
+       OPENEMV_LIBS_PRIVATE="${OPENEMV_LIBS_PRIVATE} ${LIBGCRYPT_LIBS}"])
 
-AC_ARG_ENABLE([crypto-nettle],
-	    [AS_HELP_STRING([--disable-crypto-nettle],
-			    [disable support for nettle crypto library])],
-			    [],
-			    [enable_nettle=yes])
-AS_IF([test "x$enable_crypto_nettle" != "xno"],
+OPENEMV_MODULE([crypto], [nettle], [nettle crypto library], [yes],
       [PKG_CHECK_MODULES([NETTLE], [hogweed nettle])
        if test "x$OPENEMV_REQUIRES_PRIVATE" = "x"; then
 	       OPENEMV_REQUIRES_PRIVATE="Requires.private: hogweed, nettle"
        else
 	       OPENEMV_REQUIRES_PRIVATE="${OPENEMV_REQUIRES_PRIVATE}, hogweed, nettle"
-       fi
-       AC_DEFINE([ENABLE_CRYPTO_NETTLE], [1], [Define if you enable Nettle crypto library])])
-AM_CONDITIONAL([CRYPTO_NETTLE], [test "x$enable_crypto_nettle" != "xno"])
+       fi])
 
 # Checks for header files.
 AC_FUNC_ALLOCA
