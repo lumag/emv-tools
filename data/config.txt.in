@@ -4,3 +4,5 @@ scard: {
 		file = "@pkgdatadir@/maestro.txt";
 	};
 };
+
+capk = "@pkgdatadir@/capk.txt";

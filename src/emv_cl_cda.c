@@ -11,6 +11,7 @@
 #include "openemv/dol.h"
 #include "openemv/emv_pki.h"
 #include "openemv/dump.h"
+#include "openemv/config.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -57,7 +58,8 @@ static struct emv_pk *get_ca_pk(struct tlvdb *db)
 	if (!df_tlv || !caidx_tlv || df_tlv->len < 6 || caidx_tlv->len != 1)
 		return NULL;
 
-	FILE *f = fopen("capk.txt", "r");
+	const char *fname = openemv_config_get("capk");
+	FILE *f = fopen(fname, "r");
 
 	if (!f) {
 		perror("fopen");

@@ -4,6 +4,7 @@
 
 #include "openemv/emv_pk.h"
 #include "openemv/crypto.h"
+#include "openemv/config.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,11 +21,7 @@ int main(int argc, char **argv) {
 	if (!crypto_be_init())
 		exit(2);
 
-	fname = argv[1];
-	if (!fname)
-		fname = getenv("CAPKFILE");
-	if (!fname)
-		fname = EMV_DATA_DIR "capk.txt";
+	fname = openemv_config_get("capk");
 
 	f = fopen(fname, "r");
 	if (!f) {
