@@ -9,6 +9,22 @@
 #include <stdio.h>
 #include <libconfig.h>
 
+#ifndef LIBCONFIG_VER_MAJOR
+static void openemv_config_error(const config_t *config)
+{
+	fprintf(stderr, "libconfig: %s\n",
+			config_error_text(config));
+}
+#else
+static void openemv_config_error(const config_t *config)
+{
+	fprintf(stderr, "%s:%d: %s\n",
+			config_error_file(config),
+			config_error_line(config),
+			config_error_text(config));
+}
+#endif
+
 static config_t *_openemv_config;
 
 static void openemv_init_config(void)
@@ -24,10 +40,7 @@ static void openemv_init_config(void)
 		fname = OPENEMV_CONFIG_DIR "config.txt";
 	ret = config_read_file(config, fname);
 	if (ret != CONFIG_TRUE) {
-		fprintf(stderr, "%s:%d: %s\n",
-				config_error_file(config),
-				config_error_line(config),
-				config_error_text(config));
+		openemv_config_error(config);
 		config_destroy(config);
 		free(config);
 	} else
