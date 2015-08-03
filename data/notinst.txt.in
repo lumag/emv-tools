@@ -1,7 +1,7 @@
 scard: {
 	driver = "emu";
 	emu: {
-		file = "@srcdir@/maestro.txt";
+		file = "@srcdir@/maestro.emu";
 	};
 };
 

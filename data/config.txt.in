@@ -1,7 +1,7 @@
 scard: {
 	driver = "pcsc";
 	emu: {
-		file = "@pkgdatadir@/maestro.txt";
+		file = "@pkgdatadir@/maestro.emu";
 	};
 };
 
