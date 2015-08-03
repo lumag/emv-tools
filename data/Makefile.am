@@ -1,6 +1,5 @@
 dist_pkgdata_DATA = capk.txt maestro.emu
 
-pkgsysconfdir = ${sysconfdir}/${PACKAGE}
 pkgsysconf_DATA = config.txt
 
 all-am: notinst.txt

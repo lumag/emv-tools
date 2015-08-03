@@ -86,6 +86,9 @@ AC_FUNC_MALLOC
 AC_FUNC_REALLOC
 AC_CHECK_FUNCS([memset socket strdup])
 
+pkgsysconfdir='${sysconfdir}/${PACKAGE}'
+AC_SUBST([pkgsysconfdir])
+
 AC_CONFIG_FILES([
 		 Makefile
 		 data/Makefile
