@@ -10,7 +10,54 @@ addons:
       - libpcsclite-dev
       - libgcrypt11-dev
       - nettle-dev
+
+# This project also uses Coverity Scan https://scan.coverity.com/
+# However, the Travis coverity scan addon (as of 19.02.2014) does not fit our needs,
+# because then all builds are done as covertiy scans and results send to the server.
+# Therefore we reused the old method
+# (setting environment variables, download and execute a script).
+
+# Thanks for the bareos for the idea on how to use Coverity Scan.
+
 env:
-  - GCRYPT=yes NETTLE=no
-  - GCRYPT=no NETTLE=yes
-script: autoreconf -vfi && mkdir -p build && cd build && ../configure --enable-scard-emu --enable-scard-apduio --enable-crypto-libgcrypt=${GCRYPT} --enable-crypto-nettle=${NETTLE} && make && make check
+  matrix:
+    - GCRYPT=yes NETTLE=no
+    - GCRYPT=no NETTLE=yes
+    - GCRYPT=yes NETTLE=yes COVERITY_SCAN=1
+  global:
+    # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
+    #   via the "travis encrypt" command using the project repo's public key
+    # -- BEGIN Coverity Scan ENV
+    # The build command with all of the arguments that you would apply to a manual `cov-build`
+    # Usually this is the same as STANDARD_BUILD_COMMAND, exluding the automated test arguments
+    - COVERITY_SCAN_BUILD_COMMAND="make"
+    # Name of the project
+    - COVERITY_SCAN_PROJECT_NAME="lumag/emv-tools"
+    # Email address for notifications related to this build
+    - COVERITY_SCAN_NOTIFICATION_EMAIL="dbaryshkov@gmail.com"
+    # Regular expression selects on which branches to run analysis
+    # Be aware of quotas. Do not run on every branch/commit
+    - COVERITY_SCAN_BRANCH_PATTERN="master"
+    # COVERITY_SCAN_TOKEN via "travis encrypt" using the repo's public key
+    - secure: "ZaKrdsHXIKWzdNx/zbIOD+n9uFLHv8vSl66MB9TidjNMpyVpHyXNk0ZtZ5LPmzOoW8g7QOKCNGqBv0Yv+PhvZYxQg3SzsKgco1Zd4mtPOiTKoRtHhJqTcjrWawjjlgoM4aRTxEQtbPHRn4Ci8FZIfMmmwHoi3QQPpmf8kRvk/XGALrwDo01FRCxYYmj/99KcXjvpeide2fQu8+46+4KmYMaX+ShAsm0/h6Gz9mgrGrhwyW6uLibiXv5rro8hDfGkEPS28HgAqtkprBxWGGVS7nl0sDTUFDKm0+NjjDwQZtYcRjbF/+ZO58RbKXHIV2eijaD0zU/PA5SHxjISkgdT6WsdLXxt45ol943ES5wbGSfDYhNrKr2QW7TioMvm+2otOEx+tU00nLpdaxPzoEhzPO+PfyWO9ELmzob6Lbn3j0DwBWYdSApCcUld6TMWpuhaGdY4Alg43qtPYU6MHCyEWVMW9WFMQuewAkH3Y/jmFUxQqa7NQmgWo53NmUmfEBSdeIZ7VbNlTLPCYe5bUPw0JafKc7CbOlgSQSzhpNTJH+hWpGk2+AzRyCjI2zHgYcPqcU3Mo1bZtlAYy5nae2n8FBZJ4P8cdZ4wx7uEqRBMPFGCst5UpiZnn4cdOOZywr7mWz5it5quXDGf57P6mofcssu+bo9E1BvkJXTut028qgA="
+    - COVERITY_SCAN_BUILD_URL="https://scan.coverity.com/scripts/travisci_build_coverity_scan.sh"
+    - COVERITY_SCAN_BUILD="curl -s $COVERITY_SCAN_BUILD_URL | bash"
+    # -- END Coverity Scan ENV
+
+matrix:
+  # covertiy scan should only run once and it might fail,
+  # because the number of times its runs is limited per week.
+  # We only check when compiled with gcc.
+  exclude:
+    - compiler: clang
+      env: GCRYPT=yes NETTLE=yes COVERITY_SCAN=1
+  allow_failures:
+    - env: GCRYPT=yes NETTLE=yes COVERITY_SCAN=1
+
+before_script:
+  - autoreconf -vfi
+script:
+  - mkdir -p build
+  - cd build
+  - ../configure --enable-scard-emu --enable-scard-apduio --enable-crypto-libgcrypt=${GCRYPT} --enable-crypto-nettle=${NETTLE}
+  - if [ -z "${COVERITY_SCAN}" ] ; then make check ; else eval "$COVERITY_SCAN_BUILD"; fi
