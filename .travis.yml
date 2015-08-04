@@ -15,7 +15,7 @@ env:
   - GCRYPT=no NETTLE=yes
 script: autoreconf -vfi && mkdir -p build && cd build && ../configure --enable-scard-emu --enable-scard-apduio --enable-crypto-libgcrypt=${GCRYPT} --enable-crypto-nettle=${NETTLE} && make && make check
 before_deploy:
-  - cd build && make distcheck
+  - make distcheck
   - export RELEASE_PKG_FILE=$(ls *.tar.*)
   - echo "deploying $RELEASE_PKG_FILE to GitHub releases"
 deploy:
