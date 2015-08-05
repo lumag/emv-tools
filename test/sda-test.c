@@ -20,6 +20,8 @@
 #include "openemv/emv_pk.h"
 #include "openemv/crypto.h"
 #include "openemv/dump.h"
+#include "openemv/tlv.h"
+#include "openemv/emv_pki.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -85,13 +87,11 @@ const unsigned char ssad_cr[] = {
 
 const unsigned char ssd1[] = {
 	0x5f, 0x24, 0x03, 0x08, 0x12, 0x31, 0x5a, 0x08, 0x42, 0x76, 0x55, 0x00, 0x13, 0x23, 0x45, 0x99, 0x5f, 0x34, 0x01, 0x01, 0x9f, 0x07, 0x02, 0xff, 0x00, 0x9f, 0x0d, 0x05, 0xd0, 0x40, 0xac, 0xa8, 0x00, 0x9f, 0x0e, 0x05, 0x00, 0x10, 0x00, 0x00, 0x00, 0x9f, 0x0f, 0x05, 0xd0, 0x68, 0xbc, 0xf8, 0x00,
-};
-
-const unsigned char ssd2[] = {
 	0x5c, 0x00,
 };
 
-int main(void) {
+static int sda_test_raw(void)
+{
 	const struct emv_pk *pk = &vsdc_01;
 
 	struct crypto_pk *kcp = crypto_pk_open(PK_RSA,
@@ -169,7 +169,6 @@ int main(void) {
 
 	crypto_hash_write(ch, ssad + 1, ssad_len - 22);
 	crypto_hash_write(ch, ssd1, sizeof(ssd1));
-	crypto_hash_write(ch, ssd2, sizeof(ssd2));
 
 	unsigned char *h2 = crypto_hash_read(ch);
 	if (!h2) {
@@ -183,6 +182,56 @@ int main(void) {
 	crypto_hash_close(ch);
 
 	free(ssad);
+
+	return 0;
+}
+
+static int sda_test_pk(void)
+{
+	const struct emv_pk *pk = &vsdc_01;
+	struct tlvdb *db;
+
+	db = tlvdb_external(0x90, sizeof(issuer_cert), issuer_cert);
+	tlvdb_add(db, tlvdb_external(0x9f32, sizeof(issuer_exp), issuer_exp));
+	tlvdb_add(db, tlvdb_external(0x92, sizeof(issuer_rem), issuer_rem));
+
+	struct emv_pk *ipk = emv_pki_recover_issuer_cert(pk, db);
+	if (!ipk) {
+		tlvdb_free(db);
+		return 2;
+	}
+
+	tlvdb_add(db, tlvdb_external(0x93, sizeof(ssad_cr), ssad_cr));
+
+	struct tlvdb *dacdb = emv_pki_recover_dac(ipk, db, ssd1, sizeof(ssd1));
+	if (!dacdb) {
+		emv_pk_free(ipk);
+		tlvdb_free(db);
+		return 2;
+	}
+
+	const struct tlv *dac = tlvdb_get(dacdb, 0x9f45, NULL);
+	if (dac)
+		dump_buffer(dac->value, dac->len, stdout);
+
+	tlvdb_free(dacdb);
+	emv_pk_free(ipk);
+	tlvdb_free(db);
+
+	return 0;
+}
+
+int main(void)
+{
+	int ret;
+
+	ret = sda_test_raw();
+	if (ret)
+		return ret;
+
+	ret = sda_test_pk();
+	if (ret)
+		return ret;
 
 	return 0;
 }
