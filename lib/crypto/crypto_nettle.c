@@ -18,6 +18,7 @@
 #endif
 
 #include "openemv/crypto.h"
+#include "crypto_backend.h"
 
 #include <stdarg.h>
 #include <stdlib.h>
@@ -27,19 +28,37 @@
 #include <nettle/bignum.h>
 #include <nettle/rsa.h>
 
-bool crypto_be_init(void)
-{
-	return true;
-}
-
-struct crypto_hash {
+struct crypto_hash_nettle {
+	struct crypto_hash ch;
 	struct sha1_ctx ctx;
 	unsigned char digest[SHA1_DIGEST_SIZE];
 };
 
-struct crypto_hash *crypto_hash_open(enum crypto_be_hash hash)
+static void crypto_hash_nettle_close(struct crypto_hash *_ch)
 {
-	struct crypto_hash *ch;
+	struct crypto_hash_nettle *ch = container_of(_ch, struct crypto_hash_nettle, ch);
+
+	free(ch);
+}
+
+static void crypto_hash_nettle_write(struct crypto_hash *_ch, const unsigned char *buf, size_t len)
+{
+	struct crypto_hash_nettle *ch = container_of(_ch, struct crypto_hash_nettle, ch);
+
+	sha1_update(&ch->ctx, len, buf);
+}
+
+static unsigned char *crypto_hash_nettle_read(struct crypto_hash *_ch)
+{
+	struct crypto_hash_nettle *ch = container_of(_ch, struct crypto_hash_nettle, ch);
+
+	sha1_digest(&ch->ctx, sizeof(ch->digest), ch->digest);
+	return ch->digest;
+}
+
+static struct crypto_hash *crypto_hash_nettle_open(enum crypto_algo_hash hash)
+{
+	struct crypto_hash_nettle *ch;
 
 	if (hash != HASH_SHA_1)
 		return NULL;
@@ -47,72 +66,29 @@ struct crypto_hash *crypto_hash_open(enum crypto_be_hash hash)
 	ch = malloc(sizeof(*ch));
 	sha1_init(&ch->ctx);
 
-	return ch;
+	ch->ch.write = crypto_hash_nettle_write;
+	ch->ch.read = crypto_hash_nettle_read;
+	ch->ch.close = crypto_hash_nettle_close;
+
+	return &ch->ch;
 }
 
-void crypto_hash_close(struct crypto_hash *ch)
-{
-	free(ch);
-}
-
-void crypto_hash_write(struct crypto_hash *ch, const unsigned char *buf, size_t len)
-{
-	sha1_update(&ch->ctx, len, buf);
-}
-
-unsigned char *crypto_hash_read(struct crypto_hash *ch)
-{
-	sha1_digest(&ch->ctx, sizeof(ch->digest), ch->digest);
-	return ch->digest;
-}
-
-struct crypto_pk {
+struct crypto_pk_nettle {
+	struct crypto_pk cp;
 	struct rsa_public_key key;
 };
 
-struct crypto_pk *crypto_pk_open(enum crypto_be_pk pk, ...)
+static void crypto_pk_nettle_close(struct crypto_pk *_cp)
 {
-	struct crypto_pk *cp;
-	va_list vl;
-	unsigned char *mod;
-	int modlen;
-	unsigned char *exp;
-	int explen;
-	int rc;
+	struct crypto_pk_nettle *cp = container_of(_cp, struct crypto_pk_nettle, cp);
 
-	if (pk != PK_RSA)
-		return NULL;
-
-	va_start(vl, pk);
-	mod = va_arg(vl, unsigned char *);
-	modlen = va_arg(vl, size_t);
-	exp = va_arg(vl, unsigned char *);
-	explen = va_arg(vl, size_t);
-	va_end(vl);
-
-	cp = malloc(sizeof(*cp));
-	rsa_public_key_init(&cp->key);
-	nettle_mpz_set_str_256_u(cp->key.n, modlen, mod);
-	nettle_mpz_set_str_256_u(cp->key.e, explen, exp);
-
-	rc = rsa_public_key_prepare(&cp->key);
-	if (!rc) {
-		rsa_public_key_clear(&cp->key);
-		free(cp);
-		return NULL;
-	}
-
-	return cp;
-}
-
-void crypto_pk_close(struct crypto_pk *cp)
-{
 	rsa_public_key_clear(&cp->key);
 	free(cp);
 }
 
-unsigned char *crypto_pk_encrypt(struct crypto_pk *cp, const unsigned char *buf, size_t len, size_t *clen)
+static unsigned char *crypto_pk_nettle_encrypt(struct crypto_pk *_cp, const unsigned char *buf, size_t len, size_t *clen)
 {
+	struct crypto_pk_nettle *cp = container_of(_cp, struct crypto_pk_nettle, cp);
 	mpz_t data;
 	size_t datasize;
 	unsigned char *out;
@@ -133,4 +109,49 @@ unsigned char *crypto_pk_encrypt(struct crypto_pk *cp, const unsigned char *buf,
 	*clen = cp->key.size;
 
 	return out;
+}
+
+static struct crypto_pk *crypto_pk_nettle_open(enum crypto_algo_pk pk, va_list vl)
+{
+	struct crypto_pk_nettle *cp;
+	unsigned char *mod;
+	int modlen;
+	unsigned char *exp;
+	int explen;
+	int rc;
+
+	if (pk != PK_RSA)
+		return NULL;
+
+	mod = va_arg(vl, unsigned char *);
+	modlen = va_arg(vl, size_t);
+	exp = va_arg(vl, unsigned char *);
+	explen = va_arg(vl, size_t);
+
+	cp = malloc(sizeof(*cp));
+	rsa_public_key_init(&cp->key);
+	nettle_mpz_set_str_256_u(cp->key.n, modlen, mod);
+	nettle_mpz_set_str_256_u(cp->key.e, explen, exp);
+
+	rc = rsa_public_key_prepare(&cp->key);
+	if (!rc) {
+		rsa_public_key_clear(&cp->key);
+		free(cp);
+		return NULL;
+	}
+
+	cp->cp.close = crypto_pk_nettle_close;
+	cp->cp.encrypt = crypto_pk_nettle_encrypt;
+
+	return &cp->cp;
+}
+
+static struct crypto_backend crypto_nettle_backend = {
+	.hash_open = crypto_hash_nettle_open,
+	.pk_open = crypto_pk_nettle_open,
+};
+
+struct crypto_backend *crypto_nettle_init(void)
+{
+	return &crypto_nettle_backend;
 }

@@ -33,7 +33,7 @@ int main(int argc, char **argv) {
 	const char *fname;
 	int rc = 0;
 
-	if (!crypto_be_init())
+	if (!crypto_init())
 		exit(2);
 
 	fname = openemv_config_get("capk");

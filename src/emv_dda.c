@@ -262,7 +262,7 @@ int main(void)
 	int i;
 	struct sc *sc;
 
-	if (!crypto_be_init())
+	if (!crypto_init())
 		exit(2);
 
 	sc = scard_init(NULL);
