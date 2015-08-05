@@ -30,7 +30,7 @@ env:
     # -- BEGIN Coverity Scan ENV
     # The build command with all of the arguments that you would apply to a manual `cov-build`
     # Usually this is the same as STANDARD_BUILD_COMMAND, exluding the automated test arguments
-    - COVERITY_SCAN_BUILD_COMMAND="make"
+    - COVERITY_SCAN_BUILD_COMMAND="make check"
     # Name of the project
     - COVERITY_SCAN_PROJECT_NAME="lumag/emv-tools"
     # Email address for notifications related to this build
