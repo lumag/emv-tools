@@ -98,13 +98,15 @@ int main(void) {
 			pk->modulus, pk->mlen,
 			pk->exp, pk->elen);
 	if (!kcp)
-		exit(1);
+		return 1;
 
 	unsigned char *ipk_data;
 	size_t ipk_data_len;
 	ipk_data = crypto_pk_encrypt(kcp, issuer_cert, sizeof(issuer_cert), &ipk_data_len);
-
 	crypto_pk_close(kcp);
+
+	if (!ipk_data)
+		return 1;
 
 	dump_buffer(ipk_data, ipk_data_len, stdout);
 
@@ -116,7 +118,9 @@ int main(void) {
 	struct crypto_hash *ch;
 	ch = crypto_hash_open(HASH_SHA_1);
 	if (!ch) {
-		exit(1);
+		free(ipk_pk);
+		free(ipk_data);
+		return 1;
 	}
 
 	crypto_hash_write(ch, ipk_data + 1, 14);
@@ -124,26 +128,43 @@ int main(void) {
 	crypto_hash_write(ch, issuer_exp, sizeof(issuer_exp));
 
 	unsigned char *h = crypto_hash_read(ch);
+	if (!h) {
+		crypto_hash_close(ch);
+		free(ipk_pk);
+		free(ipk_data);
+		return 1;
+	}
+
 	dump_buffer(h, 20, stdout);
 
-	if (memcmp(ipk_data + ipk_data_len - 21, h, 20))
-		exit(1);
+	if (memcmp(ipk_data + ipk_data_len - 21, h, 20)) {
+		crypto_hash_close(ch);
+		free(ipk_pk);
+		free(ipk_data);
+		return 1;
+	}
 
 	crypto_hash_close(ch);
+	free(ipk_data);
 
 	struct crypto_pk *ikcp = crypto_pk_open(PK_RSA, ipk_pk, (int) ipk_pk_len,
 			issuer_exp, (int) sizeof(issuer_exp));
 	free(ipk_pk);
+	if (!ikcp)
+		return 1;
 
 	size_t ssad_len;
 	unsigned char *ssad = crypto_pk_encrypt(ikcp, ssad_cr, sizeof(ssad_cr), &ssad_len);
 	crypto_pk_close(ikcp);
+	if (!ssad)
+		return 1;
 
 	dump_buffer(ssad, ssad_len, stdout);
 
 	ch = crypto_hash_open(HASH_SHA_1);
 	if (!ch) {
-		exit(1);
+		free(ssad);
+		return 1;
 	}
 
 	crypto_hash_write(ch, ssad + 1, ssad_len - 22);
@@ -151,13 +172,17 @@ int main(void) {
 	crypto_hash_write(ch, ssd2, sizeof(ssd2));
 
 	unsigned char *h2 = crypto_hash_read(ch);
+	if (!h2) {
+		crypto_hash_close(ch);
+		free(ssad);
+		return 1;
+	}
 
 	dump_buffer(h2, 20, stdout);
 
 	crypto_hash_close(ch);
 
 	free(ssad);
-	free(ipk_data);
 
 	return 0;
 }
