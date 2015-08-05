@@ -69,7 +69,8 @@ static struct crypto_hash *crypto_hash_libgcrypt_open(enum crypto_algo_hash hash
 				gcry_strsource (err),
 				gcry_strerror (err));
 		free(ch);
-		ch = NULL;
+
+		return NULL;
 	}
 
 	ch->ch.write = crypto_hash_libgcrypt_write;
