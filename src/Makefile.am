@@ -4,7 +4,6 @@ AM_LDFLAGS = -Wl,--as-needed
 LDADD = ../lib/libopenemv.la
 bin_PROGRAMS = \
 	capk-verify\
-	emu_test\
 	emv_dump\
 	emv_dda\
 	emv_cl_cda\

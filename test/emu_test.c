@@ -19,6 +19,7 @@
 
 #include "openemv/emu_ast.h"
 #include "openemv/dump.h"
+#include "openemv/config.h"
 
 #include <stdio.h>
 #include <stdbool.h>
@@ -33,7 +34,10 @@ int main(int argc, char **argv)
 	if (argc > 2)
 		return 1;
 
-	if (argc == 1 || !strcmp(argv[1], "-")) {
+	if (argc == 1) {
+		fname = openemv_config_get("scard.emu.file");
+		f = fopen(fname, "r");
+	} else if (!strcmp(argv[1], "-")) {
 		fname = "<stdin>";
 		f = stdin;
 	} else {
@@ -66,9 +70,13 @@ int main(int argc, char **argv)
 
 	size_t buf_len;
 	const unsigned char *buf = emu_value_get(value, 1, &buf_len);
+	if (!buf)
+		return 1;
 
 	dump_buffer(buf, buf_len, stdout);
 	buf = emu_df_get_value(df, "name", 1, &buf_len);
+	if (!buf)
+		return 1;
 	dump_buffer(buf, buf_len, stdout);
 
 	emu_fs_free(fs);
