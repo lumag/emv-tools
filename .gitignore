@@ -44,4 +44,5 @@ Makefile
 /src/emv_pse
 /src/capk-verify
 
+/test/sda-test
 /test/tlv-test
