@@ -43,4 +43,5 @@ Makefile
 /src/emv_ppse
 /src/emv_pse
 /src/capk-verify
-/src/tlv-test
+
+/test/tlv-test

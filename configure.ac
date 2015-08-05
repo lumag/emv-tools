@@ -99,5 +99,6 @@ AC_CONFIG_FILES([
 		 lib/emu/Makefile
 		 lib/scard/Makefile
 		 src/Makefile
+		 test/Makefile
 		 ])
 AC_OUTPUT
