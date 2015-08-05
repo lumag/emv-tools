@@ -262,9 +262,6 @@ int main(void)
 	int i;
 	struct sc *sc;
 
-	if (!crypto_init())
-		exit(2);
-
 	sc = scard_init(NULL);
 	if (!sc) {
 		printf("Cannot init scard\n");
