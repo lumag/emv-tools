@@ -237,6 +237,20 @@ struct tlvdb *tlvdb_fixed(tlv_tag_t tag, size_t len, const unsigned char *value)
 	return &root->db;
 }
 
+struct tlvdb *tlvdb_external(tlv_tag_t tag, size_t len, const unsigned char *value)
+{
+	struct tlvdb_root *root = malloc(sizeof(*root));
+
+	root->len = 0;
+
+	root->db.parent = root->db.next = root->db.children = NULL;
+	root->db.tag.tag = tag;
+	root->db.tag.len = len;
+	root->db.tag.value = value;
+
+	return &root->db;
+}
+
 void tlvdb_free(struct tlvdb *tlvdb)
 {
 	struct tlvdb *next = NULL;
