@@ -17,6 +17,8 @@
 #define EMU_GLUE_H
 
 #include <stdint.h>
+#include <stddef.h>
+
 struct emu_card;
 
 struct emu_card *emu_card_parse(const char *fname);

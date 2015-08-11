@@ -16,6 +16,8 @@
 #ifndef SCARD_BACKEND_H
 #define SCARD_BACKEND_H
 
+#include "openemv/scard.h"
+
 struct sc {
 	void (*shutdown)(struct sc *sc);
 	void (*connect)(struct sc *sc, unsigned idx);

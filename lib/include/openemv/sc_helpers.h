@@ -16,6 +16,10 @@
 #ifndef SC_HELPERS_H
 #define SC_HELPERS_H
 
+#include "stddef.h"
+
+struct sc;
+
 unsigned char *sc_command(struct sc *sc,
 		unsigned char cla,
 		unsigned char ins,
