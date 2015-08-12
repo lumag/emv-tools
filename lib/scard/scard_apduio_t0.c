@@ -132,7 +132,7 @@ static ssize_t tlp224_send(struct sc_apduio_t0 *sc, unsigned char cmd, const uns
 	size_t j;
 
 	if (len > TLP224_MAXMSG) {
-		errno = -E2BIG;
+		errno = E2BIG;
 		return -1;
 	}
 
@@ -178,13 +178,13 @@ static ssize_t tlp224_recv(struct sc_apduio_t0 *sc, unsigned char *status, unsig
 	}
 
 	if (tmpbuf[0] != TLP224_ACK || tmplen != tmpbuf[1] + 3 || compute_lrc(tmpbuf, tmplen) != 0) {
-		errno = -EIO;
+		errno = EIO;
 		return -1;
 	}
 
 	tmplen -= 4;
 	if (tmplen > len) {
-		errno = -E2BIG;
+		errno = E2BIG;
 		return -1;
 	}
 
