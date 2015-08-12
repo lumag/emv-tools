@@ -112,15 +112,26 @@ static ssize_t tlp224_decode(unsigned char *outbuf, const unsigned char *buf, si
 	return j;
 }
 
-static ssize_t tlp224_send(int sd, unsigned char cmd, const unsigned char *buf, size_t len)
+/* Maximum message is is 256 + 5 for transfer and 256 + 2 on receive */
+#define TLP224_MAXMSG 261
+/* 3 byte header, message, 1 byte LRC, everything encoded + 1 byte for EOT */
+#define TLP224_BUFSIZ (2 * (3 + TLP224_MAXMSG + 1) + 1)
+
+struct sc_apduio_t0 {
+	struct sc sc;
+	int sd;
+	unsigned char buf[TLP224_BUFSIZ];
+};
+
+static ssize_t tlp224_send(struct sc_apduio_t0 *sc, unsigned char cmd, const unsigned char *buf, size_t len)
 {
-	unsigned char tmpbuf[2 * (len + 4) + 1];
+	unsigned char *tmpbuf = sc->buf;
 	size_t tmplen;
 	unsigned char header[3];
 	unsigned char lrc;
 	size_t j;
 
-	if (len > 255) {
+	if (len > TLP224_MAXMSG) {
 		errno = -E2BIG;
 		return -1;
 	}
@@ -138,7 +149,7 @@ static ssize_t tlp224_send(int sd, unsigned char cmd, const unsigned char *buf, 
 	tmpbuf[tmplen++] = TLP224_EOT;
 
 	for (j = 0; j < tmplen;) {
-		ssize_t ret = send(sd, tmpbuf + j, tmplen - j, 0);
+		ssize_t ret = send(sc->sd, tmpbuf + j, tmplen - j, 0);
 		if (ret < 0)
 			return ret;
 
@@ -148,17 +159,17 @@ static ssize_t tlp224_send(int sd, unsigned char cmd, const unsigned char *buf, 
 	return tmplen;
 }
 
-static ssize_t tlp224_recv(int sd, unsigned char *status, unsigned char *buf, size_t len)
+static ssize_t tlp224_recv(struct sc_apduio_t0 *sc, unsigned char *status, unsigned char *buf, size_t len)
 {
-	unsigned char tmpbuf[2 * (258 + 4) +1];
+	unsigned char *tmpbuf = sc->buf;
 	ssize_t tmplen = 0;
 
 	do {
-		ssize_t pos = recv(sd, tmpbuf + tmplen, sizeof(tmpbuf) - tmplen, 0);
+		ssize_t pos = recv(sc->sd, tmpbuf + tmplen, TLP224_BUFSIZ - tmplen, 0);
 		if (pos < 0)
 			return pos;
 		tmplen += pos;
-	} while (tmpbuf[tmplen - 1] != TLP224_EOT && tmplen < sizeof(tmpbuf));
+	} while (tmpbuf[tmplen - 1] != TLP224_EOT && tmplen <= TLP224_BUFSIZ);
 
 	tmplen = tlp224_decode(tmpbuf, tmpbuf, tmplen - 1);
 	if (tmplen < 0) {
@@ -184,12 +195,6 @@ static ssize_t tlp224_recv(int sd, unsigned char *status, unsigned char *buf, si
 
 	return tmplen;
 }
-
-
-struct sc_apduio_t0 {
-	struct sc sc;
-	int sd;
-};
 
 static void scard_apduio_t0_connect(struct sc *_sc, unsigned idx)
 {
@@ -233,14 +238,14 @@ static void scard_apduio_t0_connect(struct sc *_sc, unsigned idx)
 	buf[i++] = 0;
 	buf[i++] = 0;
 	buf[i++] = 0;
-	ret = tlp224_send(sc->sd, TLP224_CMD_POWER_UP, buf, i);
+	ret = tlp224_send(sc, TLP224_CMD_POWER_UP, buf, i);
 	if (ret < 0) {
 		perror("tlp224_send");
 		scard_raise_error(_sc, SCARD_CARD);
 		return;
 	}
 
-	ret = tlp224_recv(sc->sd, &status, buf, sizeof(buf));
+	ret = tlp224_recv(sc, &status, buf, sizeof(buf));
 	if (ret < 0) {
 		perror("tlp224_recv");
 		scard_raise_error(_sc, SCARD_CARD);
@@ -268,14 +273,14 @@ static void scard_apduio_t0_disconnect(struct sc *_sc)
 	_sc->proto = SCARD_PROTO_INVALID;
 	_sc->error = SCARD_NO_ERROR;
 
-	ret = tlp224_send(sc->sd, TLP224_CMD_POWER_DOWN, NULL, 0);
+	ret = tlp224_send(sc, TLP224_CMD_POWER_DOWN, NULL, 0);
 	if (ret < 0) {
 		perror("tlp224_send");
 		scard_raise_error(_sc, SCARD_CARD);
 		return;
 	}
 
-	ret = tlp224_recv(sc->sd, &status, NULL, 0);
+	ret = tlp224_recv(sc, &status, NULL, 0);
 	if (ret < 0) {
 		perror("tlp224_recv");
 		scard_raise_error(_sc, SCARD_CARD);
@@ -318,7 +323,7 @@ static size_t scard_apduio_t0_transmit(struct sc *_sc,
 		return 0;
 	}
 
-	ret = tlp224_send(sc->sd, inlen > 5 ? TLP224_CMD_ISO_INPUT : TLP224_CMD_ISO_OUTPUT, inbuf, inlen);
+	ret = tlp224_send(sc, inlen > 5 ? TLP224_CMD_ISO_INPUT : TLP224_CMD_ISO_OUTPUT, inbuf, inlen);
 	if (ret < 0) {
 		perror("tlp224_send");
 		scard_raise_error(_sc, SCARD_CARD);
@@ -327,7 +332,7 @@ static size_t scard_apduio_t0_transmit(struct sc *_sc,
 
 	unsigned char status;
 
-	ret = tlp224_recv(sc->sd, &status, outbuf, outlen);
+	ret = tlp224_recv(sc, &status, outbuf, outlen);
 	if (ret < 0) {
 		perror("tlp224_recv");
 		return 0;
