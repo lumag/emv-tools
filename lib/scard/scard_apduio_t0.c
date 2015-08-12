@@ -61,7 +61,7 @@ static ssize_t tlp224_send(int sd, unsigned char cmd, const unsigned char *buf, 
 {
 	unsigned char tmpbuf[2 * (len + 4) + 1];
 	unsigned char lrc = 0x0;
-	int i = 0, j;
+	size_t i = 0, j;
 
 	if (len > 255) {
 		errno = -E2BIG;
@@ -76,19 +76,30 @@ static ssize_t tlp224_send(int sd, unsigned char cmd, const unsigned char *buf, 
 	tlp224_put(lrc);
 	tmpbuf[i++] = TLP224_EOT;
 
-	return send(sd, tmpbuf, i, 0);
+	for (j = 0; j < i;) {
+		ssize_t ret = send(sd, tmpbuf + j, i - j, 0);
+		if (ret < 0)
+			return ret;
+
+		j += ret;
+	}
+
+	return i;
 }
 
 static ssize_t tlp224_recv(int sd, unsigned char *status, unsigned char *buf, size_t len)
 {
 	unsigned char tmpbuf[2 * (258 + 4) +1];
-	ssize_t tmplen;
+	ssize_t tmplen = 0;
 	unsigned char lrc = 0;
 	int i;
 
-	tmplen = recv(sd, tmpbuf, sizeof(tmpbuf), 0);
-	if (tmplen < 0)
-		return tmplen;
+	do {
+		ssize_t pos = recv(sd, tmpbuf + tmplen, sizeof(tmpbuf) - tmplen, 0);
+		if (pos < 0)
+			return pos;
+		tmplen += pos;
+	} while (tmpbuf[tmplen-1] != TLP224_EOT && tmplen < sizeof(tmpbuf));
 
 	if (tmpbuf[tmplen-1] != TLP224_EOT || tmplen % 2 != 1) {
 		errno = -EINVAL;
@@ -295,7 +306,7 @@ static size_t scard_apduio_t0_transmit(struct sc *_sc,
 
 	ret = tlp224_recv(sc->sd, &status, outbuf, outlen);
 	if (ret < 0) {
-		perror("recv");
+		perror("tlp224_recv");
 		return 0;
 	}
 
