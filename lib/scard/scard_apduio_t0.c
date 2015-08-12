@@ -49,101 +49,124 @@ static unsigned char dig_to_hex(unsigned char d)
 	return d < 10 ? d + '0' : d - 10 + 'A';
 }
 
-#define tlp224_put(c) 					\
-	do {						\
-		unsigned char __tmp = (c);		\
-		lrc ^= __tmp;				\
-		tmpbuf[i++] = dig_to_hex(__tmp >> 4);		\
-		tmpbuf[i++] = dig_to_hex(__tmp & 0xf);		\
-	} while (0)
+static unsigned char compute_lrc(const unsigned char *buf, size_t len)
+{
+	size_t i;
+	unsigned char lrc = 0;
+
+	for (i = 0; i < len; i++)
+		lrc ^= buf[i];
+
+	return lrc;
+}
+
+static size_t tlp224_encode(unsigned char *outbuf, const unsigned char *buf, size_t len)
+{
+	size_t i, j;
+
+	for (i = 0, j = 0; i < len; i++) {
+		outbuf[j++] = dig_to_hex(buf[i] >> 4);
+		outbuf[j++] = dig_to_hex(buf[i] & 0xf);
+	}
+
+	return j;
+}
+
+static ssize_t tlp224_decode(unsigned char *outbuf, const unsigned char *buf, size_t len)
+{
+	size_t i;
+	ssize_t j;
+
+	if (len % 2 != 0)
+		return -EINVAL;
+
+	for (i = 0, j = 0; i < len;) {
+		unsigned char c;
+		unsigned char d = 0;
+
+		c = buf[i++];
+		if (c >= 'A' && c <= 'F')
+			d |= c - 'A' + 10;
+		else if (c >= 'a' && c <= 'f')
+			d |= c - 'a' + 10;
+		else if (c >= '0' && c <= '9')
+			d |= c - '0';
+		else
+			return -EINVAL;
+
+		d <<= 4;
+
+		c = buf[i++];
+		if (c >= 'A' && c <= 'F')
+			d |= c - 'A' + 10;
+		else if (c >= 'a' && c <= 'f')
+			d |= c - 'a' + 10;
+		else if (c >= '0' && c <= '9')
+			d |= c - '0';
+		else
+			return -EINVAL;
+
+		outbuf[j++] = d;
+	}
+
+	return j;
+}
 
 static ssize_t tlp224_send(int sd, unsigned char cmd, const unsigned char *buf, size_t len)
 {
 	unsigned char tmpbuf[2 * (len + 4) + 1];
-	unsigned char lrc = 0x0;
-	size_t i = 0, j;
+	size_t tmplen;
+	unsigned char header[3];
+	unsigned char lrc;
+	size_t j;
 
 	if (len > 255) {
 		errno = -E2BIG;
 		return -1;
 	}
 
-	tlp224_put(TLP224_ACK);
-	tlp224_put((unsigned char) (len + 1));
-	tlp224_put(cmd);
-	for (j = 0; j < len; j++)
-		tlp224_put(buf[j]);
-	tlp224_put(lrc);
-	tmpbuf[i++] = TLP224_EOT;
+	header[0] = TLP224_ACK;
+	header[1] = len + 1;
+	header[2] = cmd;
 
-	for (j = 0; j < i;) {
-		ssize_t ret = send(sd, tmpbuf + j, i - j, 0);
+	lrc = compute_lrc(header, 3) ^ compute_lrc(buf, len);
+
+	tmplen = tlp224_encode(tmpbuf, header, 3);
+	tmplen += tlp224_encode(tmpbuf + tmplen, buf, len);
+	tmplen += tlp224_encode(tmpbuf + tmplen, &lrc, 1);
+
+	tmpbuf[tmplen++] = TLP224_EOT;
+
+	for (j = 0; j < tmplen;) {
+		ssize_t ret = send(sd, tmpbuf + j, tmplen - j, 0);
 		if (ret < 0)
 			return ret;
 
 		j += ret;
 	}
 
-	return i;
+	return tmplen;
 }
 
 static ssize_t tlp224_recv(int sd, unsigned char *status, unsigned char *buf, size_t len)
 {
 	unsigned char tmpbuf[2 * (258 + 4) +1];
 	ssize_t tmplen = 0;
-	unsigned char lrc = 0;
-	int i;
 
 	do {
 		ssize_t pos = recv(sd, tmpbuf + tmplen, sizeof(tmpbuf) - tmplen, 0);
 		if (pos < 0)
 			return pos;
 		tmplen += pos;
-	} while (tmpbuf[tmplen-1] != TLP224_EOT && tmplen < sizeof(tmpbuf));
+	} while (tmpbuf[tmplen - 1] != TLP224_EOT && tmplen < sizeof(tmpbuf));
 
-	if (tmpbuf[tmplen-1] != TLP224_EOT || tmplen % 2 != 1) {
-		errno = -EINVAL;
+	tmplen = tlp224_decode(tmpbuf, tmpbuf, tmplen - 1);
+	if (tmplen < 0) {
+		errno = -tmplen;
 		return -1;
 	}
 
-	tmplen --;
-	for (i = 0; i < tmplen / 2; i++) {
-		unsigned char c;
-		unsigned char d = 0;
-
-		c = tmpbuf[2 * i];
-		if (c >= 'A' && c <= 'F')
-			d |= c - 'A' + 10;
-		else if (c >= 'a' && c <= 'f')
-			d |= c - 'a' + 10;
-		else if (c >= '0' && c <= '9')
-			d |= c - '0';
-		else {
-			errno = -EINVAL;
-			return -1;
-		}
-
-		d <<= 4;
-
-		c = tmpbuf[2 * i + 1];
-		if (c >= 'A' && c <= 'F')
-			d |= c - 'A' + 10;
-		else if (c >= 'a' && c <= 'f')
-			d |= c - 'a' + 10;
-		else if (c >= '0' && c <= '9')
-			d |= c - '0';
-		else {
-			errno = -EINVAL;
-			return -1;
-		}
-
-		tmpbuf[i] = d;
-	}
-	tmplen /= 2;
-	for (i = 0; i < tmplen; i++)
-		lrc ^= tmpbuf[i];
-
-	if (tmpbuf[0] != TLP224_ACK || tmplen != tmpbuf[1] + 3 || lrc != 0) {
+	if (tmpbuf[0] != TLP224_ACK || tmplen != tmpbuf[1] + 3 || compute_lrc(tmpbuf, tmplen) != 0) {
 		errno = -EIO;
 		return -1;
 	}
