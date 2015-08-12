@@ -20,5 +20,6 @@ endif
 
 if SCARD_APDUIO
 libscard_la_SOURCES += \
+	scard_apduio_t1.c \
 	scard_apduio_t0.c
 endif

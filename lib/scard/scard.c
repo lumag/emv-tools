@@ -36,6 +36,8 @@ struct sc *scard_init(const char *driver)
 		return scard_emu_init();
 	else if (!strcmp(driver, "apduio_t0"))
 		return scard_apduio_t0_init();
+	else if (!strcmp(driver, "apduio_t1"))
+		return scard_apduio_t1_init();
 	else
 		return NULL;
 }
