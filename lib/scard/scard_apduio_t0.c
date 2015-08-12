@@ -59,7 +59,7 @@ static unsigned char dig_to_hex(unsigned char d)
 
 static ssize_t tlp224_send(int sd, unsigned char cmd, const unsigned char *buf, size_t len)
 {
-	unsigned char tmpbuf[2 * (len + 3) + 1];
+	unsigned char tmpbuf[2 * (len + 4) + 1];
 	unsigned char lrc = 0x0;
 	int i = 0, j;
 
