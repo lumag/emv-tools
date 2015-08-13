@@ -24,22 +24,9 @@ AC_PROG_YACC
 PKG_PROG_PKG_CONFIG
 PKG_CONFIG="${PKG_CONFIG} --static"
 
-AC_DEFUN([C_FLAG_CHECK],
-[dnl
- AC_MSG_CHECKING([if $CC supports $1])
- AC_LANG_PUSH([C])
- ac_saved_cflags="$CFLAGS"
- CFLAGS="$1"
- AC_COMPILE_IFELSE([AC_LANG_PROGRAM([])],
- [AC_MSG_RESULT([yes])
- CFLAGS="$ac_saved_cflags $1"
- ],
- [AC_MSG_RESULT([no])
- CFLAGS="$ac_saved_cflags"
- ]
- )
- AC_LANG_POP([C])
-])
+OPENEMV_CHECK_CFLAG([-Wall])
+OPENEMV_CHECK_CFLAG([-Wmissing-prototypes])
+OPENEMV_CHECK_CFLAG([-Wformat=2])
 
 C_FLAG_CHECK([-Wall])
 C_FLAG_CHECK([-Wmissing-prototypes])
