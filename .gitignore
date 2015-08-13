@@ -1,4 +1,8 @@
 *.a
+*.gch
+*.gcov
+*.gcda
+*.gcno
 *.gz
 *.la
 *.lo
