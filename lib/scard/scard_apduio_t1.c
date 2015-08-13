@@ -62,7 +62,8 @@ static unsigned char compute_lrc(const unsigned char *buf, size_t len)
 
 static ssize_t apduio_t1_send(int sd, unsigned char cmd, const unsigned char *buf, size_t len)
 {
-	size_t tmplen, pos, ret;
+	ssize_t ret;
+	size_t tmplen, pos;
 	unsigned char tmpbuf[len + 4];
 
 	tmpbuf[0] = cmd;
@@ -330,7 +331,7 @@ static size_t scard_apduio_t1_transmit(struct sc *_sc,
 				/* R-Block */
 				next_block = T1_BLOCK_I;
 
-				if (!(pcb & T1_R_SEQ) == sc->seqd) {
+				if (!(pcb & T1_R_SEQ) != !sc->seqd) {
 					pos += tlen;
 					sc->seqd = !sc->seqd;
 				}
