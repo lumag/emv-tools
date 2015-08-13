@@ -98,6 +98,10 @@ static ssize_t apduio_t1_recv(int sd, unsigned char *cmd, unsigned char *buf, si
 	}
 
 	blocklen = (tmpbuf[1] << 8) | tmpbuf[2];
+	if (blocklen > len) {
+		errno = E2BIG;
+		return -1;
+	}
 
 	for (pos = 0; pos < blocklen + 1; pos += ret) {
 		ret = recv(sd, tmpbuf + tmplen + pos, blocklen + 1 - pos, 0);
