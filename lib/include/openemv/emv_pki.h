@@ -29,8 +29,8 @@ struct tlvdb *emv_pki_recover_dac(const struct emv_pk *pk, const struct tlvdb *d
 struct tlvdb *emv_pki_recover_idn(const struct emv_pk *pk, const struct tlvdb *db, const unsigned char *dyn_data, size_t dyn_data_len);
 struct tlvdb *emv_pki_perform_cda(const struct emv_pk *enc_pk, const struct tlvdb *db,
 		const struct tlvdb *this_db,
-		unsigned char *pdol_data, size_t pdol_data_len,
-		unsigned char *crm1_data, size_t crm1_data_len,
-		unsigned char *crm2_data, size_t crm2_data_len);
+		const unsigned char *pdol_data, size_t pdol_data_len,
+		const unsigned char *crm1_data, size_t crm1_data_len,
+		const unsigned char *crm2_data, size_t crm2_data_len);
 
 #endif

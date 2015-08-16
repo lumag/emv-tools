@@ -317,9 +317,9 @@ static bool tlv_hash(void *data, const struct tlv *tlv)
 
 struct tlvdb *emv_pki_perform_cda(const struct emv_pk *enc_pk, const struct tlvdb *db,
 		const struct tlvdb *this_db,
-		unsigned char *pdol_data, size_t pdol_data_len,
-		unsigned char *crm1_data, size_t crm1_data_len,
-		unsigned char *crm2_data, size_t crm2_data_len)
+		const unsigned char *pdol_data, size_t pdol_data_len,
+		const unsigned char *crm1_data, size_t crm1_data_len,
+		const unsigned char *crm2_data, size_t crm2_data_len)
 {
 	const struct tlv *un_tlv = tlvdb_get(db, 0x9f37, NULL);
 	const struct tlv *cid_tlv = tlvdb_get(this_db, 0x9f27, NULL);
