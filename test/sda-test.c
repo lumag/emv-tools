@@ -197,6 +197,7 @@ static int sda_test_pk(void)
 
 	struct emv_pk *ipk = emv_pki_recover_issuer_cert(pk, db);
 	if (!ipk) {
+		fprintf(stderr, "Could not recover Issuer certificate!\n");
 		tlvdb_free(db);
 		return 2;
 	}
@@ -205,14 +206,22 @@ static int sda_test_pk(void)
 
 	struct tlvdb *dacdb = emv_pki_recover_dac(ipk, db, ssd1, sizeof(ssd1));
 	if (!dacdb) {
+		fprintf(stderr, "Could not recover DAC!\n");
 		emv_pk_free(ipk);
 		tlvdb_free(db);
 		return 2;
 	}
 
 	const struct tlv *dac = tlvdb_get(dacdb, 0x9f45, NULL);
-	if (dac)
-		dump_buffer(dac->value, dac->len, stdout);
+	if (!dac) {
+		fprintf(stderr, "DAC not found!\n");
+		tlvdb_free(dacdb);
+		emv_pk_free(ipk);
+		tlvdb_free(db);
+		return 2;
+	}
+
+	dump_buffer(dac->value, dac->len, stdout);
 
 	tlvdb_free(dacdb);
 	emv_pk_free(ipk);
@@ -226,8 +235,10 @@ int main(void)
 	int ret;
 
 	ret = sda_test_raw();
-	if (ret)
+	if (ret) {
+		fprintf(stderr, "Error performing cryptography check!\n");
 		return ret;
+	}
 
 	ret = sda_test_pk();
 	if (ret)
