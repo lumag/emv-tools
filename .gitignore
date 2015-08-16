@@ -48,5 +48,8 @@ Makefile
 /src/emv_pse
 /src/capk-verify
 
+/test/cda-test
+/test/dda-test
+/test/emu_test
 /test/sda-test
 /test/tlv-test
