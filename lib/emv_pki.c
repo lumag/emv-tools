@@ -323,6 +323,10 @@ struct tlvdb *emv_pki_perform_cda(const struct emv_pk *enc_pk, const struct tlvd
 {
 	const struct tlv *un_tlv = tlvdb_get(db, 0x9f37, NULL);
 	const struct tlv *cid_tlv = tlvdb_get(this_db, 0x9f27, NULL);
+
+	if (!un_tlv || !cid_tlv)
+		return NULL;
+
 	size_t data_len;
 	unsigned char *data = emv_pki_decode_message(enc_pk, 5, &data_len,
 			tlvdb_get(this_db, 0x9f4b, NULL),
