@@ -158,19 +158,18 @@ int main(void)
 	if (!s)
 		return 1;
 
-	struct tlv pdol_data_tlv;
 	size_t pdol_data_len;
-	unsigned char *pdol_data;
+	unsigned char *pdol_data = dol_process(tlvdb_get(s, 0x9f38, NULL), s, &pdol_data_len);
+	struct tlv pdol_data_tlv = { .tag = 0x83, .len = pdol_data_len, .value = pdol_data };
 
-	pdol_data_tlv.tag = 0x83;
-	pdol_data_tlv.value = dol_process(tlvdb_get(s, 0x9f38, NULL), s, &pdol_data_tlv.len);
-	pdol_data = tlv_encode(&pdol_data_tlv, &pdol_data_len);
-	if (!pdol_data)
-		return 1;
-	free((unsigned char *)pdol_data_tlv.value);
-
-	t = docmd(sc, 0x80, 0xa8, 0x00, 0x00, pdol_data_len, pdol_data);
+	size_t pdol_data_tlv_data_len;
+	unsigned char *pdol_data_tlv_data = pdol_data_tlv_data = tlv_encode(&pdol_data_tlv, &pdol_data_tlv_data_len);
 	free(pdol_data);
+	if (!pdol_data_tlv_data)
+		return 1;
+
+	t = docmd(sc, 0x80, 0xa8, 0x00, 0x00, pdol_data_tlv_data_len, pdol_data_tlv_data);
+	free(pdol_data_tlv_data);
 	if (!t)
 		return 1;
 	if ((e = tlvdb_get(t, 0x80, NULL)) != NULL) {
