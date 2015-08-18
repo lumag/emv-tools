@@ -380,3 +380,51 @@ void emv_pk_free(struct emv_pk *pk)
 	free(pk->modulus);
 	free(pk);
 }
+
+struct emv_pk *emv_pk_get_ca_pk(const unsigned char *rid, unsigned char idx)
+{
+	const char *fname = openemv_config_get("capk");
+	FILE *f = fopen(fname, "r");
+
+	if (!f) {
+		perror("fopen");
+		return NULL;
+	}
+
+	while (!feof(f)) {
+		char buf[BUFSIZ];
+		if (fgets(buf, sizeof(buf), f) == NULL)
+			break;
+		struct emv_pk *pk = emv_pk_parse_pk(buf);
+		if (!pk)
+			continue;
+		if (memcmp(pk->rid, rid, 5) || pk->index != idx) {
+			emv_pk_free(pk);
+			continue;
+		}
+		printf("Verifying CA PK for %02hhx:%02hhx:%02hhx:%02hhx:%02hhx IDX %02hhx %zd bits...",
+				pk->rid[0],
+				pk->rid[1],
+				pk->rid[2],
+				pk->rid[3],
+				pk->rid[4],
+				pk->index,
+				pk->mlen * 8);
+		if (emv_pk_verify(pk)) {
+			printf("OK\n");
+			fclose(f);
+
+			return pk;
+		}
+
+		printf("Failed!\n");
+		emv_pk_free(pk);
+		fclose(f);
+
+		return NULL;
+	}
+
+	fclose(f);
+
+	return NULL;
+}

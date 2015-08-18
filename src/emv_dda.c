@@ -164,50 +164,7 @@ static struct emv_pk *get_ca_pk(struct tlvdb *db)
 	if (!df_tlv || !caidx_tlv || df_tlv->len < 6 || caidx_tlv->len != 1)
 		return NULL;
 
-	const char *fname = openemv_config_get("capk");
-	FILE *f = fopen(fname, "r");
-
-	if (!f) {
-		perror("fopen");
-		return NULL;
-	}
-
-	while (!feof(f)) {
-		char buf[BUFSIZ];
-		if (fgets(buf, sizeof(buf), f) == NULL)
-			break;
-		struct emv_pk *pk = emv_pk_parse_pk(buf);
-		if (!pk)
-			continue;
-		if (memcmp(pk->rid, df_tlv->value, 5) || pk->index != caidx_tlv->value[0]) {
-			emv_pk_free(pk);
-			continue;
-		}
-		printf("Verifying CA PK for %02hhx:%02hhx:%02hhx:%02hhx:%02hhx IDX %02hhx %zd bits...",
-				pk->rid[0],
-				pk->rid[1],
-				pk->rid[2],
-				pk->rid[3],
-				pk->rid[4],
-				pk->index,
-				pk->mlen * 8);
-		if (emv_pk_verify(pk)) {
-			printf("OK\n");
-			fclose(f);
-
-			return pk;
-		}
-
-		printf("Failed!\n");
-		emv_pk_free(pk);
-		fclose(f);
-
-		return NULL;
-	}
-
-	fclose(f);
-
-	return NULL;
+	return emv_pk_get_ca_pk(df_tlv->value, caidx_tlv->value[0]);
 }
 
 const struct {
