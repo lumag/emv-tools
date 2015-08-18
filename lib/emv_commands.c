@@ -26,31 +26,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-static struct tlvdb *docmd(struct sc *sc,
-		unsigned char cla,
-		unsigned char ins,
-		unsigned char p1,
-		unsigned char p2,
-		size_t dlen,
-		const unsigned char *data)
-{
-	unsigned short sw;
-	size_t outlen;
-	unsigned char *outbuf;
-	struct tlvdb *tlvdb = NULL;
-
-	outbuf = sc_command(sc, cla, ins, p1, p2, dlen, data, &sw, &outlen);
-	if (!outbuf)
-		return NULL;
-
-	if (sw == 0x9000)
-		tlvdb = tlvdb_parse(outbuf, outlen);
-
-	free(outbuf);
-
-	return tlvdb;
-}
-
 bool emv_read_records(struct sc *sc, struct tlvdb *db, unsigned char **pdata, size_t *plen)
 {
 	*pdata = NULL;
@@ -138,48 +113,82 @@ bool emv_read_records(struct sc *sc, struct tlvdb *db, unsigned char **pdata, si
 	return true;
 }
 
-struct tlvdb *emv_gpo(struct sc *sc, const unsigned char *data, size_t len)
+static struct tlvdb *emv_command_handle_format(const unsigned char *buf, size_t len, const struct tlv *dol)
 {
-	const struct tlv *e;
-	struct tlvdb *t = docmd(sc, 0x80, 0xa8, 0x00, 0x00, len, data);
-	if (!t)
-		return NULL;
+	if (buf[0] != 0x80)
+		return tlvdb_parse(buf, len);
 
-	if ((e = tlvdb_get(t, 0x80, NULL)) != NULL) {
-		const unsigned char gpo_dol_value[] = {
-			0x82, 0x02, /* AIP */
-			0x94, 0x00, /* AFL */
-		};
-		const struct tlv gpo_dol = {0x0, sizeof(gpo_dol_value), gpo_dol_value};
-		struct tlvdb *gpo_db = dol_parse(&gpo_dol, e->value, e->len);
+	struct tlvdb *t;
+	size_t left = len;
+	const unsigned char *ptr = buf;
+	struct tlv *e = tlv_parse_tl(&ptr, &left);
 
-		tlvdb_add(gpo_db, t);
-		t = gpo_db;
-	}
+	if (e && e->len == left)
+		t = dol_parse(dol, ptr, left);
+	else
+		t = NULL;
+
+	free(e);
 
 	return t;
 }
 
-struct tlvdb *emv_generate_ac(struct sc *sc, unsigned char type, const unsigned char *data, size_t len)
+static const unsigned char gpo_dol_value[] = {
+	0x82, 0x02, /* AIP */
+	0x94, 0x00, /* AFL */
+};
+static const struct tlv gpo_dol_tlv = {
+	.len = sizeof(gpo_dol_value),
+	.value = gpo_dol_value,
+};
+
+struct tlvdb *emv_gpo(struct sc *sc, const unsigned char *data, size_t len)
 {
-	const struct tlv *e;
-	struct tlvdb *t = docmd(sc, 0x80, 0xae, type, 0x00, len, data);
-	if (!t)
+	unsigned short sw;
+	size_t outlen;
+	unsigned char *outbuf = sc_command(sc, 0x80, 0xa8, 0x00, 0x00, len, data, &sw, &outlen);
+	if (!outbuf)
 		return NULL;
 
-	if ((e = tlvdb_get(t, 0x80, NULL)) != NULL) {
-		/* CID, ATC, AC, IAD */
-		const unsigned char ac_dol_value[] = {
-			0x9f, 0x27, 0x01, /* CID */
-			0x9f, 0x36, 0x02, /* ATC */
-			0x9f, 0x26, 0x08, /* AC */
-			0x9f, 0x10, 0x00, /* IAD */
-		};
-		const struct tlv ac_dol = {0x0, sizeof(ac_dol_value), ac_dol_value};
-		struct tlvdb *ac_db = dol_parse(&ac_dol, e->value, e->len);
-		tlvdb_add(ac_db, t);
-		t = ac_db;
+	if (sw != 0x9000) {
+		free(outbuf);
+
+		return NULL;
 	}
+
+	struct tlvdb *t = emv_command_handle_format(outbuf, outlen, &gpo_dol_tlv);
+	free(outbuf);
+
+	return t;
+}
+
+static const unsigned char ac_dol_value[] = {
+	0x9f, 0x27, 0x01, /* CID */
+	0x9f, 0x36, 0x02, /* ATC */
+	0x9f, 0x26, 0x08, /* AC */
+	0x9f, 0x10, 0x00, /* IAD */
+};
+static const struct tlv ac_dol_tlv = {
+	.len = sizeof(ac_dol_value),
+	.value = ac_dol_value,
+};
+
+struct tlvdb *emv_generate_ac(struct sc *sc, unsigned char type, const unsigned char *data, size_t len)
+{
+	unsigned short sw;
+	size_t outlen;
+	unsigned char *outbuf = sc_command(sc, 0x80, 0xae, type, 0x00, len, data, &sw, &outlen);
+	if (!outbuf)
+		return NULL;
+
+	if (sw != 0x9000) {
+		free(outbuf);
+
+		return NULL;
+	}
+
+	struct tlvdb *t = emv_command_handle_format(outbuf, outlen, &ac_dol_tlv);
+	free(outbuf);
 
 	return t;
 }
