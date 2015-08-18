@@ -285,7 +285,7 @@ int main(void)
 	struct tlv pdol_data_tlv = { .tag = 0x83, .len = pdol_data_len, .value = pdol_data };
 
 	size_t pdol_data_tlv_data_len;
-	unsigned char *pdol_data_tlv_data = pdol_data_tlv_data = tlv_encode(&pdol_data_tlv, &pdol_data_tlv_data_len);
+	unsigned char *pdol_data_tlv_data = tlv_encode(&pdol_data_tlv, &pdol_data_tlv_data_len);
 	free(pdol_data);
 	if (!pdol_data_tlv_data)
 		return 1;
