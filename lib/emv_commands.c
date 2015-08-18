@@ -186,5 +186,23 @@ struct tlvdb *emv_generate_ac(struct sc *sc, unsigned char type, const unsigned 
 
 struct tlvdb *emv_get_data(struct sc *sc, tlv_tag_t tag)
 {
-	return docmd(sc, 0x80, 0xca, tag >> 8, tag & 0xff, 0, NULL);
+	unsigned short sw;
+	size_t outlen;
+	unsigned char *outbuf;
+	struct tlvdb *t = NULL;
+
+	outbuf = sc_command(sc, 0x80, 0xca, tag >> 8, tag & 0xff, 0, NULL, &sw, &outlen);
+	if (!outbuf)
+		return NULL;
+
+	if (sw != 0x9000) {
+		free(outbuf);
+
+		return NULL;
+	}
+
+	t = tlvdb_parse(outbuf, outlen);
+	free(outbuf);
+
+	return t;
 }
