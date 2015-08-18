@@ -41,31 +41,6 @@ static bool print_cb(void *data, const struct tlv *tlv)
 	return true;
 }
 
-static struct tlvdb *docmd(struct sc *sc,
-		unsigned char cla,
-		unsigned char ins,
-		unsigned char p1,
-		unsigned char p2,
-		size_t dlen,
-		const unsigned char *data)
-{
-	unsigned short sw;
-	size_t outlen;
-	unsigned char *outbuf;
-	struct tlvdb *tlvdb = NULL;
-
-	outbuf = sc_command(sc, cla, ins, p1, p2, dlen, data, &sw, &outlen);
-	if (!outbuf)
-		return NULL;
-
-	if (sw == 0x9000)
-		tlvdb = tlvdb_parse(outbuf, outlen);
-
-	free(outbuf);
-
-	return tlvdb;
-}
-
 static struct emv_pk *get_ca_pk(struct tlvdb *db)
 {
 	const struct tlv *df_tlv = tlvdb_get(db, 0x84, NULL);
@@ -151,7 +126,7 @@ int main(void)
 	struct tlvdb *s;
 	struct tlvdb *t;
 	for (i = 0, s = NULL; apps[i].name_len != 0; i++) {
-		s = docmd(sc, 0x00, 0xa4, 0x04, 0x00, apps[i].name_len, apps[i].name);
+		s = emv_select(sc, apps[i].name, apps[i].name_len);
 		if (s)
 			break;
 	}
