@@ -164,7 +164,6 @@ int main(void)
 
 	size_t pdol_data_tlv_data_len;
 	unsigned char *pdol_data_tlv_data = pdol_data_tlv_data = tlv_encode(&pdol_data_tlv, &pdol_data_tlv_data_len);
-	free(pdol_data);
 	if (!pdol_data_tlv_data)
 		return 1;
 
@@ -302,7 +301,7 @@ int main(void)
 		t = ac_db;
 	}
 	struct tlvdb *idn_db = emv_pki_perform_cda(icc_pk, s, t,
-			NULL, 0,
+			pdol_data, pdol_data_len,
 			crm_data, crm_data_len,
 			NULL, 0);
 	tlvdb_add(s, t);
@@ -318,6 +317,7 @@ int main(void)
 	emv_pk_free(icc_pk);
 
 	free(sda_data);
+	free(pdol_data);
 
 	printf("Final\n");
 	tlvdb_visit(s, print_cb, NULL);
