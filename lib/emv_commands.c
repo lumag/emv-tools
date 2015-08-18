@@ -193,6 +193,34 @@ struct tlvdb *emv_generate_ac(struct sc *sc, unsigned char type, const unsigned 
 	return t;
 }
 
+static const unsigned char ia_dol_value[] = {
+	0x9f, 0x4b, 0x00, /* SDAD */
+};
+static const struct tlv ia_dol_tlv = {
+	.len = sizeof(ia_dol_value),
+	.value = ia_dol_value,
+};
+
+struct tlvdb *emv_internal_authenticate(struct sc *sc, const unsigned char *data, size_t len)
+{
+	unsigned short sw;
+	size_t outlen;
+	unsigned char *outbuf = sc_command(sc, 0x80, 0x88, 0x00, 0x00, len, data, &sw, &outlen);
+	if (!outbuf)
+		return NULL;
+
+	if (sw != 0x9000) {
+		free(outbuf);
+
+		return NULL;
+	}
+
+	struct tlvdb *t = emv_command_handle_format(outbuf, outlen, &ia_dol_tlv);
+	free(outbuf);
+
+	return t;
+}
+
 struct tlvdb *emv_get_data(struct sc *sc, tlv_tag_t tag)
 {
 	unsigned short sw;

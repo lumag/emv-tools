@@ -83,7 +83,6 @@ static struct tlv default_ddol_tlv = {.tag = 0x9f49, .len = 3, .value = default_
 
 static struct tlvdb *perform_dda(const struct emv_pk *pk, const struct tlvdb *db, struct sc *sc)
 {
-	const struct tlv *e;
 	const struct tlv *ddol_tlv = tlvdb_get(db, 0x9f49, NULL);
 
 	if (!pk)
@@ -97,17 +96,11 @@ static struct tlvdb *perform_dda(const struct emv_pk *pk, const struct tlvdb *db
 	if (!ddol_data)
 		return NULL;
 
-	struct tlvdb *dda_db = docmd(sc, 0x00, 0x88, 0x00, 0x00, ddol_data_len, ddol_data);
+	struct tlvdb *dda_db = emv_internal_authenticate(sc, ddol_data, ddol_data_len);
 	if (!dda_db) {
 		free(ddol_data);
-		return NULL;
-	}
 
-	if ((e = tlvdb_get(dda_db, 0x80, NULL)) != NULL) {
-		struct tlvdb *t;
-		t = tlvdb_fixed(0x9f4b, e->len, e->value);
-		tlvdb_free(dda_db);
-		dda_db = t;
+		return NULL;
 	}
 
 	struct tlvdb *idn_db = emv_pki_recover_idn(pk, dda_db, ddol_data, ddol_data_len);

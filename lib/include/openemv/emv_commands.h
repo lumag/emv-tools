@@ -24,6 +24,7 @@
 bool emv_read_records(struct sc *sc, struct tlvdb *db, unsigned char **pdata, size_t *plen);
 struct tlvdb *emv_gpo(struct sc *sc, const unsigned char *data, size_t len);
 struct tlvdb *emv_generate_ac(struct sc *sc, unsigned char type, const unsigned char *data, size_t len);
+struct tlvdb *emv_internal_authenticate(struct sc *sc, const unsigned char *data, size_t len);
 struct tlvdb *emv_get_data(struct sc *sc, tlv_tag_t tag);
 
 #endif
