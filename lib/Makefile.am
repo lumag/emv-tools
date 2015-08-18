@@ -6,6 +6,7 @@ libopenemv_la_SOURCES = \
 	config.c \
 	dol.c \
 	dump.c \
+	emv_commands.c \
 	emv_pk.c \
 	emv_pki.c \
 	emv_tags.c \
