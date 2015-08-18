@@ -26,6 +26,29 @@
 #include <stdlib.h>
 #include <string.h>
 
+struct tlvdb *emv_select(struct sc *sc, const unsigned char *aid, size_t aid_len)
+{
+	unsigned short sw;
+	size_t outlen;
+	unsigned char *outbuf;
+	struct tlvdb *t = NULL;
+
+	outbuf = sc_command(sc, 0x00, 0xa4, 0x04, 0x00, aid_len, aid, &sw, &outlen);
+	if (!outbuf)
+		return NULL;
+
+	if (sw != 0x9000) {
+		free(outbuf);
+
+		return NULL;
+	}
+
+	t = tlvdb_parse(outbuf, outlen);
+	free(outbuf);
+
+	return t;
+}
+
 bool emv_read_records(struct sc *sc, struct tlvdb *db, unsigned char **pdata, size_t *plen)
 {
 	*pdata = NULL;
