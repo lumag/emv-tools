@@ -19,6 +19,7 @@
 
 #include "openemv/emv_pk.h"
 #include "openemv/crypto.h"
+#include "openemv/config.h"
 
 #include <stdio.h>
 #include <stdbool.h>
