@@ -40,8 +40,9 @@ Makefile
 /lib/openemv.pc
 
 /src/emu_test
-/src/emv_dda
+/src/emv_cap
 /src/emv_cl_cda
+/src/emv_dda
 /src/emv_dump
 /src/emv_dump_emu
 /src/emv_ppse
