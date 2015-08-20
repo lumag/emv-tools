@@ -67,8 +67,9 @@ bool emv_read_records(struct sc *sc, struct tlvdb *db, unsigned char **pdata, si
 		unsigned char first = afl->value[i + 1];
 		unsigned char last = afl->value[i + 2];
 		unsigned char sdarec = afl->value[i + 3];
+		unsigned char sfi = p2 >> 3;
 
-		if (p2 == 0 || p2 == (31 << 3) || first == 0 || first > last)
+		if (sfi == 0 || sfi == 31 || first == 0 || first > last)
 			return false;
 
 		for (; first <= last; first ++) {
@@ -77,7 +78,7 @@ bool emv_read_records(struct sc *sc, struct tlvdb *db, unsigned char **pdata, si
 			unsigned char *outbuf;
 			struct tlvdb *t;
 
-			outbuf = sc_command(sc, 0x00, 0xb2, first, p2 | 0x04, 0, NULL, &sw, &outlen);
+			outbuf = sc_command(sc, 0x00, 0xb2, first, (sfi << 3) | 0x04, 0, NULL, &sw, &outlen);
 			if (!outbuf)
 				return false;
 
@@ -92,7 +93,7 @@ bool emv_read_records(struct sc *sc, struct tlvdb *db, unsigned char **pdata, si
 				const unsigned char *data;
 				size_t data_len;
 
-				if (p2 < (11 << 3)) {
+				if (sfi < 11) {
 					const struct tlv *e = tlvdb_get(t, 0x70, NULL);
 					if (!e)
 						return false;
