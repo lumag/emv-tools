@@ -103,25 +103,22 @@ static size_t tlv_parse_len(const unsigned char **buf, size_t *len)
 	return l;
 }
 
-struct tlv *tlv_parse_tl(const unsigned char **buf, size_t *len)
+bool tlv_parse_tl(const unsigned char **buf, size_t *len, struct tlv *tlv)
 {
-	struct tlv *tlv = malloc(sizeof(*tlv));
-
 	tlv->value = 0;
 
 	tlv->tag = tlv_parse_tag(buf, len);
 	if (tlv->tag == TLV_TAG_INVALID) {
-		free(tlv);
-		return NULL;
+		return false;
 	}
 
 	tlv->len = tlv_parse_len(buf, len);
 	if (tlv->len == TLV_LEN_INVALID) {
 		free(tlv);
-		return NULL;
+		return false;
 	}
 
-	return tlv;
+	return true;
 }
 
 static struct tlvdb *tlvdb_parse_children(struct tlvdb *parent);

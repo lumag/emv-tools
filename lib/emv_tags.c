@@ -255,19 +255,17 @@ static void emv_tag_dump_dol(const struct tlv *tlv, const struct emv_tag *tag, F
 	size_t left = tlv->len;
 
 	while (left) {
-		struct tlv *doltlv;
+		struct tlv doltlv;
 		const struct emv_tag *doltag;
 
-		doltlv = tlv_parse_tl(&buf, &left);
-		if (!doltlv) {
+		if (!tlv_parse_tl(&buf, &left, &doltlv)) {
 			fprintf(f, "Invalid Tag-Len\n");
 			continue;
 		}
 
-		doltag = emv_get_tag(doltlv);
+		doltag = emv_get_tag(&doltlv);
 
-		fprintf(f, "\tTag %4hx len %02zx ('%s')\n", doltlv->tag, doltlv->len, doltag->name);
-		free(doltlv);
+		fprintf(f, "\tTag %4hx len %02zx ('%s')\n", doltlv.tag, doltlv.len, doltag->name);
 	}
 }
 

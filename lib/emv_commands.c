@@ -141,19 +141,14 @@ static struct tlvdb *emv_command_handle_format(const unsigned char *buf, size_t 
 	if (buf[0] != 0x80)
 		return tlvdb_parse(buf, len);
 
-	struct tlvdb *t;
 	size_t left = len;
 	const unsigned char *ptr = buf;
-	struct tlv *e = tlv_parse_tl(&ptr, &left);
+	struct tlv e;
 
-	if (e && e->len == left)
-		t = dol_parse(dol, ptr, left);
-	else
-		t = NULL;
+	if (!tlv_parse_tl(&ptr, &left, &e) || e.len != left)
+		return NULL;
 
-	free(e);
-
-	return t;
+	return dol_parse(dol, ptr, left);
 }
 
 static const unsigned char gpo_dol_value[] = {
