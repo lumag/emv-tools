@@ -78,6 +78,7 @@ AC_TYPE_UINT32_T
 AC_FUNC_MALLOC
 AC_FUNC_REALLOC
 AC_CHECK_FUNCS([memset socket strdup])
+AC_CHECK_FUNCS([getentropy])
 
 pkgsysconfdir='${sysconfdir}/${PACKAGE}'
 AC_SUBST([pkgsysconfdir])
