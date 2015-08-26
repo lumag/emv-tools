@@ -107,6 +107,41 @@ static struct crypto_pk *crypto_pk_libgcrypt_open_rsa(va_list vl)
 	return &cp->cp;
 }
 
+static struct crypto_pk *crypto_pk_libgcrypt_genkey_rsa(va_list vl)
+{
+	struct crypto_pk_libgcrypt *cp = malloc(sizeof(*cp));
+	gcry_error_t err;
+	gcry_sexp_t params;
+	int transient = va_arg(vl, int);
+	unsigned int nbits = va_arg(vl, unsigned int);
+	unsigned int exp = va_arg(vl, unsigned int);
+
+	err = gcry_sexp_build(&params, NULL,
+			transient ?
+			"(genkey (rsa (nbits %u) (rsa-use-e %u) (flags transient-key)))":
+			"(genkey (rsa (nbits %u) (rsa-use-e %u)))",
+			nbits, exp);
+	if (err) {
+		fprintf(stderr, "LibGCrypt error %s/%s\n",
+				gcry_strsource (err),
+				gcry_strerror (err));
+		free(cp);
+		return NULL;
+	}
+
+	err = gcry_pk_genkey(&cp->pk, params);
+	gcry_sexp_release(params);
+	if (err) {
+		fprintf(stderr, "LibGCrypt error %s/%s\n",
+				gcry_strsource (err),
+				gcry_strerror (err));
+		free(cp);
+		return NULL;
+	}
+
+	return &cp->cp;
+}
+
 static void crypto_pk_libgcrypt_close(struct crypto_pk *_cp)
 {
 	struct crypto_pk_libgcrypt *cp = container_of(_cp, struct crypto_pk_libgcrypt, cp);
@@ -188,6 +223,75 @@ static unsigned char *crypto_pk_libgcrypt_encrypt(struct crypto_pk *_cp, const u
 	return result;
 }
 
+static unsigned char *crypto_pk_libgcrypt_decrypt(struct crypto_pk *_cp, const unsigned char *buf, size_t len, size_t *clen)
+{
+	struct crypto_pk_libgcrypt *cp = container_of(_cp, struct crypto_pk_libgcrypt, cp);
+	gcry_error_t err;
+	int blen = len;
+	gcry_sexp_t esexp, dsexp;
+	gcry_mpi_t tmpi;
+	size_t templen;
+	size_t keysize;
+	unsigned char *result;
+
+	/* XXX: RSA-only! */
+	err = gcry_sexp_build(&esexp, NULL, "(enc-val (flags) (rsa (a %b)))",
+			blen, buf);
+	if (err) {
+		fprintf(stderr, "LibGCrypt error %s/%s\n",
+				gcry_strsource (err),
+				gcry_strerror (err));
+		return NULL;
+	}
+
+	err = gcry_pk_decrypt(&dsexp, esexp, cp->pk);
+	gcry_sexp_release(esexp);
+	if (err) {
+		fprintf(stderr, "LibGCrypt error %s/%s\n",
+				gcry_strsource (err),
+				gcry_strerror (err));
+		return NULL;
+	}
+
+	tmpi = gcry_sexp_nth_mpi(dsexp, 1, GCRYMPI_FMT_USG);
+	gcry_sexp_release(dsexp);
+	if (!tmpi)
+		return NULL;
+
+	keysize = (gcry_pk_get_nbits(cp->pk) + 7) / 8;
+	result = malloc(keysize);
+	if (!result) {
+		gcry_mpi_release(tmpi);
+		return NULL;
+	}
+
+	err = gcry_mpi_print(GCRYMPI_FMT_USG, NULL, keysize, &templen, tmpi);
+	if (err) {
+		fprintf(stderr, "LibGCrypt error %s/%s\n",
+				gcry_strsource (err),
+				gcry_strerror (err));
+		gcry_mpi_release(tmpi);
+		free(result);
+		return NULL;
+	}
+
+	err = gcry_mpi_print(GCRYMPI_FMT_USG, result + keysize - templen, templen, &templen, tmpi);
+	if (err) {
+		fprintf(stderr, "LibGCrypt error %s/%s\n",
+				gcry_strsource (err),
+				gcry_strerror (err));
+		gcry_mpi_release(tmpi);
+		free(result);
+		return NULL;
+	}
+	memset(result, 0, keysize - templen);
+
+	*clen = keysize;
+	gcry_mpi_release(tmpi);
+
+	return result;
+}
+
 static struct crypto_pk *crypto_pk_libgcrypt_open(enum crypto_algo_pk pk, va_list vl)
 {
 	struct crypto_pk *cp;
@@ -203,9 +307,26 @@ static struct crypto_pk *crypto_pk_libgcrypt_open(enum crypto_algo_pk pk, va_lis
 	return cp;
 }
 
+static struct crypto_pk *crypto_pk_libgcrypt_genkey(enum crypto_algo_pk pk, va_list vl)
+{
+	struct crypto_pk *cp;
+
+	if (pk == PK_RSA)
+		cp = crypto_pk_libgcrypt_genkey_rsa(vl);
+	else
+		return NULL;
+
+	cp->close = crypto_pk_libgcrypt_close;
+	cp->encrypt = crypto_pk_libgcrypt_encrypt;
+	cp->decrypt = crypto_pk_libgcrypt_decrypt;
+
+	return cp;
+}
+
 static struct crypto_backend crypto_libgcrypt_backend = {
 	.hash_open = crypto_hash_libgcrypt_open,
 	.pk_open = crypto_pk_libgcrypt_open,
+	.pk_genkey = crypto_pk_libgcrypt_genkey,
 };
 
 struct crypto_backend *crypto_libgcrypt_init(void)
