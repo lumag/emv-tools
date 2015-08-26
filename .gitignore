@@ -50,6 +50,7 @@ Makefile
 /src/capk-verify
 
 /test/cda-test
+/test/crypto-test
 /test/dda-test
 /test/emu_test
 /test/sda-test

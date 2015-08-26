@@ -4,6 +4,7 @@ AM_LDFLAGS = -Wl,--as-needed
 LDADD = ../lib/libopenemv.la
 check_PROGRAMS = \
 	emu_test\
+	crypto-test \
 	tlv-test \
 	cda-test \
 	dda-test \
@@ -11,6 +12,7 @@ check_PROGRAMS = \
 
 TESTS = \
 	emu_test\
+	crypto-test \
 	tlv-test \
 	cda-test \
 	dda-test \
