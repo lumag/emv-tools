@@ -76,14 +76,16 @@ static struct crypto_hash *crypto_hash_nettle_open(enum crypto_algo_hash hash)
 
 struct crypto_pk_nettle {
 	struct crypto_pk cp;
-	struct rsa_public_key key;
+	struct rsa_public_key rsa_pub;
+	struct rsa_private_key rsa_priv;
 };
 
 static void crypto_pk_nettle_close(struct crypto_pk *_cp)
 {
 	struct crypto_pk_nettle *cp = container_of(_cp, struct crypto_pk_nettle, cp);
 
-	rsa_public_key_clear(&cp->key);
+	rsa_public_key_clear(&cp->rsa_pub);
+	rsa_private_key_clear(&cp->rsa_priv);
 	free(cp);
 }
 
@@ -95,19 +97,44 @@ static unsigned char *crypto_pk_nettle_encrypt(struct crypto_pk *_cp, const unsi
 	unsigned char *out;
 
 	nettle_mpz_init_set_str_256_u(data, len, buf);
-	mpz_powm(data, data, cp->key.e, cp->key.n);
+	mpz_powm(data, data, cp->rsa_pub.e, cp->rsa_pub.n);
 	datasize = nettle_mpz_sizeinbase_256_u(data);
 
-	out = malloc(cp->key.size);
+	out = malloc(cp->rsa_pub.size);
 	if (!out) {
 		*clen = 0;
 		return NULL;
 	}
-	nettle_mpz_get_str_256(datasize, out + cp->key.size - datasize, data);
-	memset(out, 0, cp->key.size - datasize);
+	nettle_mpz_get_str_256(datasize, out + cp->rsa_pub.size - datasize, data);
+	memset(out, 0, cp->rsa_pub.size - datasize);
 	mpz_clear(data);
 
-	*clen = cp->key.size;
+	*clen = cp->rsa_pub.size;
+
+	return out;
+}
+
+static unsigned char *crypto_pk_nettle_decrypt(struct crypto_pk *_cp, const unsigned char *buf, size_t len, size_t *clen)
+{
+	struct crypto_pk_nettle *cp = container_of(_cp, struct crypto_pk_nettle, cp);
+	mpz_t data;
+	size_t datasize;
+	unsigned char *out;
+
+	nettle_mpz_init_set_str_256_u(data, len, buf);
+	rsa_compute_root(&cp->rsa_priv, data, data);
+	datasize = nettle_mpz_sizeinbase_256_u(data);
+
+	out = malloc(cp->rsa_priv.size);
+	if (!out) {
+		*clen = 0;
+		return NULL;
+	}
+	nettle_mpz_get_str_256(datasize, out + cp->rsa_priv.size - datasize, data);
+	memset(out, 0, cp->rsa_priv.size - datasize);
+	mpz_clear(data);
+
+	*clen = cp->rsa_priv.size;
 
 	return out;
 }
@@ -130,13 +157,14 @@ static struct crypto_pk *crypto_pk_nettle_open(enum crypto_algo_pk pk, va_list v
 	explen = va_arg(vl, size_t);
 
 	cp = malloc(sizeof(*cp));
-	rsa_public_key_init(&cp->key);
-	nettle_mpz_set_str_256_u(cp->key.n, modlen, mod);
-	nettle_mpz_set_str_256_u(cp->key.e, explen, exp);
+	rsa_public_key_init(&cp->rsa_pub);
+	rsa_private_key_init(&cp->rsa_priv);
+	nettle_mpz_set_str_256_u(cp->rsa_pub.n, modlen, mod);
+	nettle_mpz_set_str_256_u(cp->rsa_pub.e, explen, exp);
 
-	rc = rsa_public_key_prepare(&cp->key);
+	rc = rsa_public_key_prepare(&cp->rsa_pub);
 	if (!rc) {
-		rsa_public_key_clear(&cp->key);
+		rsa_public_key_clear(&cp->rsa_pub);
 		free(cp);
 		return NULL;
 	}
@@ -241,9 +269,41 @@ static bool rnd_init(void)
 	return initialized;
 }
 
+static struct crypto_pk *crypto_pk_nettle_genkey(enum crypto_algo_pk pk, va_list vl)
+{
+	struct crypto_pk_nettle *cp;
+	/*int transient;*/
+	unsigned int nbits;
+	unsigned int exp;
+
+	if (pk != PK_RSA)
+		return NULL;
+
+	/*transient = */va_arg(vl, int);
+	nbits = va_arg(vl, unsigned int);
+	exp = va_arg(vl, unsigned int);
+
+	cp = malloc(sizeof(*cp));
+	rsa_public_key_init(&cp->rsa_pub);
+	rsa_private_key_init(&cp->rsa_priv);
+
+	mpz_set_ui(cp->rsa_pub.e, exp);
+
+	rsa_generate_keypair(&cp->rsa_pub, &cp->rsa_priv, NULL,
+			rnd_func, NULL, NULL,
+			nbits, 0);
+
+	cp->cp.close = crypto_pk_nettle_close;
+	cp->cp.encrypt = crypto_pk_nettle_encrypt;
+	cp->cp.decrypt = crypto_pk_nettle_decrypt;
+
+	return &cp->cp;
+}
+
 static struct crypto_backend crypto_nettle_backend = {
 	.hash_open = crypto_hash_nettle_open,
 	.pk_open = crypto_pk_nettle_open,
+	.pk_genkey = crypto_pk_nettle_genkey,
 };
 
 struct crypto_backend *crypto_nettle_init(void)
