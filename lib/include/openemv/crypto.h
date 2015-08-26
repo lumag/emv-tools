@@ -37,7 +37,10 @@ enum crypto_algo_pk {
 };
 
 struct crypto_pk *crypto_pk_open(enum crypto_algo_pk pk, ...);
+struct crypto_pk *crypto_pk_priv_open(enum crypto_algo_pk pk, ...);
+struct crypto_pk *crypto_pk_genkey(enum crypto_algo_pk pk, ...);
 void crypto_pk_close(struct crypto_pk *cp);
 unsigned char *crypto_pk_encrypt(struct crypto_pk *cp, const unsigned char *buf, size_t len, size_t *clen);
+unsigned char *crypto_pk_decrypt(struct crypto_pk *cp, const unsigned char *buf, size_t len, size_t *clen);
 
 #endif

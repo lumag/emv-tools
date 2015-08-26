@@ -72,6 +72,42 @@ struct crypto_pk *crypto_pk_open(enum crypto_algo_pk pk, ...)
 	return cp;
 }
 
+struct crypto_pk *crypto_pk_priv_open(enum crypto_algo_pk pk, ...)
+{
+	struct crypto_pk *cp;
+	va_list vl;
+
+	if (!crypto_init())
+		return NULL;
+
+	if (!crypto_backend->pk_priv_open)
+		return NULL;
+
+	va_start(vl, pk);
+	cp = crypto_backend->pk_priv_open(pk, vl);
+	va_end(vl);
+
+	return cp;
+}
+
+struct crypto_pk *crypto_pk_genkey(enum crypto_algo_pk pk, ...)
+{
+	struct crypto_pk *cp;
+	va_list vl;
+
+	if (!crypto_init())
+		return NULL;
+
+	if (!crypto_backend->pk_genkey)
+		return NULL;
+
+	va_start(vl, pk);
+	cp = crypto_backend->pk_genkey(pk, vl);
+	va_end(vl);
+
+	return cp;
+}
+
 void crypto_pk_close(struct crypto_pk *cp)
 {
 	cp->close(cp);
@@ -80,4 +116,15 @@ void crypto_pk_close(struct crypto_pk *cp)
 unsigned char *crypto_pk_encrypt(struct crypto_pk *cp, const unsigned char *buf, size_t len, size_t *clen)
 {
 	return cp->encrypt(cp, buf, len, clen);
+}
+
+unsigned char *crypto_pk_decrypt(struct crypto_pk *cp, const unsigned char *buf, size_t len, size_t *clen)
+{
+	if (!cp->decrypt) {
+		*clen = 0;
+
+		return NULL;
+	}
+
+	return cp->decrypt(cp, buf, len, clen);
 }

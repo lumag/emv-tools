@@ -33,12 +33,15 @@ struct crypto_hash {
 
 struct crypto_pk {
 	unsigned char *(*encrypt)(struct crypto_pk *cp, const unsigned char *buf, size_t len, size_t *clen);
+	unsigned char *(*decrypt)(struct crypto_pk *cp, const unsigned char *buf, size_t len, size_t *clen);
 	void (*close)(struct crypto_pk *cp);
 };
 
 struct crypto_backend {
 	struct crypto_hash *(*hash_open)(enum crypto_algo_hash hash);
 	struct crypto_pk *(*pk_open)(enum crypto_algo_pk pk, va_list vl);
+	struct crypto_pk *(*pk_priv_open)(enum crypto_algo_pk pk, va_list vl);
+	struct crypto_pk *(*pk_genkey)(enum crypto_algo_pk pk, va_list vl);
 };
 
 #ifdef ENABLE_CRYPTO_LIBGCRYPT
