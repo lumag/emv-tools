@@ -200,7 +200,7 @@ static int getrandom(void *buf, size_t buflen, unsigned int flags)
 #else
 static int getrandom(void *buf, size_t buflen, unsigned int flags)
 {
-	errno = -ENOSYS;
+	errno = ENOSYS;
 	return -1;
 }
 #endif
