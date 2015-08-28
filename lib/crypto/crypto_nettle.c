@@ -224,7 +224,9 @@ static int getentropy_urandom(void *buf, size_t len)
 
 		old = fcntl(fd, F_GETFD);
 		if (old != -1)
-			fcntl(fd, F_SETFD, old | FD_CLOEXEC);
+			old = fcntl(fd, F_SETFD, old | FD_CLOEXEC);
+		if (old < 0)
+			return old;
 	}
 
 	for (pos = 0; pos < len; ) {
