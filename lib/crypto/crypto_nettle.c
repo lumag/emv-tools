@@ -197,8 +197,50 @@ static int getrandom(void *buf, size_t buflen, unsigned int flags)
 	return syscall(SYS_getrandom, buf, buflen, flags);
 }
 #else
-#error Please provide getrandom emulation
+static int getrandom(void *buf, size_t buflen, unsigned int flags)
+{
+	errno = -ENOSYS;
+	return -1;
+}
 #endif
+
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <fcntl.h>
+
+static int getentropy_urandom(void *buf, size_t len)
+{
+	static int fd = -1;
+	size_t pos;
+
+	if (fd == -1) {
+		int old;
+
+		fd = open("/dev/urandom", O_RDONLY);
+		if (fd < 0) {
+			return fd;
+		}
+
+		old = fcntl(fd, F_GETFD);
+		if (old != -1)
+			fcntl(fd, F_SETFD, old | FD_CLOEXEC);
+	}
+
+	for (pos = 0; pos < len; ) {
+		ssize_t res = read(fd, buf + pos, len - pos);
+		if (res < 0) {
+			if (errno == EINTR)
+				continue;
+
+			return res;
+		} else if (res == 0)
+			return -1;
+		else
+			pos += res;
+	}
+
+	return 0;
+}
 
 static int getentropy(void *buf, size_t buflen)
 {
@@ -208,8 +250,11 @@ static int getentropy(void *buf, size_t buflen)
 		goto failure;
 
 	ret = getrandom(buf, buflen, 0);
-	if (ret < 0)
+	if (ret < 0) {
+		if (errno == ENOSYS)
+			return getentropy_urandom(buf, buflen);
 		return ret;
+	}
 	if (ret == buflen)
 		return 0;
 failure:
