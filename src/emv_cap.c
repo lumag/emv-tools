@@ -123,7 +123,7 @@ static void build_cap(struct tlvdb *db)
 
 	unsigned long data = 0;
 	for (i = 0; i < k; i++)
-		data |= buf[i] << (8 * i);
+		data |= ((unsigned long) buf[i]) << (8 * i);
 	dump_buffer(buf, k, stdout);
 
 	fprintf(stdout, "CAP data: %lu\n", data);
