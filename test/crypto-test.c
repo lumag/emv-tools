@@ -29,7 +29,7 @@ static int test_genkey(unsigned int keylength, unsigned char *msg, size_t msg_le
 	size_t tmp_len, tmp2_len;
 	unsigned char *tmp, *tmp2;
 	struct crypto_pk *pk;
-	
+
 	pk = crypto_pk_genkey(PK_RSA, 1, keylength, 3);
 	if (!pk)
 		goto out;
@@ -76,12 +76,14 @@ static unsigned char message[4096 / 8] =
 
 int main(void)
 {
-	unsigned int keylengths[] = {1024, 1152, 1408, 1984, 2048, 3072, 4096};
+	unsigned int keylengths[] = {1024, 1152, 1408, 1984, 2048/*, 3072, 4096*/};
 	int i;
 
 	for (i = 0; i < sizeof(keylengths) / sizeof(keylengths[0]); i++) {
 		unsigned int kl = keylengths[i];
-		int ret = test_genkey(kl, message, kl / 8);
+		int ret;
+		printf("Testing key length %d\n", kl);
+		ret = test_genkey(kl, message, kl / 8);
 		if (ret)
 			return ret;
 	}
