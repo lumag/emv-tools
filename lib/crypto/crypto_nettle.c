@@ -286,7 +286,13 @@ static int rnd_source_getentropy(int init)
 
 }
 
-static void rnd_func(void *_ctx, size_t length, uint8_t *data)
+#if NETTLE_VERSION_MAJOR > 2
+typedef size_t rnd_size_t;
+#else
+typedef unsigned int rnd_size_t;
+#endif
+
+static void rnd_func(void *_ctx, rnd_size_t length, uint8_t *data)
 {
 	yarrow256_random(&rndctx.yactx, length, data);
 }
