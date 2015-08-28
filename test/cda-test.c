@@ -280,6 +280,10 @@ static int cda_test_raw(void)
 	crypto_hash_close(ch);
 
 	ch =  crypto_hash_open(HASH_SHA_1);
+	if (!ch) {
+		free(sdad);
+		return 1;
+	}
 
 	crypto_hash_write(ch, crm1, sizeof(crm1));
 	crypto_hash_write(ch, dd2, sizeof(dd2));
