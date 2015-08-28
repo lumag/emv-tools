@@ -23,6 +23,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #include <nettle/sha.h>
 #include <nettle/bignum.h>
@@ -274,8 +275,11 @@ static int rnd_source_getentropy(int init)
 	int rc;
 
 	rc = getentropy(buf, read_size);
-	if (rc < 0)
+	if (rc < 0) {
+		perror("getentropy");
+
 		return rc;
+	}
 
 	return yarrow256_update(&rndctx.yactx, init,
 			read_size * 8 / 2, read_size, buf);
