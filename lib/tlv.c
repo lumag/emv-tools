@@ -108,15 +108,12 @@ bool tlv_parse_tl(const unsigned char **buf, size_t *len, struct tlv *tlv)
 	tlv->value = 0;
 
 	tlv->tag = tlv_parse_tag(buf, len);
-	if (tlv->tag == TLV_TAG_INVALID) {
+	if (tlv->tag == TLV_TAG_INVALID)
 		return false;
-	}
 
 	tlv->len = tlv_parse_len(buf, len);
-	if (tlv->len == TLV_LEN_INVALID) {
-		free(tlv);
+	if (tlv->len == TLV_LEN_INVALID)
 		return false;
-	}
 
 	return true;
 }
