@@ -107,6 +107,80 @@ static struct crypto_pk *crypto_pk_libgcrypt_open_rsa(va_list vl)
 	return &cp->cp;
 }
 
+static struct crypto_pk *crypto_pk_libgcrypt_open_priv_rsa(va_list vl)
+{
+	struct crypto_pk_libgcrypt *cp = malloc(sizeof(*cp));
+	gcry_error_t err;
+	char *mod = va_arg(vl, char *);
+	int modlen = va_arg(vl, size_t);
+	char *exp = va_arg(vl, char *);
+	int explen = va_arg(vl, size_t);
+	char *d = va_arg(vl, char *);
+	int dlen = va_arg(vl, size_t);
+	char *p = va_arg(vl, char *);
+	int plen = va_arg(vl, size_t);
+	gcry_mpi_t pmpi;
+	char *q = va_arg(vl, char *);
+	int qlen = va_arg(vl, size_t);
+	gcry_mpi_t qmpi;
+	(void) va_arg(vl, char *);
+	(void) va_arg(vl, size_t);
+	(void) va_arg(vl, char *);
+	(void) va_arg(vl, size_t);
+	char *inv = va_arg(vl, char *);
+	int invlen = va_arg(vl, size_t);
+	gcry_mpi_t invmpi;
+
+	err = gcry_mpi_scan(&pmpi, GCRYMPI_FMT_USG, p, plen, NULL);
+	if (err)
+		goto err_p;
+
+	err = gcry_mpi_scan(&qmpi, GCRYMPI_FMT_USG, q, qlen, NULL);
+	if (err)
+		goto err_q;
+
+	err = gcry_mpi_scan(&invmpi, GCRYMPI_FMT_USG, inv, invlen, NULL);
+	if (err)
+		goto err_inv;
+
+	if (gcry_mpi_cmp (pmpi, qmpi) > 0) {
+		gcry_mpi_swap (pmpi, qmpi);
+		gcry_mpi_invm (invmpi, pmpi, qmpi);
+	}
+
+	err = gcry_sexp_build(&cp->pk, NULL, "(private-key (rsa (n %b) (e %b) (d %b) (p %M) (q %M) (u %M)))",
+			modlen, mod, explen, exp, dlen, d,
+			pmpi, qmpi, invmpi);
+	if (err)
+		goto err_sexp;
+
+	err = gcry_pk_testkey(cp->pk);
+	if (err)
+		goto err_test;
+
+	gcry_mpi_release(invmpi);
+	gcry_mpi_release(qmpi);
+	gcry_mpi_release(pmpi);
+
+	return &cp->cp;
+
+err_test:
+	gcry_sexp_release(cp->pk);
+err_sexp:
+	gcry_mpi_release(invmpi);
+err_inv:
+	gcry_mpi_release(qmpi);
+err_q:
+	gcry_mpi_release(pmpi);
+err_p:
+	free(cp);
+
+	fprintf(stderr, "LibGCrypt error %s/%s\n",
+			gcry_strsource (err),
+			gcry_strerror (err));
+	return NULL;
+}
+
 static struct crypto_pk *crypto_pk_libgcrypt_genkey_rsa(va_list vl)
 {
 	struct crypto_pk_libgcrypt *cp = malloc(sizeof(*cp));
@@ -307,6 +381,22 @@ static struct crypto_pk *crypto_pk_libgcrypt_open(enum crypto_algo_pk pk, va_lis
 	return cp;
 }
 
+static struct crypto_pk *crypto_pk_libgcrypt_open_priv(enum crypto_algo_pk pk, va_list vl)
+{
+	struct crypto_pk *cp;
+
+	if (pk == PK_RSA)
+		cp = crypto_pk_libgcrypt_open_priv_rsa(vl);
+	else
+		return NULL;
+
+	cp->close = crypto_pk_libgcrypt_close;
+	cp->encrypt = crypto_pk_libgcrypt_encrypt;
+	cp->decrypt = crypto_pk_libgcrypt_decrypt;
+
+	return cp;
+}
+
 static struct crypto_pk *crypto_pk_libgcrypt_genkey(enum crypto_algo_pk pk, va_list vl)
 {
 	struct crypto_pk *cp;
@@ -326,6 +416,7 @@ static struct crypto_pk *crypto_pk_libgcrypt_genkey(enum crypto_algo_pk pk, va_l
 static struct crypto_backend crypto_libgcrypt_backend = {
 	.hash_open = crypto_hash_libgcrypt_open,
 	.pk_open = crypto_pk_libgcrypt_open,
+	.pk_open_priv = crypto_pk_libgcrypt_open_priv,
 	.pk_genkey = crypto_pk_libgcrypt_genkey,
 };
 
