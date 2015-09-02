@@ -72,7 +72,7 @@ struct crypto_pk *crypto_pk_open(enum crypto_algo_pk pk, ...)
 	return cp;
 }
 
-struct crypto_pk *crypto_pk_priv_open(enum crypto_algo_pk pk, ...)
+struct crypto_pk *crypto_pk_open_priv(enum crypto_algo_pk pk, ...)
 {
 	struct crypto_pk *cp;
 	va_list vl;
@@ -80,11 +80,11 @@ struct crypto_pk *crypto_pk_priv_open(enum crypto_algo_pk pk, ...)
 	if (!crypto_init())
 		return NULL;
 
-	if (!crypto_backend->pk_priv_open)
+	if (!crypto_backend->pk_open_priv)
 		return NULL;
 
 	va_start(vl, pk);
-	cp = crypto_backend->pk_priv_open(pk, vl);
+	cp = crypto_backend->pk_open_priv(pk, vl);
 	va_end(vl);
 
 	return cp;

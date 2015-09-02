@@ -40,7 +40,7 @@ struct crypto_pk {
 struct crypto_backend {
 	struct crypto_hash *(*hash_open)(enum crypto_algo_hash hash);
 	struct crypto_pk *(*pk_open)(enum crypto_algo_pk pk, va_list vl);
-	struct crypto_pk *(*pk_priv_open)(enum crypto_algo_pk pk, va_list vl);
+	struct crypto_pk *(*pk_open_priv)(enum crypto_algo_pk pk, va_list vl);
 	struct crypto_pk *(*pk_genkey)(enum crypto_algo_pk pk, va_list vl);
 };
 
