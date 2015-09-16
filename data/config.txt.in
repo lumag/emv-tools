@@ -1,8 +1,12 @@
 scard: {
-	driver = "pcsc";
+	driver = "@default_scard@";
 	emu: {
 		file = "@pkgdatadir@/maestro.emu";
 	};
+};
+
+crypto: {
+	driver = "@default_crypto@";
 };
 
 capk = "@pkgdatadir@/capk.txt";

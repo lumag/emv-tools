@@ -1,8 +1,12 @@
 scard: {
-	driver = "emu";
+	driver = "@default_scard@";
 	emu: {
 		file = "@srcdir@/maestro.emu";
 	};
+};
+
+crypto: {
+	driver = "@default_crypto@";
 };
 
 capk = "@srcdir@/capk.txt";
