@@ -119,12 +119,8 @@ static bool verify_offline_enc(struct tlvdb *db, struct sc *sc, struct emv_pk *p
 	if (!pb)
 		return false;
 
-	unsigned short sw;
-	size_t outlen;
-	unsigned char *outbuf;
-
-	outbuf = sc_command(sc, 0x00, 0x84, 0x00, 0x00, 0, NULL, &sw, &outlen);
-	if (sw != 0x9000 || !outbuf || outlen != 8) {
+	unsigned char *challenge = emv_get_challenge(sc);
+	if (!challenge) {
 		free(pb);
 		return false;
 	}
@@ -134,12 +130,12 @@ static bool verify_offline_enc(struct tlvdb *db, struct sc *sc, struct emv_pk *p
 
 	pinbuf[0] = 0x7f;
 	memcpy(pinbuf+1, pb, 8);
-	memcpy(pinbuf+9, outbuf, 8);
+	memcpy(pinbuf+9, challenge, 8);
 	/* Should be random */
 	memset(pinbuf+17, 0x5a, pinbuf_len - 17);
 
 	free(pb);
-	free(outbuf);
+	free(challenge);
 
 	struct crypto_pk *kcp;
 	kcp = crypto_pk_open(pk->pk_algo,
@@ -148,7 +144,8 @@ static bool verify_offline_enc(struct tlvdb *db, struct sc *sc, struct emv_pk *p
 	if (!kcp)
 		return false;
 
-	outbuf = crypto_pk_encrypt(kcp, pinbuf, pinbuf_len, &outlen);
+	size_t outlen;
+	unsigned char *outbuf = crypto_pk_encrypt(kcp, pinbuf, pinbuf_len, &outlen);
 	crypto_pk_close(kcp);
 	ret = verify(sc, 0x88, outbuf, outlen);
 	free(outbuf);
