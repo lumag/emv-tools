@@ -243,7 +243,7 @@ struct tlvdb *emv_internal_authenticate(struct sc *sc, const unsigned char *data
 {
 	unsigned short sw;
 	size_t outlen;
-	unsigned char *outbuf = sc_command(sc, 0x80, 0x88, 0x00, 0x00, len, data, &sw, &outlen);
+	unsigned char *outbuf = sc_command(sc, 0x00, 0x88, 0x00, 0x00, len, data, &sw, &outlen);
 	if (!outbuf)
 		return NULL;
 
