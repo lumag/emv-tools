@@ -21,6 +21,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+unsigned char *emv_get_challenge(struct sc *sc);
 struct tlvdb *emv_select(struct sc *sc, const unsigned char *aid, size_t aid_len);
 unsigned char *emv_read_record(struct sc *sc, unsigned char sfi, unsigned char record, unsigned short *psw, size_t *plen);
 bool emv_read_records(struct sc *sc, struct tlvdb *db, unsigned char **pdata, size_t *plen);

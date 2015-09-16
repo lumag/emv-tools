@@ -26,6 +26,20 @@
 #include <stdlib.h>
 #include <string.h>
 
+unsigned char *emv_get_challenge(struct sc *sc)
+{
+	unsigned short sw;
+	size_t outlen;
+	unsigned char *outbuf = sc_command(sc, 0x00, 0x84, 0x00, 0x00, 0, NULL, &sw, &outlen);
+
+	if (sw == 0x9000 && outbuf && outlen == 8)
+		return outbuf;
+
+	free(outbuf);
+
+	return NULL;
+}
+
 struct tlvdb *emv_select(struct sc *sc, const unsigned char *aid, size_t aid_len)
 {
 	unsigned short sw;
