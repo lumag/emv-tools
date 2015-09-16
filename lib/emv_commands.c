@@ -49,6 +49,11 @@ struct tlvdb *emv_select(struct sc *sc, const unsigned char *aid, size_t aid_len
 	return t;
 }
 
+unsigned char *emv_read_record(struct sc *sc, unsigned char sfi, unsigned char record, unsigned short *psw, size_t *plen)
+{
+	return sc_command(sc, 0x00, 0xb2, record, (sfi << 3) | 0x04, 0, NULL, psw, plen);
+}
+
 bool emv_read_records(struct sc *sc, struct tlvdb *db, unsigned char **pdata, size_t *plen)
 {
 	*pdata = NULL;
@@ -78,7 +83,7 @@ bool emv_read_records(struct sc *sc, struct tlvdb *db, unsigned char **pdata, si
 			unsigned char *outbuf;
 			struct tlvdb *t;
 
-			outbuf = sc_command(sc, 0x00, 0xb2, first, (sfi << 3) | 0x04, 0, NULL, &sw, &outlen);
+			outbuf = emv_read_record(sc, sfi, first, &sw, &outlen);
 			if (!outbuf)
 				return false;
 
