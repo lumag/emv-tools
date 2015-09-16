@@ -17,17 +17,29 @@
 #include <config.h>
 #endif
 
+#include "openemv/config.h"
 #include "openemv/crypto.h"
 #include "crypto_backend.h"
+
+#include <string.h>
 
 static struct crypto_backend *crypto_backend;
 
 bool crypto_init(void)
 {
-	if (!crypto_backend)
+	const char *driver;
+
+	if (crypto_backend)
+		return true;
+
+	driver = openemv_config_get("crypto.driver");
+	if (!driver)
+		return false;
+	else if (!strcmp(driver, "libgcrypt"))
 		crypto_backend = crypto_libgcrypt_init();
-	if (!crypto_backend)
+	else if (!strcmp(driver, "nettle"))
 		crypto_backend = crypto_nettle_init();
+
 	if (!crypto_backend)
 		return false;
 
