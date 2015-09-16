@@ -25,7 +25,7 @@
 
 static struct crypto_backend *crypto_backend;
 
-bool crypto_init(void)
+static bool crypto_init(void)
 {
 	const char *driver;
 

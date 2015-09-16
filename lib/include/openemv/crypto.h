@@ -19,8 +19,6 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-bool crypto_init(void);
-
 enum crypto_algo_hash {
 	HASH_INVALID,
 	HASH_SHA_1,
