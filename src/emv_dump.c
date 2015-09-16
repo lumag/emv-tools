@@ -120,7 +120,7 @@ int main(void)
 		for (i = 1; i <= logent_tlv->value[1]; i++) {
 			unsigned short sw;
 			size_t log_len;
-			unsigned char *log = sc_command(sc, 0x00, 0xb2, i, (logent_tlv->value[0] << 3) | 0x4, 0, NULL, &sw, &log_len);
+			unsigned char *log = emv_read_record(sc, logent_tlv->value[0], i, &sw, &log_len);
 			if (!log)
 				continue;
 

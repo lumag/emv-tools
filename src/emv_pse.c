@@ -55,14 +55,11 @@ int main(void)
 		return 1;
 	}
 
-	struct tlvdb *t;
-	const struct tlv *e;
-
 	struct tlvdb *pse = emv_select(sc, pse_name, sizeof(pse_name));
 	if (!pse)
 		return 1;
 
-	e = tlvdb_get(pse, 0x88, NULL);
+	const struct tlv *e = tlvdb_get(pse, 0x88, NULL);
 	if (!e)
 		return 1;
 	unsigned char sfi = e->value[0];
@@ -71,18 +68,18 @@ int main(void)
 	for (i = 1; ; i++) {
 		unsigned short sw;
 		size_t outlen;
-		unsigned char *outbuf;
-		outbuf = sc_command(sc, 0x00, 0xb2, i, (sfi << 3) | 0x04, 0, NULL, &sw, &outlen);
-		if (sw == 0x9000) {
-			t = tlvdb_parse(outbuf, outlen);
-			free(outbuf);
-			if (!t)
-				return 1;
-			tlvdb_add(pse, t);
-		} else if (sw == 0x6a83) {
+		unsigned char *outbuf = emv_read_record(sc, sfi, i, &sw, &outlen);
+		if (sw == 0x6a83)
 			break;
-		} else
+		else if (sw != 0x9000 || !outbuf)
 			return 1;
+
+		struct tlvdb *t = tlvdb_parse(outbuf, outlen);
+		free(outbuf);
+		if (!t)
+			return 1;
+
+		tlvdb_add(pse, t);
 	}
 
 #if 0
