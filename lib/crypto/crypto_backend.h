@@ -26,9 +26,11 @@
         (type *)( (char *)__mptr - offsetof(type,member) );})
 
 struct crypto_hash {
+	enum crypto_algo_hash algo;
 	void (*write)(struct crypto_hash *ch, const unsigned char *buf, size_t len);
 	unsigned char *(*read)(struct crypto_hash *ch);
 	void (*close)(struct crypto_hash *ch);
+	size_t (*get_size)(const struct crypto_hash *ch);
 };
 
 struct crypto_pk {

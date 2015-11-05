@@ -58,6 +58,14 @@ static unsigned char *crypto_hash_nettle_read(struct crypto_hash *_ch)
 	return ch->digest;
 }
 
+static size_t crypto_hash_nettle_get_size(const struct crypto_hash *ch)
+{
+	if (ch->algo == HASH_SHA_1)
+		return SHA1_DIGEST_SIZE;
+	else
+		return 0;
+}
+
 static struct crypto_hash *crypto_hash_nettle_open(enum crypto_algo_hash hash)
 {
 	struct crypto_hash_nettle *ch;
@@ -71,6 +79,7 @@ static struct crypto_hash *crypto_hash_nettle_open(enum crypto_algo_hash hash)
 	ch->ch.write = crypto_hash_nettle_write;
 	ch->ch.read = crypto_hash_nettle_read;
 	ch->ch.close = crypto_hash_nettle_close;
+	ch->ch.get_size = crypto_hash_nettle_get_size;
 
 	return &ch->ch;
 }

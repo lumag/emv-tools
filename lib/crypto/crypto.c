@@ -48,10 +48,16 @@ static bool crypto_init(void)
 
 struct crypto_hash *crypto_hash_open(enum crypto_algo_hash hash)
 {
+	struct crypto_hash *ch;
+
 	if (!crypto_init())
 		return NULL;
 
-	return crypto_backend->hash_open(hash);
+	ch = crypto_backend->hash_open(hash);
+	if (ch)
+		ch->algo = hash;
+
+	return ch;
 }
 
 void crypto_hash_close(struct crypto_hash *ch)
@@ -67,6 +73,11 @@ void crypto_hash_write(struct crypto_hash *ch, const unsigned char *buf, size_t 
 unsigned char *crypto_hash_read(struct crypto_hash *ch)
 {
 	return ch->read(ch);
+}
+
+size_t crypto_hash_get_size(const struct crypto_hash *ch)
+{
+	return ch->get_size(ch);
 }
 
 struct crypto_pk *crypto_pk_open(enum crypto_algo_pk pk, ...)

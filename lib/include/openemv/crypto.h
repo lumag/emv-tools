@@ -28,6 +28,7 @@ struct crypto_hash *crypto_hash_open(enum crypto_algo_hash hash);
 void crypto_hash_close(struct crypto_hash *ch);
 void crypto_hash_write(struct crypto_hash *ch, const unsigned char *buf, size_t len);
 unsigned char *crypto_hash_read(struct crypto_hash *ch);
+size_t crypto_hash_get_size(const struct crypto_hash *ch);
 
 enum crypto_algo_pk {
 	PK_INVALID,

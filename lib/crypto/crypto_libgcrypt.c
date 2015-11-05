@@ -54,6 +54,16 @@ static unsigned char *crypto_hash_libgcrypt_read(struct crypto_hash *_ch)
 	return gcry_md_read(ch->md, 0);
 }
 
+static size_t crypto_hash_libgcrypt_get_size(const struct crypto_hash *ch)
+{
+	int algo = GCRY_MD_NONE;
+
+	if (ch->algo == HASH_SHA_1)
+		algo = GCRY_MD_SHA1;
+
+	return gcry_md_get_algo_dlen(algo);
+}
+
 static struct crypto_hash *crypto_hash_libgcrypt_open(enum crypto_algo_hash hash)
 {
 	struct crypto_hash_libgcrypt *ch = malloc(sizeof(*ch));
@@ -76,6 +86,7 @@ static struct crypto_hash *crypto_hash_libgcrypt_open(enum crypto_algo_hash hash
 	ch->ch.write = crypto_hash_libgcrypt_write;
 	ch->ch.read = crypto_hash_libgcrypt_read;
 	ch->ch.close = crypto_hash_libgcrypt_close;
+	ch->ch.get_size = crypto_hash_libgcrypt_get_size;
 
 	return &ch->ch;
 }
