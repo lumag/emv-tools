@@ -149,6 +149,31 @@ static unsigned char *crypto_pk_nettle_decrypt(struct crypto_pk *_cp, const unsi
 	return out;
 }
 
+static unsigned char *crypto_pk_nettle_get_parameter(const struct crypto_pk *_cp, unsigned param, size_t *plen)
+{
+	struct crypto_pk_nettle *cp = container_of(_cp, struct crypto_pk_nettle, cp);
+	mpz_t *p;
+
+	if (param == 0)
+		p = &cp->rsa_pub.n;
+	else if (param == 1)
+		p = &cp->rsa_pub.e;
+	else
+		return NULL;
+
+	size_t parameter_size = nettle_mpz_sizeinbase_256_u(*p);
+	unsigned char *out;
+
+	out = malloc(parameter_size);
+	if (!out)
+		return NULL;
+
+	nettle_mpz_get_str_256(parameter_size, out, *p);
+	*plen = parameter_size;
+
+	return out;
+}
+
 static struct crypto_pk *crypto_pk_nettle_open(enum crypto_algo_pk pk, va_list vl)
 {
 	struct crypto_pk_nettle *cp;
@@ -182,6 +207,7 @@ static struct crypto_pk *crypto_pk_nettle_open(enum crypto_algo_pk pk, va_list v
 
 	cp->cp.close = crypto_pk_nettle_close;
 	cp->cp.encrypt = crypto_pk_nettle_encrypt;
+	cp->cp.get_parameter = crypto_pk_nettle_get_parameter;
 
 	return &cp->cp;
 }
@@ -242,6 +268,7 @@ static struct crypto_pk *crypto_pk_nettle_open_priv(enum crypto_algo_pk pk, va_l
 	cp->cp.close = crypto_pk_nettle_close;
 	cp->cp.encrypt = crypto_pk_nettle_encrypt;
 	cp->cp.decrypt = crypto_pk_nettle_decrypt;
+	cp->cp.get_parameter = crypto_pk_nettle_get_parameter;
 
 	return &cp->cp;
 }
@@ -423,6 +450,7 @@ static struct crypto_pk *crypto_pk_nettle_genkey(enum crypto_algo_pk pk, va_list
 	cp->cp.close = crypto_pk_nettle_close;
 	cp->cp.encrypt = crypto_pk_nettle_encrypt;
 	cp->cp.decrypt = crypto_pk_nettle_decrypt;
+	cp->cp.get_parameter = crypto_pk_nettle_get_parameter;
 
 	return &cp->cp;
 }

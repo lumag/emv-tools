@@ -92,6 +92,9 @@ struct crypto_pk *crypto_pk_open(enum crypto_algo_pk pk, ...)
 	cp = crypto_backend->pk_open(pk, vl);
 	va_end(vl);
 
+	if (cp)
+		cp->algo = pk;
+
 	return cp;
 }
 
@@ -110,6 +113,9 @@ struct crypto_pk *crypto_pk_open_priv(enum crypto_algo_pk pk, ...)
 	cp = crypto_backend->pk_open_priv(pk, vl);
 	va_end(vl);
 
+	if (cp)
+		cp->algo = pk;
+
 	return cp;
 }
 
@@ -127,6 +133,9 @@ struct crypto_pk *crypto_pk_genkey(enum crypto_algo_pk pk, ...)
 	va_start(vl, pk);
 	cp = crypto_backend->pk_genkey(pk, vl);
 	va_end(vl);
+
+	if (cp)
+		cp->algo = pk;
 
 	return cp;
 }
@@ -150,4 +159,22 @@ unsigned char *crypto_pk_decrypt(struct crypto_pk *cp, const unsigned char *buf,
 	}
 
 	return cp->decrypt(cp, buf, len, clen);
+}
+
+enum crypto_algo_pk crypto_pk_get_algo(const struct crypto_pk *cp)
+{
+	if (!cp)
+		return PK_INVALID;
+
+	return cp->algo;
+}
+
+unsigned char *crypto_pk_get_parameter(const struct crypto_pk *cp, unsigned param, size_t *plen)
+{
+	*plen = 0;
+
+	if (!cp->get_parameter)
+		return NULL;
+
+	return cp->get_parameter(cp, param, plen);
 }

@@ -377,6 +377,56 @@ static unsigned char *crypto_pk_libgcrypt_decrypt(struct crypto_pk *_cp, const u
 	return result;
 }
 
+static unsigned char *crypto_pk_libgcrypt_get_parameter(const struct crypto_pk *_cp, unsigned param, size_t *plen)
+{
+	struct crypto_pk_libgcrypt *cp = container_of(_cp, struct crypto_pk_libgcrypt, cp);
+	gcry_error_t err;
+	gcry_sexp_t psexp;
+	gcry_mpi_t tmpi;
+	size_t parameter_size;
+	unsigned char *result;
+	const char *name;
+
+	/* XXX: RSA-only! */
+	if (param == 0)
+		name = "n";
+	else if (param == 1)
+		name = "e";
+	else
+		return NULL;
+
+	psexp = gcry_sexp_find_token(cp->pk, name, 1);
+	if (!psexp)
+		return NULL;
+
+	tmpi = gcry_sexp_nth_mpi(psexp, 1, GCRYMPI_FMT_USG);
+	gcry_sexp_release(psexp);
+	if (!tmpi)
+		return NULL;
+
+	parameter_size = (gcry_mpi_get_nbits(tmpi) + 7) / 8;
+	result = malloc(parameter_size);
+	if (!result) {
+		gcry_mpi_release(tmpi);
+		return NULL;
+	}
+
+	err = gcry_mpi_print(GCRYMPI_FMT_USG, result, parameter_size, NULL, tmpi);
+	if (err) {
+		fprintf(stderr, "LibGCrypt error %s/%s\n",
+				gcry_strsource (err),
+				gcry_strerror (err));
+		gcry_mpi_release(tmpi);
+		free(result);
+		return NULL;
+	}
+
+	*plen = parameter_size;
+	gcry_mpi_release(tmpi);
+
+	return result;
+}
+
 static struct crypto_pk *crypto_pk_libgcrypt_open(enum crypto_algo_pk pk, va_list vl)
 {
 	struct crypto_pk *cp;
@@ -388,6 +438,7 @@ static struct crypto_pk *crypto_pk_libgcrypt_open(enum crypto_algo_pk pk, va_lis
 
 	cp->close = crypto_pk_libgcrypt_close;
 	cp->encrypt = crypto_pk_libgcrypt_encrypt;
+	cp->get_parameter = crypto_pk_libgcrypt_get_parameter;
 
 	return cp;
 }
@@ -404,6 +455,7 @@ static struct crypto_pk *crypto_pk_libgcrypt_open_priv(enum crypto_algo_pk pk, v
 	cp->close = crypto_pk_libgcrypt_close;
 	cp->encrypt = crypto_pk_libgcrypt_encrypt;
 	cp->decrypt = crypto_pk_libgcrypt_decrypt;
+	cp->get_parameter = crypto_pk_libgcrypt_get_parameter;
 
 	return cp;
 }
@@ -420,6 +472,7 @@ static struct crypto_pk *crypto_pk_libgcrypt_genkey(enum crypto_algo_pk pk, va_l
 	cp->close = crypto_pk_libgcrypt_close;
 	cp->encrypt = crypto_pk_libgcrypt_encrypt;
 	cp->decrypt = crypto_pk_libgcrypt_decrypt;
+	cp->get_parameter = crypto_pk_libgcrypt_get_parameter;
 
 	return cp;
 }

@@ -41,5 +41,7 @@ struct crypto_pk *crypto_pk_genkey(enum crypto_algo_pk pk, ...);
 void crypto_pk_close(struct crypto_pk *cp);
 unsigned char *crypto_pk_encrypt(struct crypto_pk *cp, const unsigned char *buf, size_t len, size_t *clen);
 unsigned char *crypto_pk_decrypt(struct crypto_pk *cp, const unsigned char *buf, size_t len, size_t *clen);
+enum crypto_algo_pk crypto_pk_get_algo(const struct crypto_pk *cp);
+unsigned char *crypto_pk_get_parameter(const struct crypto_pk *cp, unsigned param, size_t *plen);
 
 #endif
