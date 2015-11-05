@@ -339,10 +339,13 @@ bool emv_pk_verify(const struct emv_pk *pk)
 	crypto_hash_write(ch, pk->exp, pk->elen);
 
 	unsigned char *h = crypto_hash_read(ch);
-	if (!h)
+	if (!h) {
+		crypto_hash_close(ch);
 		return false;
+	}
 
-	bool r = memcmp(h, pk->hash, 20) ? false : true;
+	size_t hsize = crypto_hash_get_size(ch);
+	bool r = hsize && !memcmp(h, pk->hash, hsize) ? true : false;
 
 	crypto_hash_close(ch);
 
