@@ -168,7 +168,7 @@ static struct emv_pk *emv_pki_decode_key(const struct emv_pk *enc_pk,
 			exp_tlv->value, exp_tlv->len,
 			add_data, add_data_len,
 			NULL, 0);
-	if (!data)
+	if (!data || data_len < 11 + pan_length)
 		return NULL;
 
 	/* Perform the rest of checks here */
