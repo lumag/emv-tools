@@ -18,9 +18,13 @@
 
 #include "openemv/crypto.h"
 #include "openemv/emv_pk.h"
+#include "openemv/tlv.h"
 
 struct emv_pk *emv_pki_make_ca(const struct crypto_pk *cp,
 		const unsigned char *rid, unsigned char index,
 		unsigned int expire, enum crypto_algo_hash hash_algo);
+struct tlvdb *emv_pki_sign_issuer_cert(const struct crypto_pk *cp, struct emv_pk *issuer_pk);
+struct tlvdb *emv_pki_sign_icc_cert(const struct crypto_pk *cp, struct emv_pk *icc_pk, const unsigned char *sda_data, size_t sda_data_len);
+struct tlvdb *emv_pki_sign_icc_pe_cert(const struct crypto_pk *cp, struct emv_pk *icc_pe_pk);
 
 #endif
