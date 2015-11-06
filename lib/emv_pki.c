@@ -104,8 +104,38 @@ static unsigned char *emv_pki_decode_message(const struct emv_pk *enc_pk,
 	return data;
 }
 
+static unsigned emv_cn_length(const struct tlv *tlv)
+{
+	int i;
+
+	for (i = 0; i < tlv->len; i++) {
+		unsigned char c = tlv->value[i];
+
+		if (c >> 4 == 0xf)
+			return 2 * i;
+
+		if ((c & 0xf) == 0xf)
+			return 2 * i + 1;
+	}
+
+	return 2 * tlv->len;
+}
+
+static unsigned char emv_cn_get(const struct tlv *tlv, unsigned pos)
+{
+	if (pos > tlv->len * 2)
+		return 0xf;
+
+	unsigned char c = tlv->value[pos / 2];
+
+	if (pos % 2)
+		return c & 0xf;
+	else
+		return c >> 4;
+}
 
 static struct emv_pk *emv_pki_decode_message_2(const struct emv_pk *enc_pk,
+		const struct tlv *pan_tlv,
 		const struct tlv *cert_tlv,
 		const struct tlv *exp_tlv,
 		const struct tlv *rem_tlv)
@@ -114,7 +144,7 @@ static struct emv_pk *emv_pki_decode_message_2(const struct emv_pk *enc_pk,
 	size_t data_len;
 	size_t pk_len;
 
-	if (!cert_tlv || !exp_tlv)
+	if (!cert_tlv || !exp_tlv || !pan_tlv)
 		return NULL;
 
 	if (!rem_tlv)
@@ -131,6 +161,27 @@ static struct emv_pk *emv_pki_decode_message_2(const struct emv_pk *enc_pk,
 
 	/* Perform the rest of checks here */
 
+	struct tlv pan2_tlv = {
+		.tag = 0x5a,
+		.len = 4,
+		.value = &data[2],
+	};
+	unsigned pan_len = emv_cn_length(pan_tlv);
+	unsigned pan2_len = emv_cn_length(&pan2_tlv);
+
+	if (pan2_len < 4 || pan2_len > pan_len) {
+		free(data);
+
+		return NULL;
+	}
+
+	unsigned i;
+	for (i = 0; i < pan2_len; i++)
+		if (emv_cn_get(pan_tlv, i) != emv_cn_get(&pan2_tlv, i)) {
+			free(data);
+
+			return NULL;
+		}
 
 	pk_len = data[13];
 	/* Just to be sure -- not required by the standard ?! */
@@ -153,6 +204,8 @@ static struct emv_pk *emv_pki_decode_message_2(const struct emv_pk *enc_pk,
 	pk->pk_algo = data[12];
 	pk->expire = (data[7] << 16) | (data[6] << 8) | 31;
 	memcpy(pk->serial, data + 8, 3);
+	memcpy(pk->pan, data + 2, 4);
+	memset(pk->pan + 4, 0xff, 10 - 4);
 
 	memcpy(pk->modulus, data + 15, data_len - 36);
 	memcpy(pk->modulus + data_len - 36, rem_tlv->value, rem_tlv->len);
@@ -164,6 +217,7 @@ static struct emv_pk *emv_pki_decode_message_2(const struct emv_pk *enc_pk,
 }
 
 static struct emv_pk *emv_pki_decode_message_4(const struct emv_pk *enc_pk,
+		const struct tlv *pan_tlv,
 		const struct tlv *cert_tlv,
 		const struct tlv *exp_tlv,
 		const struct tlv *rem_tlv,
@@ -174,7 +228,7 @@ static struct emv_pk *emv_pki_decode_message_4(const struct emv_pk *enc_pk,
 	size_t data_len;
 	size_t pk_len;
 
-	if (!cert_tlv || !exp_tlv)
+	if (!cert_tlv || !exp_tlv || !pan_tlv)
 		return NULL;
 
 	if (!rem_tlv)
@@ -192,6 +246,28 @@ static struct emv_pk *emv_pki_decode_message_4(const struct emv_pk *enc_pk,
 
 
 	/* Perform the rest of checks here */
+
+	struct tlv pan2_tlv = {
+		.tag = 0x5a,
+		.len = 10,
+		.value = &data[2],
+	};
+	unsigned pan_len = emv_cn_length(pan_tlv);
+	unsigned pan2_len = emv_cn_length(&pan2_tlv);
+
+	if (pan2_len != pan_len) {
+		free(data);
+
+		return NULL;
+	}
+
+	unsigned i;
+	for (i = 0; i < pan2_len; i++)
+		if (emv_cn_get(pan_tlv, i) != emv_cn_get(&pan2_tlv, i)) {
+			free(data);
+
+			return NULL;
+		}
 
 	pk_len = data[19];
 	if (pk_len > data_len - 42 + rem_tlv->len) {
@@ -213,6 +289,7 @@ static struct emv_pk *emv_pki_decode_message_4(const struct emv_pk *enc_pk,
 	pk->pk_algo = data[18];
 	pk->expire = (data[13] << 16) | (data[12] << 8) | 31;
 	memcpy(pk->serial, data + 14, 3);
+	memcpy(pk->pan, data + 2, 10);
 
 	memcpy(pk->modulus, data + 21,
 			pk_len < data_len - 42 ? pk_len : data_len - 42);
@@ -227,6 +304,7 @@ static struct emv_pk *emv_pki_decode_message_4(const struct emv_pk *enc_pk,
 struct emv_pk *emv_pki_recover_issuer_cert(const struct emv_pk *pk, struct tlvdb *db)
 {
 	return emv_pki_decode_message_2(pk,
+			tlvdb_get(db, 0x5a, NULL),
 			tlvdb_get(db, 0x90, NULL),
 			tlvdb_get(db, 0x9f32, NULL),
 			tlvdb_get(db, 0x92, NULL));
@@ -235,6 +313,7 @@ struct emv_pk *emv_pki_recover_issuer_cert(const struct emv_pk *pk, struct tlvdb
 struct emv_pk *emv_pki_recover_icc_cert(const struct emv_pk *pk, struct tlvdb *db, const unsigned char *sda_data, size_t sda_data_len)
 {
 	return emv_pki_decode_message_4(pk,
+			tlvdb_get(db, 0x5a, NULL),
 			tlvdb_get(db, 0x9f46, NULL),
 			tlvdb_get(db, 0x9f47, NULL),
 			tlvdb_get(db, 0x9f48, NULL),
@@ -244,6 +323,7 @@ struct emv_pk *emv_pki_recover_icc_cert(const struct emv_pk *pk, struct tlvdb *d
 struct emv_pk *emv_pki_recover_icc_pe_cert(const struct emv_pk *pk, struct tlvdb *db)
 {
 	return emv_pki_decode_message_4(pk,
+			tlvdb_get(db, 0x5a, NULL),
 			tlvdb_get(db, 0x9f2d, NULL),
 			tlvdb_get(db, 0x9f2e, NULL),
 			tlvdb_get(db, 0x9f2f, NULL),

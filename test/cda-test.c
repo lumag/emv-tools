@@ -121,6 +121,10 @@ const unsigned char ssd1[] = {
 	0x39, 0x00,
 };
 
+const unsigned char pan[] = {
+	0x52, 0x85, 0x88, 0x12, 0x54, 0x34, 0x56, 0x53,
+};
+
 const unsigned char dd1[] = {
 	0x12, 0x34, 0x57, 0x79,
 };
@@ -318,6 +322,7 @@ static int cda_test_pk(void)
 	db = tlvdb_external(0x90, sizeof(issuer_cert), issuer_cert);
 	tlvdb_add(db, tlvdb_external(0x9f32, sizeof(issuer_exp), issuer_exp));
 	tlvdb_add(db, tlvdb_external(0x92, sizeof(issuer_rem), issuer_rem));
+	tlvdb_add(db, tlvdb_external(0x5a, sizeof(pan), pan));
 
 	struct emv_pk *ipk = emv_pki_recover_issuer_cert(pk, db);
 	if (!ipk) {
