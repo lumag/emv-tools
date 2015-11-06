@@ -35,8 +35,8 @@ struct crypto_hash {
 
 struct crypto_pk {
 	enum crypto_algo_pk algo;
-	unsigned char *(*encrypt)(struct crypto_pk *cp, const unsigned char *buf, size_t len, size_t *clen);
-	unsigned char *(*decrypt)(struct crypto_pk *cp, const unsigned char *buf, size_t len, size_t *clen);
+	unsigned char *(*encrypt)(const struct crypto_pk *cp, const unsigned char *buf, size_t len, size_t *clen);
+	unsigned char *(*decrypt)(const struct crypto_pk *cp, const unsigned char *buf, size_t len, size_t *clen);
 	unsigned char *(*get_parameter)(const struct crypto_pk *cp, unsigned param, size_t *plen);
 	size_t (*get_nbits)(const struct crypto_pk *cp);
 	void (*close)(struct crypto_pk *cp);

@@ -145,12 +145,12 @@ void crypto_pk_close(struct crypto_pk *cp)
 	cp->close(cp);
 }
 
-unsigned char *crypto_pk_encrypt(struct crypto_pk *cp, const unsigned char *buf, size_t len, size_t *clen)
+unsigned char *crypto_pk_encrypt(const struct crypto_pk *cp, const unsigned char *buf, size_t len, size_t *clen)
 {
 	return cp->encrypt(cp, buf, len, clen);
 }
 
-unsigned char *crypto_pk_decrypt(struct crypto_pk *cp, const unsigned char *buf, size_t len, size_t *clen)
+unsigned char *crypto_pk_decrypt(const struct crypto_pk *cp, const unsigned char *buf, size_t len, size_t *clen)
 {
 	if (!cp->decrypt) {
 		*clen = 0;

@@ -99,7 +99,7 @@ static void crypto_pk_nettle_close(struct crypto_pk *_cp)
 	free(cp);
 }
 
-static unsigned char *crypto_pk_nettle_encrypt(struct crypto_pk *_cp, const unsigned char *buf, size_t len, size_t *clen)
+static unsigned char *crypto_pk_nettle_encrypt(const struct crypto_pk *_cp, const unsigned char *buf, size_t len, size_t *clen)
 {
 	struct crypto_pk_nettle *cp = container_of(_cp, struct crypto_pk_nettle, cp);
 	mpz_t data;
@@ -124,7 +124,7 @@ static unsigned char *crypto_pk_nettle_encrypt(struct crypto_pk *_cp, const unsi
 	return out;
 }
 
-static unsigned char *crypto_pk_nettle_decrypt(struct crypto_pk *_cp, const unsigned char *buf, size_t len, size_t *clen)
+static unsigned char *crypto_pk_nettle_decrypt(const struct crypto_pk *_cp, const unsigned char *buf, size_t len, size_t *clen)
 {
 	struct crypto_pk_nettle *cp = container_of(_cp, struct crypto_pk_nettle, cp);
 	mpz_t data;

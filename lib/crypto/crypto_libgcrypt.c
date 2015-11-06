@@ -235,7 +235,7 @@ static void crypto_pk_libgcrypt_close(struct crypto_pk *_cp)
 	free(cp);
 }
 
-static unsigned char *crypto_pk_libgcrypt_encrypt(struct crypto_pk *_cp, const unsigned char *buf, size_t len, size_t *clen)
+static unsigned char *crypto_pk_libgcrypt_encrypt(const struct crypto_pk *_cp, const unsigned char *buf, size_t len, size_t *clen)
 {
 	struct crypto_pk_libgcrypt *cp = container_of(_cp, struct crypto_pk_libgcrypt, cp);
 	gcry_error_t err;
@@ -308,7 +308,7 @@ static unsigned char *crypto_pk_libgcrypt_encrypt(struct crypto_pk *_cp, const u
 	return result;
 }
 
-static unsigned char *crypto_pk_libgcrypt_decrypt(struct crypto_pk *_cp, const unsigned char *buf, size_t len, size_t *clen)
+static unsigned char *crypto_pk_libgcrypt_decrypt(const struct crypto_pk *_cp, const unsigned char *buf, size_t len, size_t *clen)
 {
 	struct crypto_pk_libgcrypt *cp = container_of(_cp, struct crypto_pk_libgcrypt, cp);
 	gcry_error_t err;
