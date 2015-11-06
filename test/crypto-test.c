@@ -203,12 +203,14 @@ static int test_pk(void)
 		free(tmp);
 		goto close_pub;
 	}
+	free(tmp);
 
 	tmp = crypto_pk_get_parameter(pubk, 1, &tmp_len);
 	if (tmp_len != sizeof(pk_E) || memcmp(tmp, pk_E, tmp_len)) {
 		free(tmp);
 		goto close_pub;
 	}
+	free(tmp);
 
 	privk = crypto_pk_open_priv(PK_RSA,
 			pk_N, sizeof(pk_N),
@@ -233,12 +235,15 @@ static int test_pk(void)
 		free(tmp);
 		goto close;
 	}
+	free(tmp);
 
 	tmp = crypto_pk_get_parameter(privk, 1, &tmp_len);
 	if (tmp_len != sizeof(pk_E) || memcmp(tmp, pk_E, tmp_len)) {
 		free(tmp);
 		goto close;
 	}
+	free(tmp);
+
 	tmp = crypto_pk_decrypt(privk, msg, msg_len, &tmp_len);
 	if (!tmp)
 		goto close;
