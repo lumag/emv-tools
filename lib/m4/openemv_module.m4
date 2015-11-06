@@ -23,7 +23,7 @@ AS_IF([test "x$enable_$1_$2" != "xno"],
 AS_IF([test "x$default_$1" = "x"],
       [default_$1="$2"
 AC_SUBST([default_$1])dnl
-AC_DEFINE([DEFAULT_]openemv_SUBSYS, [$2], [Default provider for $1])])dnl
+AC_DEFINE([DEFAULT_]openemv_SUBSYS, ["$2"], [Default provider for $1])])dnl
 AC_DEFINE([ENABLE_]openemv_SUBSYS[_]openemv_NAME, [1], [Define if you enable $3])])
 AM_CONDITIONAL(openemv_SUBSYS[_]openemv_NAME, [test "x$enable_$1_$2" != "xno"])dnl
 m4_popdef([openemv_NAME])dnl
