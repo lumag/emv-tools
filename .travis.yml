@@ -24,6 +24,7 @@ env:
     - GCRYPT=yes NETTLE=no
     - GCRYPT=no NETTLE=yes
     - GCRYPT=yes NETTLE=yes COVERITY_SCAN=1
+    - DEPLOY=1
   global:
     # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
     #   via the "travis encrypt" command using the project repo's public key
@@ -51,8 +52,11 @@ matrix:
   exclude:
     - compiler: clang
       env: GCRYPT=yes NETTLE=yes COVERITY_SCAN=1
+    - compiler: clang
+      env: DEPLOY=1
   allow_failures:
     - env: GCRYPT=yes NETTLE=yes COVERITY_SCAN=1
+    - env: DEPLOY=1
 
 before_script:
   - autoreconf -vfi
@@ -60,9 +64,8 @@ script:
   - mkdir -p build
   - cd build
   - ../configure --enable-scard-emu --enable-scard-apduio --enable-crypto-libgcrypt=${GCRYPT} --enable-crypto-nettle=${NETTLE}
-  - if [ -z "${COVERITY_SCAN}" ] ; then make check ; else eval "$COVERITY_SCAN_BUILD"; fi
+  - if [ -n "${COVERITY_SCAN}" ] ; then eval "$COVERITY_SCAN_BUILD"; elif [ -n "${DEPLOY}" ] ; then make distcheck ; else make check ; fi
 before_deploy:
-  - make distcheck
   - export RELEASE_PKG_FILE=$(ls *.tar.*)
   - echo "deploying $RELEASE_PKG_FILE to GitHub releases"
 deploy:
@@ -71,5 +74,7 @@ deploy:
     secure: nt0vm42oMDDR5wG9QJbhDuEd+dCHE0oJlNo2XkDxkrIdPwZkggEAUlL9+OabXiGAiUyC3Fs8idz+GSUlG+51N3zruS4XwdbI21xv5EOq4JCXeX0+9Fq+2WU76rD50Rx+VxaYxlBTWVjrp6UDUX9jvia4t0XH18NKzpSJNTypctDQ0tAcKg24/4pOHCA2awNZIvNREuujFcF/DUUti+V3xv8Bv1O63BtC6xMyLe2TTcFOEP9NJcRSbaYSe8KbR/3jkRgKoMbHYmDLEAjpYmBqUKldta5YE9RPmsxe06VBtb2n+V2qysuFcPRUDbCyiVPKGxzh1t2vQr4vTv88MAqm5k9u3+UOhhVdOlh5U/dudgBxdCwxiHRelOnUHbGtDZMsnlbC4Oq3zdaBSjuzdYrDis5+N6hElu/Ul0cl2VufWetDDqgsVqfeIBmoiDYPRZ4jQ7pt8FazQXEvmS5ETkcjwNpMeLzD/W1J63VVV5TXd7Q2WAkiXW1O5vlpBloAJChHsGgwsGoLsfPTvMKgpjZuuc1/xaWs7/POJFx1W+0u7WCk9Huu/fzRWzKg3DqRM7gGnW6mUFqFtRYqt5QES9pATuyp1iUmOSAwMonthpOkrHVNZlFUMIfI0/vNSlllEnDa0bjGeulOVzzLReXtzd8spLs0nZFLU5NDQP7JHayJalE=
   file_glob: true
   file: "${RELEASE_PKG_FILE}"
+  skip_cleanup: true
   on:
     tags: true
+    condition: -n $DEPLOY
