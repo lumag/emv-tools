@@ -9,6 +9,7 @@ libopenemv_la_SOURCES = \
 	emv_commands.c \
 	emv_pk.c \
 	emv_pki.c \
+	emv_pki_priv.c \
 	emv_tags.c \
 	pinpad.c \
 	tlv.c

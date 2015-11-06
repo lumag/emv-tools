@@ -55,3 +55,4 @@ Makefile
 /test/emu_test
 /test/sda-test
 /test/tlv-test
+/test/emv_pki_priv_test

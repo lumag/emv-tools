@@ -8,6 +8,7 @@ nobase_include_HEADERS = \
 	openemv/emv_commands.h \
 	openemv/emv_pk.h \
 	openemv/emv_pki.h \
+	openemv/emv_pki_priv.h \
 	openemv/emv_tags.h \
 	openemv/pinpad.h \
 	openemv/sc_helpers.h \
