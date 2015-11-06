@@ -77,7 +77,8 @@ static unsigned char *emv_pki_decode_message(const struct emv_pk *enc_pk,
 		return NULL;
 	}
 
-	crypto_hash_write(ch, data + 1, data_len - 22);
+	size_t hash_len = crypto_hash_get_size(ch);
+	crypto_hash_write(ch, data + 1, data_len - 2 - hash_len);
 
 	va_start(vl, cert_tlv);
 	while (true) {
@@ -91,7 +92,7 @@ static unsigned char *emv_pki_decode_message(const struct emv_pk *enc_pk,
 	}
 	va_end(vl);
 
-	if (memcmp(data + data_len - 21, crypto_hash_read(ch), 20)) {
+	if (memcmp(data + data_len - 1 - hash_len, crypto_hash_read(ch), hash_len)) {
 		crypto_hash_close(ch);
 		free(data);
 		return NULL;
@@ -99,7 +100,7 @@ static unsigned char *emv_pki_decode_message(const struct emv_pk *enc_pk,
 
 	crypto_hash_close(ch);
 
-	*len = data_len;
+	*len = data_len - hash_len - 1;
 
 	return data;
 }
@@ -184,7 +185,7 @@ static struct emv_pk *emv_pki_decode_message_2(const struct emv_pk *enc_pk,
 		}
 
 	pk_len = data[13];
-	if (pk_len > data_len - 36  + rem_tlv->len) {
+	if (pk_len > data_len - 15  + rem_tlv->len) {
 		free(data);
 		return NULL;
 	}
@@ -207,8 +208,8 @@ static struct emv_pk *emv_pki_decode_message_2(const struct emv_pk *enc_pk,
 	memset(pk->pan + 4, 0xff, 10 - 4);
 
 	memcpy(pk->modulus, data + 15,
-			pk_len < data_len - 36 ? pk_len : data_len - 36);
-	memcpy(pk->modulus + data_len - 36, rem_tlv->value, rem_tlv->len);
+			pk_len < data_len - 15 ? pk_len : data_len - 15);
+	memcpy(pk->modulus + data_len - 15, rem_tlv->value, rem_tlv->len);
 	memcpy(pk->exp, exp_tlv->value, exp_tlv->len);
 
 	free(data);
@@ -270,7 +271,7 @@ static struct emv_pk *emv_pki_decode_message_4(const struct emv_pk *enc_pk,
 		}
 
 	pk_len = data[19];
-	if (pk_len > data_len - 42 + rem_tlv->len) {
+	if (pk_len > data_len - 21 + rem_tlv->len) {
 		free(data);
 		return NULL;
 	}
@@ -292,8 +293,8 @@ static struct emv_pk *emv_pki_decode_message_4(const struct emv_pk *enc_pk,
 	memcpy(pk->pan, data + 2, 10);
 
 	memcpy(pk->modulus, data + 21,
-			pk_len < data_len - 42 ? pk_len : data_len - 42);
-	memcpy(pk->modulus + data_len - 42, rem_tlv->value, rem_tlv->len);
+			pk_len < data_len - 21 ? pk_len : data_len - 21);
+	memcpy(pk->modulus + data_len - 21, rem_tlv->value, rem_tlv->len);
 	memcpy(pk->exp, exp_tlv->value, exp_tlv->len);
 
 	free(data);
@@ -338,7 +339,7 @@ struct tlvdb *emv_pki_recover_dac(const struct emv_pk *enc_pk, const struct tlvd
 			sda_data, sda_data_len,
 			NULL, 0);
 
-	if (!data)
+	if (!data || data_len < 5)
 		return NULL;
 
 	struct tlvdb *dac_db = tlvdb_fixed(0x9f45, 2, data+3);
@@ -356,10 +357,10 @@ struct tlvdb *emv_pki_recover_idn(const struct emv_pk *enc_pk, const struct tlvd
 			dyn_data, dyn_data_len,
 			NULL, 0);
 
-	if (!data)
+	if (!data || data_len < 3)
 		return NULL;
 
-	if (data[3] < 2 || data[3] > data_len - 25) {
+	if (data[3] < 2 || data[3] > data_len - 3) {
 		free(data);
 		return NULL;
 	}
@@ -412,10 +413,10 @@ struct tlvdb *emv_pki_perform_cda(const struct emv_pk *enc_pk, const struct tlvd
 			tlvdb_get(this_db, 0x9f4b, NULL),
 			un_tlv->value, un_tlv->len,
 			NULL, 0);
-	if (!data)
+	if (!data || data_len < 3)
 		return NULL;
 
-	if (data[3] < 30 || data[3] > data_len - 25) {
+	if (data[3] < 30 || data[3] > data_len - 4) {
 		free(data);
 		return NULL;
 	}
