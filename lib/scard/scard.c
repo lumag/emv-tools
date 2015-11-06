@@ -26,7 +26,7 @@
 struct sc *scard_init(const char *driver)
 {
 	if (!driver)
-		driver = openemv_config_get("scard.driver");
+		driver = openemv_config_get_def("scard.driver", DEFAULT_SCARD);
 
 	if (!driver)
 		return NULL;
