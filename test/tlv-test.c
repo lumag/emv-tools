@@ -54,13 +54,12 @@ static int parse_test(void) {
 		{ 0x02, {0x88, 0x00}, false, 0x88, 1 },
 		{ 0x04, {0x9f, 0x02, 0x01, 0x01}, false, 0x9f02, 1},
 	};
-	struct tlvdb *t;
 	const struct tlv *tlv;
-	int i, j;
+	int i;
 
 	for (i = 0; i < sizeof(tests)/sizeof(tests[0]); i++) {
 		printf("Test %d\n", i);
-		t = tlvdb_parse(tests[i].buf, tests[i].len);
+		struct tlvdb *t = tlvdb_parse(tests[i].buf, tests[i].len);
 		if (tests[i].fail && t) {
 			printf("Unexpected success\n");
 			exit (1);
@@ -72,6 +71,7 @@ static int parse_test(void) {
 
 		tlvdb_visit(t, print_cb, NULL);
 
+		int j;
 		for (tlv = tlvdb_get(t, tests[i].tag, NULL), j = 0;
 				tlv;
 				tlv = tlvdb_get(t, tests[i].tag, tlv), j++) {

@@ -152,12 +152,14 @@ int main(int argc, char **argv)
 	sc = scard_init(NULL);
 	if (!sc) {
 		printf("Cannot init scard\n");
+		fclose(f);
 		return 1;
 	}
 
 	scard_connect(sc, 0);
 	if (scard_is_error(sc)) {
 		printf("%s\n", scard_error(sc));
+		fclose(f);
 		return 1;
 	}
 

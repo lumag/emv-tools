@@ -152,7 +152,7 @@ int main(void)
 	tlvdb_add(s, t);
 	if (idn_db) {
 		const struct tlv *idn_tlv = tlvdb_get(idn_db, 0x9f4c, NULL);
-		printf("CDA verified OK (IDN %zd bytes long)!\n", idn_tlv->len);
+		printf("CDA verified OK (IDN %zu bytes long)!\n", idn_tlv->len);
 		tlvdb_add(s, idn_db);
 	}
 

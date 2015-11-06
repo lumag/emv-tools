@@ -30,7 +30,7 @@ static int test_genkey(unsigned int keylength, unsigned char *msg, size_t msg_le
 	unsigned char *tmp, *tmp2;
 	struct crypto_pk *pk;
 
-	printf("Testing key length %d\n", keylength);
+	printf("Testing key length %u\n", keylength);
 
 	pk = crypto_pk_genkey(PK_RSA, 1, keylength, 3);
 	if (!pk)

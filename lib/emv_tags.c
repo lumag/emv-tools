@@ -234,11 +234,10 @@ static void emv_tag_dump_bitmask(const struct tlv *tlv, const struct emv_tag *ta
 {
 	const struct emv_tag_bit *bits = tag->data;
 	unsigned bit, byte;
-	unsigned char val;
 
 	for (byte = 1; byte <= tlv->len; byte ++) {
-		val = tlv->value[byte - 1];
-		fprintf(f, "\tByte %d (%02x)\n", byte, val);
+		unsigned char val = tlv->value[byte - 1];
+		fprintf(f, "\tByte %u (%02x)\n", byte, val);
 		for (bit = 8; bit > 0; bit--, val <<= 1) {
 			if (val & 0x80)
 				fprintf(f, "\t\t%s - '%s'\n", bitstrings[bit - 1],
@@ -416,7 +415,7 @@ static void emv_tag_dump_cvm_list(const struct tlv *tlv, const struct emv_tag *t
 
 		fprintf(f, "\t%02x %02x: '%s' '%s' and '%s' if this CVM is unsuccessful\n",
 				tlv->value[i], tlv->value[i+1],
-				method, condition, tlv->value[i] & 0x40 ? "continue" : "fail");
+				method, condition, (tlv->value[i] & 0x40) ? "continue" : "fail");
 	}
 }
 

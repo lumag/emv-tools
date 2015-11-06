@@ -249,7 +249,7 @@ int main(void)
 
 	unsigned int keylength = 1024;
 
-	printf("Testing key length %d\n", keylength);
+	printf("Testing key length %u\n", keylength);
 
 	struct crypto_pk *cp = crypto_pk_genkey(PK_RSA, 1, keylength, 3);
 	if (!cp) {

@@ -273,7 +273,7 @@ int main(void)
 	struct tlvdb *idn_db = perform_dda(icc_pk, s, sc);
 	if (idn_db) {
 		const struct tlv *idn_tlv = tlvdb_get(idn_db, 0x9f4c, NULL);
-		printf("DDA verified OK (IDN %zd bytes long)!\n", idn_tlv->len);
+		printf("DDA verified OK (IDN %zu bytes long)!\n", idn_tlv->len);
 		tlvdb_add(s, idn_db);
 	}
 

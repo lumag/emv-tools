@@ -329,14 +329,13 @@ struct emu_fs *emu_fs_append(struct emu_fs *fs, struct emu_df *df)
 const struct emu_df *emu_fs_get_df(const struct emu_fs *fs, const unsigned char *name, size_t len)
 {
 	struct emu_df *df;
-	size_t buf_len;
-	const unsigned char *buf;
 
 	if (len == 0)
 		return fs->df;
 
 	for (df = fs->df; df; df = df->next) {
-		buf = emu_df_get_value(df, "name", 1, &buf_len);
+		size_t buf_len;
+		const unsigned char *buf = emu_df_get_value(df, "name", 1, &buf_len);
 
 		if (len > buf_len)
 			continue;

@@ -195,7 +195,6 @@ struct emv_pk *emv_pk_parse_pk(char *buf)
 	l = emv_pk_read_bin(buf, r->hash, 20, NULL);
 	if (l <= 0)
 		goto out2;
-	buf += l;
 
 	return r;
 
