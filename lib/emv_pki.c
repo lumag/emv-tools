@@ -184,8 +184,7 @@ static struct emv_pk *emv_pki_decode_message_2(const struct emv_pk *enc_pk,
 		}
 
 	pk_len = data[13];
-	/* Just to be sure -- not required by the standard ?! */
-	if (pk_len != data_len - 36 + rem_tlv->len) {
+	if (pk_len > data_len - 36  + rem_tlv->len) {
 		free(data);
 		return NULL;
 	}
@@ -207,7 +206,8 @@ static struct emv_pk *emv_pki_decode_message_2(const struct emv_pk *enc_pk,
 	memcpy(pk->pan, data + 2, 4);
 	memset(pk->pan + 4, 0xff, 10 - 4);
 
-	memcpy(pk->modulus, data + 15, data_len - 36);
+	memcpy(pk->modulus, data + 15,
+			pk_len < data_len - 36 ? pk_len : data_len - 36);
 	memcpy(pk->modulus + data_len - 36, rem_tlv->value, rem_tlv->len);
 	memcpy(pk->exp, exp_tlv->value, exp_tlv->len);
 
