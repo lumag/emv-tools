@@ -83,11 +83,10 @@ static struct emv_pk *make_icc_pk(struct crypto_pk *cp)
 	ipk->pan[2] = 0x56;
 	ipk->pan[3] = 0x78;
 	ipk->pan[4] = 0x89;
-	ipk->pan[4] = 0x12;
-	ipk->pan[5] = 0x34;
+	ipk->pan[5] = 0x78;
 	ipk->pan[6] = 0x56;
-	ipk->pan[7] = 0x78;
-	ipk->pan[8] = 0x89;
+	ipk->pan[7] = 0x34;
+	ipk->pan[8] = 0x12;
 
 	return ipk;
 }
@@ -151,7 +150,7 @@ static int test_emv_pki_sign_icc_cert(struct crypto_pk *cp)
 		goto out;
 
 	struct emv_pk *icc_pk = make_icc_pk(cp);
-	if (!ipk)
+	if (!icc_pk)
 		goto out2;
 
 	struct tlvdb *db = emv_pki_sign_icc_cert(cp, icc_pk, sdad, sizeof(sdad));
@@ -204,7 +203,7 @@ static int test_emv_pki_sign_icc_pe_cert(struct crypto_pk *cp)
 		goto out;
 
 	struct emv_pk *icc_pe_pk = make_icc_pk(cp);
-	if (!ipk)
+	if (!icc_pe_pk)
 		goto out2;
 
 	struct tlvdb *db = emv_pki_sign_icc_pe_cert(cp, icc_pe_pk);
