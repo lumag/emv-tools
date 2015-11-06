@@ -202,7 +202,7 @@ static struct emv_pk *emv_pki_decode_message_2(const struct emv_pk *enc_pk,
 
 	pk->hash_algo = data[11];
 	pk->pk_algo = data[12];
-	pk->expire = (data[7] << 16) | (data[6] << 8) | 31;
+	pk->expire = (data[7] << 16) | (data[6] << 8) | 0x31;
 	memcpy(pk->serial, data + 8, 3);
 	memcpy(pk->pan, data + 2, 4);
 	memset(pk->pan + 4, 0xff, 10 - 4);
@@ -287,7 +287,7 @@ static struct emv_pk *emv_pki_decode_message_4(const struct emv_pk *enc_pk,
 
 	pk->hash_algo = data[17];
 	pk->pk_algo = data[18];
-	pk->expire = (data[13] << 16) | (data[12] << 8) | 31;
+	pk->expire = (data[13] << 16) | (data[12] << 8) | 0x31;
 	memcpy(pk->serial, data + 14, 3);
 	memcpy(pk->pan, data + 2, 10);
 
