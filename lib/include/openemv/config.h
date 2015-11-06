@@ -16,6 +16,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-const char *openemv_config_get(const char *path);
+const char *openemv_config_get_def(const char *path, const char *def);
+#define openemv_config_get(path)	openemv_config_get_def(path, NULL)
 
 #endif

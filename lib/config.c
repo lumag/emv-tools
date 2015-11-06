@@ -53,30 +53,29 @@ static void openemv_init_config(void)
 	fname = getenv("OPENEMV_CONFIG");
 	if (!fname)
 		fname = OPENEMV_CONFIG_DIR "config.txt";
+
 	ret = config_read_file(config, fname);
+
 	if (ret != CONFIG_TRUE) {
 		openemv_config_error(config);
+
+		/* Do not let incorrect data live in our config */
 		config_destroy(config);
-		free(config);
-	} else
-		_openemv_config = config;
+		config_init(config);
+	}
+
+	_openemv_config = config;
 }
 
-const char *openemv_config_get(const char *path)
+const char *openemv_config_get_def(const char *path, const char *def)
 {
-	const char *value;
-	int ret;
+	const char *value = def;
 
 	if (!_openemv_config)
 		openemv_init_config();
 
-	if (!_openemv_config)
-		return NULL;
-
-	ret = config_lookup_string(_openemv_config, path, &value);
-
-	if (ret != CONFIG_TRUE)
-		return NULL;
+	if (_openemv_config)
+		config_lookup_string(_openemv_config, path, &value);
 
 	return value;
 }
