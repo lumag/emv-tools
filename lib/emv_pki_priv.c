@@ -269,3 +269,52 @@ struct tlvdb *emv_pki_sign_icc_pe_cert(const struct crypto_pk *cp, struct emv_pk
 
 	return db;
 }
+
+struct tlvdb *emv_pki_sign_dac(const struct crypto_pk *cp, const unsigned char *dac, const unsigned char *sda_data, size_t sda_data_len)
+{
+	unsigned pos = 0;
+	unsigned char *msg = malloc(1+1+2);
+
+	if (!msg)
+		return NULL;
+
+	msg[pos++] = 3;
+	msg[pos++] = HASH_SHA_1;
+	msg[pos++] = dac[0];
+	msg[pos++] = dac[1];
+
+	struct tlvdb *db = emv_pki_sign_message(cp,
+			0x93, 0,
+			msg, pos,
+			sda_data, sda_data_len,
+			NULL, 0);
+
+	free(msg);
+
+	return db;
+}
+
+struct tlvdb *emv_pki_sign_idn(const struct crypto_pk *cp, const unsigned char *idn, size_t idn_len, const unsigned char *dyn_data, size_t dyn_data_len)
+{
+	unsigned pos = 0;
+	unsigned char *msg = malloc(1+1+1+1+idn_len);
+
+	if (!msg)
+		return NULL;
+
+	msg[pos++] = 5;
+	msg[pos++] = HASH_SHA_1;
+	msg[pos++] = idn_len + 1;
+	msg[pos++] = idn_len;
+	memcpy(msg+pos, idn, idn_len); pos += idn_len;
+
+	struct tlvdb *db = emv_pki_sign_message(cp,
+			0x9f4b, 0,
+			msg, pos,
+			dyn_data, dyn_data_len,
+			NULL, 0);
+
+	free(msg);
+
+	return db;
+}

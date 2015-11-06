@@ -31,6 +31,18 @@ static const unsigned char sdad[] = {
 	0xde, 0xad, 0xbe, 0xaf, 0xca, 0xfe, 0xfe, 0xed,
 };
 
+const unsigned char dd1[] = {
+	0x00, 0x00, 0x00, 0x00,
+};
+
+static const unsigned char dac[] = {
+	0x31, 0x32,
+};
+
+static const unsigned char idn[] = {
+	0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38
+};
+
 static int test_emv_pki_make_ca(struct crypto_pk *cp)
 {
 	int ret = 1;
@@ -91,14 +103,14 @@ static struct emv_pk *make_icc_pk(struct crypto_pk *cp)
 	return ipk;
 }
 
-static int test_emv_pki_sign_issuer_cert(struct crypto_pk *cp)
+static int test_emv_pki_sign_issuer_cert(struct crypto_pk *cp, struct crypto_pk *icp)
 {
 	int ret = 1;
 	struct emv_pk *pk = emv_pki_make_ca(cp, rid, caidx, 0x000000, HASH_SHA_1);
 	if (!pk)
 		return ret;
 
-	struct emv_pk *ipk = make_issuer_pk(cp);
+	struct emv_pk *ipk = make_issuer_pk(icp);
 	if (!ipk)
 		goto out;
 
@@ -138,29 +150,25 @@ out:
 	return ret;
 }
 
-static int test_emv_pki_sign_icc_cert(struct crypto_pk *cp)
+static int test_emv_pki_sign_icc_cert(struct crypto_pk *icp, struct crypto_pk *icc_cp)
 {
 	int ret = 1;
-	struct emv_pk *pk = emv_pki_make_ca(cp, rid, caidx, 0x000000, HASH_SHA_1);
-	if (!pk)
+	struct emv_pk *ipk = make_issuer_pk(icp);
+	if (!ipk)
 		return ret;
 
-	struct emv_pk *ipk = make_issuer_pk(cp);
-	if (!ipk)
+	struct emv_pk *icc_pk = make_icc_pk(icc_cp);
+	if (!icc_pk)
 		goto out;
 
-	struct emv_pk *icc_pk = make_icc_pk(cp);
-	if (!icc_pk)
-		goto out2;
-
-	struct tlvdb *db = emv_pki_sign_icc_cert(cp, icc_pk, sdad, sizeof(sdad));
+	struct tlvdb *db = emv_pki_sign_icc_cert(icp, icc_pk, sdad, sizeof(sdad));
 	if (!db)
-		goto out3;
+		goto out2;
 	tlvdb_add(db, tlvdb_fixed(0x5a, 10, icc_pk->pan));
 
-	struct emv_pk *rpk = emv_pki_recover_icc_cert(pk, db, sdad, sizeof(sdad));
+	struct emv_pk *rpk = emv_pki_recover_icc_cert(ipk, db, sdad, sizeof(sdad));
 	if (!rpk)
-		goto out4;
+		goto out3;
 
 	if (memcmp(rpk->rid, icc_pk->rid, 5) ||
 	    rpk->index != icc_pk->index ||
@@ -173,47 +181,41 @@ static int test_emv_pki_sign_icc_cert(struct crypto_pk *cp)
 	    memcmp(rpk->modulus, icc_pk->modulus, rpk->mlen) ||
 	    rpk->elen != icc_pk->elen ||
 	    memcmp(rpk->exp, icc_pk->exp, rpk->elen))
-		goto out5;
+		goto out4;
 
 	ret = 0;
 
-out5:
-	emv_pk_free(rpk);
 out4:
-	tlvdb_free(db);
+	emv_pk_free(rpk);
 out3:
-	emv_pk_free(icc_pk);
+	tlvdb_free(db);
 out2:
-	emv_pk_free(ipk);
+	emv_pk_free(icc_pk);
 out:
-	emv_pk_free(pk);
+	emv_pk_free(ipk);
 
 	return ret;
 }
 
-static int test_emv_pki_sign_icc_pe_cert(struct crypto_pk *cp)
+static int test_emv_pki_sign_icc_pe_cert(struct crypto_pk *icp, struct crypto_pk *icc_pe_cp)
 {
 	int ret = 1;
-	struct emv_pk *pk = emv_pki_make_ca(cp, rid, caidx, 0x000000, HASH_SHA_1);
-	if (!pk)
+	struct emv_pk *ipk = make_issuer_pk(icp);
+	if (!ipk)
 		return ret;
 
-	struct emv_pk *ipk = make_issuer_pk(cp);
-	if (!ipk)
+	struct emv_pk *icc_pe_pk = make_icc_pk(icc_pe_cp);
+	if (!icc_pe_pk)
 		goto out;
 
-	struct emv_pk *icc_pe_pk = make_icc_pk(cp);
-	if (!icc_pe_pk)
-		goto out2;
-
-	struct tlvdb *db = emv_pki_sign_icc_pe_cert(cp, icc_pe_pk);
+	struct tlvdb *db = emv_pki_sign_icc_pe_cert(icp, icc_pe_pk);
 	if (!db)
-		goto out3;
+		goto out2;
 	tlvdb_add(db, tlvdb_fixed(0x5a, 10, icc_pe_pk->pan));
 
-	struct emv_pk *rpk = emv_pki_recover_icc_pe_cert(pk, db);
+	struct emv_pk *rpk = emv_pki_recover_icc_pe_cert(ipk, db);
 	if (!rpk)
-		goto out4;
+		goto out3;
 
 	if (memcmp(rpk->rid, icc_pe_pk->rid, 5) ||
 	    rpk->index != icc_pe_pk->index ||
@@ -226,20 +228,80 @@ static int test_emv_pki_sign_icc_pe_cert(struct crypto_pk *cp)
 	    memcmp(rpk->modulus, icc_pe_pk->modulus, rpk->mlen) ||
 	    rpk->elen != icc_pe_pk->elen ||
 	    memcmp(rpk->exp, icc_pe_pk->exp, rpk->elen))
-		goto out5;
+		goto out4;
 
 	ret = 0;
 
-out5:
-	emv_pk_free(rpk);
 out4:
-	tlvdb_free(db);
+	emv_pk_free(rpk);
 out3:
-	emv_pk_free(icc_pe_pk);
+	tlvdb_free(db);
 out2:
-	emv_pk_free(ipk);
+	emv_pk_free(icc_pe_pk);
 out:
-	emv_pk_free(pk);
+	emv_pk_free(ipk);
+
+	return ret;
+}
+
+static int test_emv_pki_sign_dac(struct crypto_pk *icp)
+{
+	int ret = 1;
+	struct emv_pk *ipk = make_issuer_pk(icp);
+	if (!ipk)
+		return ret;
+
+	struct tlvdb *db = emv_pki_sign_dac(icp, dac, sdad, sizeof(sdad));
+	if (!db)
+		goto out;
+
+	struct tlvdb *rdb = emv_pki_recover_dac(ipk, db, sdad, sizeof(sdad));
+	if (!rdb)
+		goto out2;
+
+	const struct tlv *dac_tlv = tlvdb_get(rdb, 0x9f45, NULL);
+	if (!dac_tlv || dac_tlv->len != sizeof(dac) || memcmp(dac_tlv->value, dac, sizeof(dac)))
+		goto out3;
+
+	ret = 0;
+
+out3:
+	tlvdb_free(rdb);
+out2:
+	tlvdb_free(db);
+out:
+	emv_pk_free(ipk);
+
+	return ret;
+}
+
+static int test_emv_pki_sign_idn(struct crypto_pk *icc_cp)
+{
+	int ret = 1;
+	struct emv_pk *icc_pk = make_issuer_pk(icc_cp);
+	if (!icc_pk)
+		return ret;
+
+	struct tlvdb *db = emv_pki_sign_idn(icc_cp, idn, sizeof(idn), dd1, sizeof(dd1));
+	if (!db)
+		goto out;
+
+	struct tlvdb *rdb = emv_pki_recover_idn(icc_pk, db, dd1, sizeof(dd1));
+	if (!rdb)
+		goto out2;
+
+	const struct tlv *idn_tlv = tlvdb_get(rdb, 0x9f4c, NULL);
+	if (!idn_tlv || idn_tlv->len != sizeof(idn) || memcmp(idn_tlv->value, idn, sizeof(idn)))
+		goto out3;
+
+	ret = 0;
+
+out3:
+	tlvdb_free(rdb);
+out2:
+	tlvdb_free(db);
+out:
+	emv_pk_free(icc_pk);
 
 	return ret;
 }
@@ -265,22 +327,36 @@ int main(void)
 		return 1;
 	}
 
-	if (test_emv_pki_sign_issuer_cert(cp)) {
+	if (test_emv_pki_sign_issuer_cert(cp, cp)) {
 		printf("Failed emv_pki_sign_issuer_cert test\n");
 		crypto_pk_close(cp);
 
 		return 1;
 	}
 
-	if (test_emv_pki_sign_icc_cert(cp)) {
+	if (test_emv_pki_sign_icc_cert(cp, cp)) {
 		printf("Failed emv_pki_sign_icc_cert test\n");
 		crypto_pk_close(cp);
 
 		return 1;
 	}
 
-	if (test_emv_pki_sign_icc_pe_cert(cp)) {
+	if (test_emv_pki_sign_icc_pe_cert(cp, cp)) {
 		printf("Failed emv_pki_sign_icc_pe_cert test\n");
+		crypto_pk_close(cp);
+
+		return 1;
+	}
+
+	if (test_emv_pki_sign_dac(cp)) {
+		printf("Failed emv_pki_sign_dac test\n");
+		crypto_pk_close(cp);
+
+		return 1;
+	}
+
+	if (test_emv_pki_sign_idn(cp)) {
+		printf("Failed emv_pki_sign_idn test\n");
 		crypto_pk_close(cp);
 
 		return 1;
