@@ -36,6 +36,10 @@ static int test_genkey(unsigned int keylength, unsigned char *msg, size_t msg_le
 	if (!pk)
 		goto out;
 
+	tmp_len = crypto_pk_get_nbits(pk);
+	if (tmp_len != keylength)
+		goto close;
+
 	tmp = crypto_pk_decrypt(pk, msg, msg_len, &tmp_len);
 	if (!tmp)
 		goto close;
@@ -190,6 +194,10 @@ static int test_pk(void)
 	if (!pubk)
 		return 1;
 
+	tmp_len = crypto_pk_get_nbits(pubk);
+	if (tmp_len != sizeof(pk_N) * 8)
+		goto close_pub;
+
 	tmp = crypto_pk_get_parameter(pubk, 0, &tmp_len);
 	if (tmp_len != sizeof(pk_N) || memcmp(tmp, pk_N, tmp_len)) {
 		free(tmp);
@@ -215,6 +223,10 @@ static int test_pk(void)
 	if (!privk)
 		goto close_pub;
 
+
+	tmp_len = crypto_pk_get_nbits(privk);
+	if (tmp_len != sizeof(pk_N) * 8)
+		goto close_pub;
 
 	tmp = crypto_pk_get_parameter(privk, 0, &tmp_len);
 	if (tmp_len != sizeof(pk_N) || memcmp(tmp, pk_N, tmp_len)) {

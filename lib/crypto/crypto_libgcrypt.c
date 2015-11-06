@@ -377,6 +377,13 @@ static unsigned char *crypto_pk_libgcrypt_decrypt(struct crypto_pk *_cp, const u
 	return result;
 }
 
+static size_t crypto_pk_libgcrypt_get_nbits(const struct crypto_pk *_cp)
+{
+	struct crypto_pk_libgcrypt *cp = container_of(_cp, struct crypto_pk_libgcrypt, cp);
+
+	return gcry_pk_get_nbits(cp->pk);
+}
+
 static unsigned char *crypto_pk_libgcrypt_get_parameter(const struct crypto_pk *_cp, unsigned param, size_t *plen)
 {
 	struct crypto_pk_libgcrypt *cp = container_of(_cp, struct crypto_pk_libgcrypt, cp);
@@ -439,6 +446,7 @@ static struct crypto_pk *crypto_pk_libgcrypt_open(enum crypto_algo_pk pk, va_lis
 	cp->close = crypto_pk_libgcrypt_close;
 	cp->encrypt = crypto_pk_libgcrypt_encrypt;
 	cp->get_parameter = crypto_pk_libgcrypt_get_parameter;
+	cp->get_nbits = crypto_pk_libgcrypt_get_nbits;
 
 	return cp;
 }
@@ -456,6 +464,7 @@ static struct crypto_pk *crypto_pk_libgcrypt_open_priv(enum crypto_algo_pk pk, v
 	cp->encrypt = crypto_pk_libgcrypt_encrypt;
 	cp->decrypt = crypto_pk_libgcrypt_decrypt;
 	cp->get_parameter = crypto_pk_libgcrypt_get_parameter;
+	cp->get_nbits = crypto_pk_libgcrypt_get_nbits;
 
 	return cp;
 }
@@ -473,6 +482,7 @@ static struct crypto_pk *crypto_pk_libgcrypt_genkey(enum crypto_algo_pk pk, va_l
 	cp->encrypt = crypto_pk_libgcrypt_encrypt;
 	cp->decrypt = crypto_pk_libgcrypt_decrypt;
 	cp->get_parameter = crypto_pk_libgcrypt_get_parameter;
+	cp->get_nbits = crypto_pk_libgcrypt_get_nbits;
 
 	return cp;
 }

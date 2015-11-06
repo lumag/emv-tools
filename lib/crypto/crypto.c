@@ -169,6 +169,14 @@ enum crypto_algo_pk crypto_pk_get_algo(const struct crypto_pk *cp)
 	return cp->algo;
 }
 
+size_t crypto_pk_get_nbits(const struct crypto_pk *cp)
+{
+	if (!cp->get_nbits)
+		return 0;
+
+	return cp->get_nbits(cp);
+}
+
 unsigned char *crypto_pk_get_parameter(const struct crypto_pk *cp, unsigned param, size_t *plen)
 {
 	*plen = 0;
