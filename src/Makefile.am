@@ -9,6 +9,7 @@ bin_PROGRAMS = \
 	emv_cl_cda\
 	emv_dump_emu\
 	emv_cap \
+	emv_select \
 	emv_pse\
 	emv_ppse
 

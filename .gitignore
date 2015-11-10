@@ -47,6 +47,7 @@ Makefile
 /src/emv_dump_emu
 /src/emv_ppse
 /src/emv_pse
+/src/emv_select
 /src/capk-verify
 
 /test/cda-test
