@@ -32,7 +32,7 @@ static bool crypto_init(void)
 	if (crypto_backend)
 		return true;
 
-	driver = openemv_config_get_def("crypto.driver", DEFAULT_CRYPTO);
+	driver = openemv_config_get_str("crypto.driver", DEFAULT_CRYPTO);
 	if (!driver)
 		return false;
 	else if (!strcmp(driver, "libgcrypt"))

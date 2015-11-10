@@ -48,7 +48,7 @@ static void scard_emu_connect(struct sc *_sc, unsigned idx)
 	if (idx || sc->card)
 		scard_raise_error(_sc, SCARD_PARAMETER);
 
-	fname = openemv_config_get("scard.emu.file");
+	fname = openemv_config_get_str("scard.emu.file", NULL);
 	if (!fname) {
 		scard_raise_error(_sc, SCARD_CARD);
 		return;

@@ -33,7 +33,7 @@ int main(int argc, char **argv) {
 	const char *fname;
 	int rc = 0;
 
-	fname = openemv_config_get_def("capk", "capk.txt");
+	fname = openemv_config_get_str("capk", "capk.txt");
 
 	f = fopen(fname, "r");
 	if (!f) {

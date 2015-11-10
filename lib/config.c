@@ -67,7 +67,7 @@ static void openemv_init_config(void)
 	_openemv_config = config;
 }
 
-const char *openemv_config_get_def(const char *path, const char *def)
+const char *openemv_config_get_str(const char *path, const char *def)
 {
 	const char *value = def;
 
@@ -76,6 +76,19 @@ const char *openemv_config_get_def(const char *path, const char *def)
 
 	if (_openemv_config)
 		config_lookup_string(_openemv_config, path, &value);
+
+	return value;
+}
+
+int openemv_config_get_int(const char *path, int def)
+{
+	int value = def;
+
+	if (!_openemv_config)
+		openemv_init_config();
+
+	if (_openemv_config)
+		config_lookup_int(_openemv_config, path, &value);
 
 	return value;
 }
