@@ -23,6 +23,7 @@
 #include "openemv/dol.h"
 #include "openemv/dump.h"
 #include "openemv/emu_ast.h"
+#include "openemv/config.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -156,7 +157,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	scard_connect(sc, 0);
+	scard_connect(sc, openemv_config_get_int("scard.reader", 0));
 	if (scard_is_error(sc)) {
 		printf("%s\n", scard_error(sc));
 		fclose(f);

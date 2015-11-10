@@ -74,7 +74,7 @@ int main(void)
 		return 1;
 	}
 
-	scard_connect(sc, 1);
+	scard_connect(sc, openemv_config_get_int("scard.reader", 0));
 	if (scard_is_error(sc)) {
 		printf("%s\n", scard_error(sc));
 		return 1;

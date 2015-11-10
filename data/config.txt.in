@@ -1,5 +1,6 @@
 scard: {
 	driver = "@default_scard@";
+	reader = 0;
 	emu: {
 		file = "@pkgdatadir@/maestro.emu";
 	};

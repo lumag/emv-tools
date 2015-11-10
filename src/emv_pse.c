@@ -23,6 +23,7 @@
 #include "openemv/emv_tags.h"
 #include "openemv/dump.h"
 #include "openemv/emv_commands.h"
+#include "openemv/config.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -49,7 +50,7 @@ int main(void)
 		return 1;
 	}
 
-	scard_connect(sc, 0);
+	scard_connect(sc, openemv_config_get_int("scard.reader", 0));
 	if (scard_is_error(sc)) {
 		printf("%s\n", scard_error(sc));
 		return 1;
