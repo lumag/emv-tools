@@ -34,6 +34,7 @@ typedef bool (*tlv_cb)(void *data, const struct tlv *tlv);
 struct tlvdb *tlvdb_fixed(tlv_tag_t tag, size_t len, const unsigned char *value);
 struct tlvdb *tlvdb_external(tlv_tag_t tag, size_t len, const unsigned char *value);
 struct tlvdb *tlvdb_parse(const unsigned char *buf, size_t len);
+struct tlvdb *tlvdb_parse_multi(const unsigned char *buf, size_t len);
 void tlvdb_free(struct tlvdb *tlvdb);
 
 void tlvdb_add(struct tlvdb *tlvdb, struct tlvdb *other);

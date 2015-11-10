@@ -216,6 +216,43 @@ err:
 	return NULL;
 }
 
+struct tlvdb *tlvdb_parse_multi(const unsigned char *buf, size_t len)
+{
+	struct tlvdb_root *root;
+	const unsigned char *tmp;
+	size_t left;
+
+	if (!len || !buf)
+		return NULL;
+
+	root = malloc(sizeof(*root) + len);
+	root->len = len;
+	memcpy(root->buf, buf, len);
+
+	tmp = root->buf;
+	left = len;
+
+	if (!tlvdb_parse_one(&root->db, NULL, &tmp, &left))
+		goto err;
+
+	while (left != 0) {
+		struct tlvdb *db = malloc(sizeof(*db));
+		if (!tlvdb_parse_one(db, NULL, &tmp, &left)) {
+			free (db);
+			goto err;
+		}
+
+		tlvdb_add(&root->db, db);
+	}
+
+	return &root->db;
+
+err:
+	tlvdb_free(&root->db);
+
+	return NULL;
+}
+
 struct tlvdb *tlvdb_fixed(tlv_tag_t tag, size_t len, const unsigned char *value)
 {
 	struct tlvdb_root *root = malloc(sizeof(*root) + len);

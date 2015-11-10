@@ -87,6 +87,53 @@ static int parse_test(void) {
 	return 0;
 }
 
+static int parse_multi_test(void) {
+	struct {
+		size_t len;
+		const unsigned char buf[256];
+		bool fail;
+		tlv_tag_t tag;
+		unsigned count;
+	} tests[] = {
+		{ 0x0a, {0x6f, 0x3, 0x88, 0x01, 0x01, 0x6e, 0x3, 0x88, 0x01, 0x01,}, false, 0x88, 2},
+		{ 0x0a, {0x6f, 0x3, 0x88, 0x01, 0x01, 0x6e, 0x4, 0x88, 0x01, 0x01,}, true, 0x88, 0},
+		{ 0x09, {0x6f, 0x3, 0x88, 0x01, 0x01, 0x6e, 0x3, 0x88, 0x01,}, true, 0x88, 0},
+		{ 0x06, {0x6f, 0x3, 0x88, 0x01, 0x01, 0x6e,}, true, 0x88, 0},
+		{ 0x05, {0x6f, 0x3, 0x88, 0x01, 0x01,}, false, 0x88, 1},
+	};
+	const struct tlv *tlv;
+	int i;
+
+	for (i = 0; i < sizeof(tests)/sizeof(tests[0]); i++) {
+		printf("Test %d\n", i);
+		struct tlvdb *t = tlvdb_parse_multi(tests[i].buf, tests[i].len);
+		if (tests[i].fail && t) {
+			printf("Unexpected success\n");
+			exit (1);
+		}
+		if (!tests[i].fail && !t) {
+			printf("Unexpected failure\n");
+			exit (1);
+		}
+
+		tlvdb_visit(t, print_cb, NULL);
+
+		int j;
+		for (tlv = tlvdb_get(t, tests[i].tag, NULL), j = 0;
+				tlv;
+				tlv = tlvdb_get(t, tests[i].tag, tlv), j++) {
+			print_cb(NULL, tlv);
+		}
+		if (j != tests[i].count) {
+			printf("Unexpected amount of 0x%x tags (%d)\n", tests[i].tag, j);
+			exit(1);
+		}
+		tlvdb_free(t);
+	}
+
+	return 0;
+}
+
 static int encode_test(void)
 {
 	struct {
@@ -127,6 +174,7 @@ static int encode_test(void)
 int main(void)
 {
 	parse_test();
+	parse_multi_test();
 	encode_test();
 
 	return 0;
