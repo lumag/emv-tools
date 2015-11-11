@@ -37,6 +37,8 @@ AS_IF([test "x$enable_gcov" != "xno"],
       [OPENEMV_CHECK_CFLAG([--coverage])
        OPENEMV_CHECK_CFLAG([--no-inline])
        OPENEMV_CHECK_CFLAG([-O0])])
+AM_EXTRA_RECURSIVE_TARGETS([gcov])
+AM_CONDITIONAL([USE_GCOV], [test "x$enable_gcov" != "xno"])
 
 # Checks for libraries.
 PKG_CHECK_MODULES([CONFIG], [libconfig])

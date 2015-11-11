@@ -1,3 +1,5 @@
+include $(top_srcdir)/Makefile-gcov
+
 noinst_LTLIBRARIES = libscard.la
 
 libscard_la_SOURCES = \

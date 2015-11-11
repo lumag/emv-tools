@@ -1,3 +1,5 @@
+include $(top_srcdir)/Makefile-gcov
+
 AM_CPPFLAGS = -I$(srcdir)/../lib/include
 AM_LDFLAGS = -Wl,--as-needed
 

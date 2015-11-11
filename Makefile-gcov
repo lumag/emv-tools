@@ -1,0 +1,9 @@
+if !USE_GCOV
+CLEANFILES =
+DISTCLEANFILES =
+else
+CLEANFILES = *.gcda *.gcno
+DISTCLEANFILES = *.gcov
+gcov-local:
+	$(AM_V_at) for file in *.gcda; do gcov $$file || exit $? ; done
+endif
