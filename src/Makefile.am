@@ -5,7 +5,6 @@ AM_LDFLAGS = -Wl,--as-needed
 
 LDADD = ../lib/libopenemv.la
 bin_PROGRAMS = \
-	capk-verify\
 	emv_dump\
 	emv_dda\
 	emv_cl_cda\
@@ -14,6 +13,3 @@ bin_PROGRAMS = \
 	emv_select \
 	emv_pse\
 	emv_ppse
-
-TESTS = capk-verify
-TESTS_ENVIRONMENT = env OPENEMV_CONFIG="$(builddir)"/../data/notinst.txt

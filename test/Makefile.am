@@ -4,6 +4,10 @@ AM_CPPFLAGS = -I$(srcdir)/../lib/include
 AM_LDFLAGS = -Wl,--as-needed
 
 LDADD = ../lib/libopenemv.la
+
+bin_PROGRAMS = \
+	capk-verify
+
 check_PROGRAMS = \
 	emu_test\
 	crypto-test \
@@ -16,8 +20,9 @@ check_PROGRAMS = \
 TESTS = \
 	emu_test\
 	crypto-test \
-	emv_pki_priv_test \
 	tlv-test \
+	emv_pki_priv_test \
+	capk-verify \
 	cda-test \
 	dda-test \
 	sda-test
