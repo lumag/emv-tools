@@ -25,6 +25,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <search.h>
 
 unsigned char *emv_get_challenge(struct sc *sc)
 {
@@ -68,6 +69,39 @@ unsigned char *emv_read_record(struct sc *sc, unsigned char sfi, unsigned char r
 	return sc_command(sc, 0x00, 0xb2, record, (sfi << 3) | 0x04, 0, NULL, psw, plen);
 }
 
+struct sda_list {
+	struct sda_list *forw;
+	struct sda_list *back;
+	unsigned char *buf;
+	size_t offset;
+	size_t len;
+};
+
+static struct sda_list *sda_list_new(unsigned char *buf, size_t offset, size_t len)
+{
+	struct sda_list *elem = malloc(sizeof(*elem));
+
+	if (!elem)
+		return NULL;
+
+	elem->buf = buf;
+	elem->offset = offset;
+	elem->len = len;
+
+	return elem;
+}
+
+static void sda_list_free(struct sda_list *head)
+{
+	while (head->forw != head) {
+		struct sda_list *elem = head->forw;
+
+		remque(elem);
+		free(elem->buf);
+		free(elem);
+	}
+}
+
 bool emv_read_records(struct sc *sc, struct tlvdb *db, unsigned char **pdata, size_t *plen)
 {
 	*pdata = NULL;
@@ -77,9 +111,10 @@ bool emv_read_records(struct sc *sc, struct tlvdb *db, unsigned char **pdata, si
 	if (!afl)
 		return 1;
 
-	unsigned char *sda_data = NULL;
-	size_t sda_len = 0;
-
+	struct sda_list sda_list_head = {
+		.forw = &sda_list_head,
+		.back = &sda_list_head,
+	};
 	int i;
 	for (i = 0; i < afl->len; i += 4) {
 		unsigned char p2 = afl->value[i + 0];
@@ -89,48 +124,52 @@ bool emv_read_records(struct sc *sc, struct tlvdb *db, unsigned char **pdata, si
 		unsigned char sfi = p2 >> 3;
 
 		if (sfi == 0 || sfi == 31 || first == 0 || first > last)
-			return false;
+			goto err;
 
 		for (; first <= last; first ++) {
 			unsigned short sw;
 			size_t outlen;
 			unsigned char *outbuf;
-			struct tlvdb *t;
 
 			outbuf = emv_read_record(sc, sfi, first, &sw, &outlen);
 			if (!outbuf)
-				return false;
+				goto err;
 
-			if (sw == 0x9000) {
-				t = tlvdb_parse(outbuf, outlen);
-				if (!t)
-					return false;
-			} else
-				return false;
-
-			if (sdarec) {
-				const unsigned char *data;
-				size_t data_len;
-
-				if (sfi < 11) {
-					const struct tlv *e = tlvdb_get(t, 0x70, NULL);
-					if (!e)
-						return false;
-
-					data = e->value;
-					data_len = e->len;
-				} else {
-					data = outbuf;
-					data_len = outlen;
-				}
-
-				sda_data = realloc(sda_data, sda_len + data_len);
-				memcpy(sda_data + sda_len, data, data_len);
-				sda_len += data_len;
-				sdarec --;
+			if (sw != 0x9000) {
+				free(outbuf);
+				goto err;
 			}
 
-			free(outbuf);
+			struct tlvdb *t = tlvdb_parse(outbuf, outlen);
+			if (!t) {
+				free(outbuf);
+				goto err;
+			}
+
+			if (sdarec) {
+				struct sda_list *elem = NULL;
+
+				if (sfi < 11) {
+					const unsigned char *tmp = outbuf;
+					size_t tmplen = outlen;
+					struct tlv e;
+
+					/*  We can be pretty sure here -- it was checked after parsing the record */
+					if (tlv_parse_tl(&tmp, &tmplen, &e))
+						elem = sda_list_new(outbuf, outlen - tmplen, tmplen);
+				} else
+					elem = sda_list_new(outbuf, 0, outlen);
+
+				if (!elem) {
+					free(outbuf);
+					goto err;
+				}
+
+				insque(elem, sda_list_head.back);
+				sdarec--;
+			} else
+				free(outbuf);
+
 			tlvdb_add(db, t);
 		}
 	}
@@ -139,21 +178,51 @@ bool emv_read_records(struct sc *sc, struct tlvdb *db, unsigned char **pdata, si
 	if (sdatl_tlv) {
 		const struct tlv *aip_tlv = tlvdb_get(db, 0x82, NULL);
 		if (sdatl_tlv->len == 1 && sdatl_tlv->value[0] == 0x82 && aip_tlv) {
-			sda_data = realloc(sda_data, sda_len + aip_tlv->len);
-			memcpy(sda_data + sda_len, aip_tlv->value, aip_tlv->len);
-			sda_len += aip_tlv->len;
-		} else {
-			/* Error!! */
-			free(sda_data);
-			sda_data = NULL;
-			sda_len = 0;
-		}
+			unsigned char *buf = malloc(aip_tlv->len);
+			if (!buf)
+				goto err;
+
+			memcpy(buf, aip_tlv->value, aip_tlv->len);
+
+			struct sda_list *elem = sda_list_new(buf, 0, aip_tlv->len);
+			if (!elem) {
+				free(buf);
+				goto err;
+			}
+
+			insque(elem, sda_list_head.back);
+		} else
+			goto err;
 	}
+
+	size_t sda_len = 0;
+	struct sda_list *elem;
+
+	for (elem = sda_list_head.forw; elem != &sda_list_head; elem = elem->forw)
+		sda_len += elem->len;
+
+	unsigned char *sda_data = NULL;
+	sda_data = malloc(sda_len);
+	if (!sda_data)
+		goto err;
+
+	size_t sda_pos = 0;
+	for (elem = sda_list_head.forw; elem != &sda_list_head; elem = elem->forw) {
+		memcpy(sda_data + sda_pos, elem->buf + elem->offset, elem->len);
+		sda_pos += elem->len;
+	}
+
+	sda_list_free(&sda_list_head);
 
 	*pdata = sda_data;
 	*plen = sda_len;
 
 	return true;
+err:
+
+	sda_list_free(&sda_list_head);
+
+	return false;
 }
 
 static struct tlvdb *emv_command_handle_format(const unsigned char *buf, size_t len, const struct tlv *dol)
