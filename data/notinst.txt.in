@@ -10,4 +10,6 @@ crypto: {
 	driver = "@default_crypto@";
 };
 
-capk = "@srcdir@/capk.txt";
+capk: {
+	file  = "@srcdir@/capk.txt";
+};

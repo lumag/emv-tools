@@ -386,7 +386,7 @@ void emv_pk_free(struct emv_pk *pk)
 
 struct emv_pk *emv_pk_get_ca_pk(const unsigned char *rid, unsigned char idx)
 {
-	const char *fname = openemv_config_get_str("capk", NULL);
+	const char *fname = openemv_config_get_str("capk.file", NULL);
 	if (!fname) {
 		fprintf(stderr, "No CA PK file specified!\n");
 		return NULL;
