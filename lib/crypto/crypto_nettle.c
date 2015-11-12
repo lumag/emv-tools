@@ -315,7 +315,7 @@ static int getrandom(void *buf, size_t buflen, unsigned int flags)
 #include <sys/types.h>
 #include <fcntl.h>
 
-static int getentropy_urandom(void *buf, size_t len)
+static int getentropy_urandom(unsigned char *buf, size_t len)
 {
 	static int fd = -1;
 	size_t pos;
