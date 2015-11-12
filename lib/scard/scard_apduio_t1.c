@@ -137,7 +137,8 @@ static ssize_t block_t1_send(int sd, unsigned char NAD, unsigned char PCB, const
 	tmpbuf[1] = PCB;
 	tmpbuf[2] = len & 0xff;
 
-	memcpy(tmpbuf + 3, buf, len);
+	if (len != 0)
+		memcpy(tmpbuf + 3, buf, len);
 	tmplen = len + 3;
 
 	tmpbuf[tmplen] = compute_lrc(tmpbuf, tmplen);

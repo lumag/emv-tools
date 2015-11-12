@@ -132,7 +132,8 @@ static size_t scard_emu_transmit(struct sc *_sc,
 		sw = 0x6700;
 	}
 
-	memcpy(outbuf, ret, retlen);
+	if (retlen != 0)
+		memcpy(outbuf, ret, retlen);
 
 	outbuf[retlen ++] = sw >> 8;
 	outbuf[retlen ++] = sw & 0xff;
