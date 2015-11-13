@@ -12,5 +12,5 @@ crypto: {
 
 capk: {
 	file  = "@srcdir@/capk.txt";
-	dir = "@srcdir@";
+	dir = "@builddir@";
 };
