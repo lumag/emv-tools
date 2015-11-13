@@ -21,6 +21,8 @@
 #include "openemv/crypto.h"
 #include "openemv/config.h"
 
+/* For asprintf */
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
@@ -384,16 +386,14 @@ void emv_pk_free(struct emv_pk *pk)
 	free(pk);
 }
 
-struct emv_pk *emv_pk_get_ca_pk(const unsigned char *rid, unsigned char idx)
+static struct emv_pk *emv_pk_get_ca_pk_from_file(const char *fname,
+		const unsigned char *rid,
+		unsigned char idx)
 {
-	const char *fname = openemv_config_get_str("capk.file", NULL);
-	if (!fname) {
-		fprintf(stderr, "No CA PK file specified!\n");
+	if  (!fname)
 		return NULL;
-	}
 
 	FILE *f = fopen(fname, "r");
-
 	if (!f) {
 		perror("fopen");
 		return NULL;
@@ -403,6 +403,7 @@ struct emv_pk *emv_pk_get_ca_pk(const unsigned char *rid, unsigned char idx)
 		char buf[BUFSIZ];
 		if (fgets(buf, sizeof(buf), f) == NULL)
 			break;
+
 		struct emv_pk *pk = emv_pk_parse_pk(buf);
 		if (!pk)
 			continue;
@@ -410,7 +411,97 @@ struct emv_pk *emv_pk_get_ca_pk(const unsigned char *rid, unsigned char idx)
 			emv_pk_free(pk);
 			continue;
 		}
-		printf("Verifying CA PK for %02hhx:%02hhx:%02hhx:%02hhx:%02hhx IDX %02hhx %zd bits...",
+
+		fclose(f);
+
+		return pk;
+	}
+
+	fclose(f);
+
+	return NULL;
+}
+
+char *emv_pk_get_ca_pk_file(const char *dirname, const unsigned char *rid, unsigned char idx)
+{
+	if (!dirname)
+		dirname = openemv_config_get_str("capk.dir", NULL);
+
+	if (!dirname)
+		return NULL;
+
+	char *filename;
+	int ret = asprintf(&filename, "%s/%02hhx%02hhx%02hhx%02hhx%02hhx_%02hhx.0",
+			dirname,
+			rid[0],
+			rid[1],
+			rid[2],
+			rid[3],
+			rid[4],
+			idx);
+
+	if (ret <= 0)
+		return NULL;
+
+	return filename;
+}
+
+char *emv_pk_get_ca_pk_rid_file(const char *dirname, const unsigned char *rid)
+{
+	if (!dirname)
+		dirname = openemv_config_get_str("capk.dir", NULL);
+
+	if (!dirname)
+		return NULL;
+
+	char *filename;
+	int ret = asprintf(&filename, "%s/%02hhx%02hhx%02hhx%02hhx%02hhx.pks",
+			dirname,
+			rid[0],
+			rid[1],
+			rid[2],
+			rid[3],
+			rid[4]);
+
+	if (ret <= 0)
+		return NULL;
+
+	return filename;
+}
+
+struct emv_pk *emv_pk_get_ca_pk(const unsigned char *rid, unsigned char idx)
+{
+	struct emv_pk *pk = NULL;
+
+	if (!pk) {
+		char *fname = emv_pk_get_ca_pk_file(NULL, rid, idx);
+		if (fname) {
+			pk = emv_pk_get_ca_pk_from_file(fname, rid, idx);
+			free(fname);
+		}
+	}
+
+	if (!pk) {
+		char *fname = emv_pk_get_ca_pk_rid_file(NULL, rid);
+		if (fname) {
+			pk = emv_pk_get_ca_pk_from_file(fname, rid, idx);
+			free(fname);
+		}
+	}
+
+	if (!pk) {
+		const char *fname = openemv_config_get_str("capk.file", NULL);
+		if (!fname) {
+			fprintf(stderr, "No CA PK file specified!\n");
+			return NULL;
+		}
+
+		pk = emv_pk_get_ca_pk_from_file(fname, rid, idx);
+	}
+	if (!pk)
+		return NULL;
+
+	printf("Verifying CA PK for %02hhx:%02hhx:%02hhx:%02hhx:%02hhx IDX %02hhx %zd bits...",
 				pk->rid[0],
 				pk->rid[1],
 				pk->rid[2],
@@ -418,21 +509,14 @@ struct emv_pk *emv_pk_get_ca_pk(const unsigned char *rid, unsigned char idx)
 				pk->rid[4],
 				pk->index,
 				pk->mlen * 8);
-		if (emv_pk_verify(pk)) {
-			printf("OK\n");
-			fclose(f);
+	if (emv_pk_verify(pk)) {
+		printf("OK\n");
 
-			return pk;
-		}
-
-		printf("Failed!\n");
-		emv_pk_free(pk);
-		fclose(f);
-
-		return NULL;
+		return pk;
 	}
 
-	fclose(f);
+	printf("Failed!\n");
+	emv_pk_free(pk);
 
 	return NULL;
 }

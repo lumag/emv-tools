@@ -42,5 +42,7 @@ void emv_pk_free(struct emv_pk *pk);
 char *emv_pk_dump_pk(const struct emv_pk *pk);
 bool emv_pk_verify(const struct emv_pk *pk);
 
+char *emv_pk_get_ca_pk_file(const char *dirname, const unsigned char *rid, unsigned char idx);
+char *emv_pk_get_ca_pk_rid_file(const char *dirname, const unsigned char *rid);
 struct emv_pk *emv_pk_get_ca_pk(const unsigned char *rid, unsigned char idx);
 #endif

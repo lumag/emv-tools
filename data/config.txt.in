@@ -12,4 +12,5 @@ crypto: {
 
 capk: {
 	file  = "@pkgdatadir@/capk.txt";
+	dir = "@pkgdatadir@";
 };

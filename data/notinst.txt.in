@@ -12,4 +12,5 @@ crypto: {
 
 capk: {
 	file  = "@srcdir@/capk.txt";
+	dir = "@srcdir@";
 };
