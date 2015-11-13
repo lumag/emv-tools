@@ -59,8 +59,7 @@ int main(int argc, char **argv) {
 		if (emv_pk_verify(pk)) {
 			fprintf(stderr, "OK\n");
 			if (argc > 2 && argv[2][0] == 'v') {
-				unsigned char *c;
-				c = emv_pk_dump_pk(pk);
+				char *c = emv_pk_dump_pk(pk);
 				if (c)
 					printf("%s\n", c);
 				free(c);

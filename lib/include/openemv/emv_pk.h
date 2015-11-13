@@ -39,7 +39,7 @@ struct emv_pk {
 struct emv_pk *emv_pk_parse_pk(char *buf);
 struct emv_pk *emv_pk_new(size_t modlen, size_t explen);
 void emv_pk_free(struct emv_pk *pk);
-unsigned char *emv_pk_dump_pk(const struct emv_pk *pk);
+char *emv_pk_dump_pk(const struct emv_pk *pk);
 bool emv_pk_verify(const struct emv_pk *pk);
 
 struct emv_pk *emv_pk_get_ca_pk(const unsigned char *rid, unsigned char idx);

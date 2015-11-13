@@ -205,7 +205,7 @@ out:
 	return NULL;
 }
 
-static size_t emv_pk_write_bin(unsigned char *out, size_t outlen, const unsigned char *buf, size_t len)
+static size_t emv_pk_write_bin(char *out, size_t outlen, const unsigned char *buf, size_t len)
 {
 	int i;
 	size_t pos = 0;
@@ -227,7 +227,7 @@ static size_t emv_pk_write_bin(unsigned char *out, size_t outlen, const unsigned
 	return pos;
 }
 
-static size_t emv_pk_write_str(unsigned char *out, size_t outlen, const char *str)
+static size_t emv_pk_write_str(char *out, size_t outlen, const char *str)
 {
 	size_t len = strlen(str);
 
@@ -241,10 +241,10 @@ static size_t emv_pk_write_str(unsigned char *out, size_t outlen, const char *st
 	return len;
 }
 
-unsigned char *emv_pk_dump_pk(const struct emv_pk *pk)
+char *emv_pk_dump_pk(const struct emv_pk *pk)
 {
 	size_t outsize = 1024; /* should be enough */
-	unsigned char *out = malloc(outsize); /* should be enough */
+	char *out = malloc(outsize); /* should be enough */
 	size_t outpos = 0;
 	size_t rc;
 
