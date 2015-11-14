@@ -398,3 +398,14 @@ bool tlv_is_constructed(const struct tlv *tlv)
 {
 	return (tlv->tag < 0x100 ? tlv->tag : tlv->tag >> 8) & TLV_TAG_COMPLEX;
 }
+
+bool tlv_equal(const struct tlv *a, const struct tlv *b)
+{
+	if (!a && !b)
+		return true;
+
+	if (!a || !b)
+		return false;
+
+	return a->tag == b->tag && a->len == b->len && !memcmp(a->value, b->value, a->len);
+}

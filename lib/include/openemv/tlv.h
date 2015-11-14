@@ -45,5 +45,6 @@ const struct tlv *tlvdb_get(const struct tlvdb *tlvdb, tlv_tag_t tag, const stru
 bool tlv_parse_tl(const unsigned char **buf, size_t *len, struct tlv *tlv);
 unsigned char *tlv_encode(const struct tlv *tlv, size_t *len);
 bool tlv_is_constructed(const struct tlv *tlv);
+bool tlv_equal(const struct tlv *a, const struct tlv *b);
 
 #endif
