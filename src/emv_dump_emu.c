@@ -70,18 +70,18 @@ static struct emu_df *read_df(FILE *f, struct sc *sc, const unsigned char *name,
 	if (!s)
 		return NULL;
 
-	df = emu_df_new();
-
 	struct tlv *pdol_data_tlv = dol_process(tlvdb_get(s, 0x9f38, NULL), s, 0x83);
 	if (!pdol_data_tlv)
 		return NULL;
 
 	pdol_data = tlv_encode(pdol_data_tlv, &pdol_data_len);
+	free(pdol_data_tlv);
 	if (!pdol_data)
 		return NULL;
-	free(pdol_data_tlv);
 
 	tlvdb_free(s);
+
+	df = emu_df_new();
 
 	emu_df_append(df, emu_property_new("name", emu_value_new_buf(name, name_len)));
 
