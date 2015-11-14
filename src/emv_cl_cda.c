@@ -83,42 +83,39 @@ int main(void)
 	struct tlvdb *s;
 	struct tlvdb *t;
 	for (i = 0, s = NULL; apps[i].name_len != 0; i++) {
-		s = emv_select(sc, apps[i].name, apps[i].name_len);
+		const struct tlv aid_tlv = {
+			.len = apps[i].name_len,
+			.value = apps[i].name,
+		};
+		s = emv_select(sc, &aid_tlv);
 		if (s)
 			break;
 	}
 	if (!s)
 		return 1;
 
-	size_t pdol_data_len;
-	unsigned char *pdol_data = dol_process(tlvdb_get(s, 0x9f38, NULL), s, &pdol_data_len);
-	struct tlv pdol_data_tlv = { .tag = 0x83, .len = pdol_data_len, .value = pdol_data };
-
-	size_t pdol_data_tlv_data_len;
-	unsigned char *pdol_data_tlv_data = tlv_encode(&pdol_data_tlv, &pdol_data_tlv_data_len);
-	if (!pdol_data_tlv_data)
+	struct tlv *pdol_data_tlv = dol_process(tlvdb_get(s, 0x9f38, NULL), s, 0x83);
+	if (!pdol_data_tlv)
 		return 1;
 
-	t = emv_gpo(sc, pdol_data_tlv_data, pdol_data_tlv_data_len);
-	free(pdol_data_tlv_data);
+	t = emv_gpo(sc, pdol_data_tlv);
+	free(pdol_data_tlv);
 	if (!t)
 		return 1;
 	tlvdb_add(s, t);
 
-	unsigned char *sda_data = NULL;
-	size_t sda_len = 0;
-	bool ok = emv_read_records(sc, s, &sda_data, &sda_len);
-	if (!ok)
+	struct tlv *sda_tlv = emv_read_records(sc, s);
+	if (!sda_tlv)
 		return 1;
 
 	struct emv_pk *pk = get_ca_pk(s);
 	struct emv_pk *issuer_pk = emv_pki_recover_issuer_cert(pk, s);
 	if (issuer_pk)
 		printf("Issuer PK recovered!\n");
-	struct emv_pk *icc_pk = emv_pki_recover_icc_cert(issuer_pk, s, sda_data, sda_len);
+	struct emv_pk *icc_pk = emv_pki_recover_icc_cert(issuer_pk, s, sda_tlv);
 	if (icc_pk)
 		printf("ICC PK recovered!\n");
-	struct tlvdb *dac_db = emv_pki_recover_dac(issuer_pk, s, sda_data, sda_len);
+	struct tlvdb *dac_db = emv_pki_recover_dac(issuer_pk, s, sda_tlv);
 	if (dac_db) {
 		const struct tlv *dac_tlv = tlvdb_get(dac_db, 0x9f45, NULL);
 		printf("SDA verified OK (%02hhx:%02hhx)!\n", dac_tlv->value[0], dac_tlv->value[1]);
@@ -138,17 +135,18 @@ int main(void)
 #undef TAG
 
 	/* Generate AC asking for TC/CDA, then check CDA */
-	size_t crm_data_len;
-	unsigned char *crm_data = dol_process(tlvdb_get(s, 0x8c, NULL), s, &crm_data_len);
-	dump_buffer(crm_data, crm_data_len, stdout);
-	t = emv_generate_ac(sc, 0x50, crm_data, crm_data_len);
-	free(crm_data);
+	struct tlv *crm_tlv = dol_process(tlvdb_get(s, 0x8c, NULL), s, 0);
+	if (!crm_tlv)
+		return 1;
+	dump_buffer(crm_tlv->value, crm_tlv->len, stdout);
+	t = emv_generate_ac(sc, 0x50, crm_tlv);
+	free(crm_tlv);
 	if (!t)
 		return 1;
 	struct tlvdb *idn_db = emv_pki_perform_cda(icc_pk, s, t,
-			pdol_data, pdol_data_len,
-			crm_data, crm_data_len,
-			NULL, 0);
+			pdol_data_tlv,
+			crm_tlv,
+			NULL);
 	tlvdb_add(s, t);
 	if (idn_db) {
 		const struct tlv *idn_tlv = tlvdb_get(idn_db, 0x9f4c, NULL);
@@ -156,13 +154,13 @@ int main(void)
 		tlvdb_add(s, idn_db);
 	}
 
-	free(crm_data);
+	free(crm_tlv);
 	emv_pk_free(pk);
 	emv_pk_free(issuer_pk);
 	emv_pk_free(icc_pk);
 
-	free(sda_data);
-	free(pdol_data);
+	free(sda_tlv);
+	free(pdol_data_tlv);
 
 	printf("Final\n");
 	tlvdb_visit(s, print_cb, NULL);

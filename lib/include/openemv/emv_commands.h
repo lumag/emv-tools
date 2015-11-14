@@ -22,12 +22,12 @@
 #include <stddef.h>
 
 unsigned char *emv_get_challenge(struct sc *sc);
-struct tlvdb *emv_select(struct sc *sc, const unsigned char *aid, size_t aid_len);
+struct tlvdb *emv_select(struct sc *sc, const struct tlv *aid_tlv);
 unsigned char *emv_read_record(struct sc *sc, unsigned char sfi, unsigned char record, unsigned short *psw, size_t *plen);
-bool emv_read_records(struct sc *sc, struct tlvdb *db, unsigned char **pdata, size_t *plen);
-struct tlvdb *emv_gpo(struct sc *sc, const unsigned char *data, size_t len);
-struct tlvdb *emv_generate_ac(struct sc *sc, unsigned char type, const unsigned char *data, size_t len);
-struct tlvdb *emv_internal_authenticate(struct sc *sc, const unsigned char *data, size_t len);
+struct tlv *emv_read_records(struct sc *sc, struct tlvdb *db);
+struct tlvdb *emv_gpo(struct sc *sc, const struct tlv *pdol_data_tlv);
+struct tlvdb *emv_generate_ac(struct sc *sc, unsigned char type, const struct tlv *crm_tlv);
+struct tlvdb *emv_internal_authenticate(struct sc *sc, const struct tlv *data_tlv);
 struct tlvdb *emv_get_data(struct sc *sc, tlv_tag_t tag);
 
 #endif

@@ -26,10 +26,10 @@ struct emv_pk *emv_pki_make_ca(const struct crypto_pk *cp,
 		const unsigned char *rid, unsigned char index,
 		unsigned int expire, enum crypto_algo_hash hash_algo);
 struct tlvdb *emv_pki_sign_issuer_cert(const struct crypto_pk *cp, struct emv_pk *issuer_pk);
-struct tlvdb *emv_pki_sign_icc_cert(const struct crypto_pk *cp, struct emv_pk *icc_pk, const unsigned char *sda_data, size_t sda_data_len);
+struct tlvdb *emv_pki_sign_icc_cert(const struct crypto_pk *cp, struct emv_pk *icc_pk, const struct tlv *sda_tlv);
 struct tlvdb *emv_pki_sign_icc_pe_cert(const struct crypto_pk *cp, struct emv_pk *icc_pe_pk);
 
-struct tlvdb *emv_pki_sign_dac(const struct crypto_pk *cp, const unsigned char *dac, const unsigned char *sda_data, size_t sda_data_len);
-struct tlvdb *emv_pki_sign_idn(const struct crypto_pk *cp, const unsigned char *idn, size_t idn_len, const unsigned char *dyn_data, size_t dyn_data_len);
+struct tlvdb *emv_pki_sign_dac(const struct crypto_pk *cp, const struct tlv *dac_tlv, const struct tlv *sda_tlv);
+struct tlvdb *emv_pki_sign_idn(const struct crypto_pk *cp, const struct tlv *idn_tlv, const struct tlv *dyn_tlv);
 
 #endif

@@ -83,15 +83,14 @@ static void build_cap(struct tlvdb *db)
 
 	ipb_dol_value[sizeof(ipb_dol_value) - 1] = ipb->len - (1 + 1 + 2 + 8);
 
-	size_t ipb_data_len;
-	unsigned char *ipb_data = dol_process(&ipb_dol, db, &ipb_data_len);
-	if (!ipb_data)
+	struct tlv *ipb_data_tlv = dol_process(&ipb_dol, db, 0);
+	if (!ipb_data_tlv)
 		return;
 
-	dump_buffer(ipb_data, ipb_data_len, stdout);
+	dump_buffer(ipb_data_tlv->value, ipb_data_tlv->len, stdout);
 	dump_buffer(ipb->value, ipb->len, stdout);
-	if (ipb_data_len < ipb->len) {
-		free(ipb_data);
+	if (ipb_data_tlv->len < ipb->len) {
+		free(ipb_data_tlv);
 		return;
 	}
 
@@ -103,7 +102,7 @@ static void build_cap(struct tlvdb *db)
 			if ((ipb->value[i-1] & (1 << j)) == 0)
 				continue;
 
-			c |= ((ipb_data[i-1] >> j) & 1) << (k % 8);
+			c |= ((ipb_data_tlv->value[i-1] >> j) & 1) << (k % 8);
 			k++;
 
 			if (k % 8 != 0)
@@ -113,7 +112,7 @@ static void build_cap(struct tlvdb *db)
 			c = 0;
 		}
 	}
-	free(ipb_data);
+	free(ipb_data_tlv);
 
 	if (k % 8 != 0) {
 		k += 8 - (k % 8);
@@ -159,33 +158,29 @@ int main(void)
 	struct tlvdb *s;
 	struct tlvdb *t;
 	for (i = 0, s = NULL; apps[i].name_len != 0; i++) {
-		s = emv_select(sc, apps[i].name, apps[i].name_len);
+		const struct tlv aid_tlv = {
+			.len = apps[i].name_len,
+			.value = apps[i].name,
+		};
+		s = emv_select(sc, &aid_tlv);
 		if (s)
 			break;
 	}
 	if (!s)
 		return 1;
 
-	size_t pdol_data_len;
-	unsigned char *pdol_data = dol_process(tlvdb_get(s, 0x9f38, NULL), s, &pdol_data_len);
-	struct tlv pdol_data_tlv = { .tag = 0x83, .len = pdol_data_len, .value = pdol_data };
-
-	size_t pdol_data_tlv_data_len;
-	unsigned char *pdol_data_tlv_data = tlv_encode(&pdol_data_tlv, &pdol_data_tlv_data_len);
-	free(pdol_data);
-	if (!pdol_data_tlv_data)
+	struct tlv *pdol_data_tlv = dol_process(tlvdb_get(s, 0x9f38, NULL), s, 0x83);
+	if (!pdol_data_tlv)
 		return 1;
 
-	t = emv_gpo(sc, pdol_data_tlv_data, pdol_data_tlv_data_len);
-	free(pdol_data_tlv_data);
+	t = emv_gpo(sc, pdol_data_tlv);
+	free(pdol_data_tlv);
 	if (!t)
 		return 1;
 	tlvdb_add(s, t);
 
-	unsigned char *sda_data = NULL;
-	size_t sda_len = 0;
-	bool ok = emv_read_records(sc, s, &sda_data, &sda_len);
-	if (!ok)
+	struct tlv *sda_tlv = emv_read_records(sc, s);
+	if (!sda_tlv)
 		return 1;
 
 	/* Only PTC read should happen before VERIFY */
@@ -206,11 +201,11 @@ int main(void)
 #undef TAG
 
 	/* Generate ARQC */
-	size_t crm_data_len;
-	unsigned char *crm_data;
-	crm_data = dol_process(tlvdb_get(s, 0x8c, NULL), s, &crm_data_len);
-	t = emv_generate_ac(sc, 0x80, crm_data, crm_data_len);
-	free(crm_data);
+	struct tlv *crm_tlv = dol_process(tlvdb_get(s, 0x8c, NULL), s, 0);
+	if (!crm_tlv)
+		return 1;
+	t = emv_generate_ac(sc, 0x80, crm_tlv);
+	free(crm_tlv);
 	tlvdb_add(s, t);
 
 	build_cap(s);
@@ -220,9 +215,11 @@ int main(void)
 #undef TAG
 
 	/* Generate AC asking for AAC */
-	crm_data = dol_process(tlvdb_get(s, 0x8d, NULL), s, &crm_data_len);
-	t = emv_generate_ac(sc, 0x00, crm_data, crm_data_len);
-	free(crm_data);
+	crm_tlv = dol_process(tlvdb_get(s, 0x8d, NULL), s, 0);
+	if (!crm_tlv)
+		return 1;
+	t = emv_generate_ac(sc, 0x00, crm_tlv);
+	free(crm_tlv);
 	tlvdb_add(s, t);
 
 	tlvdb_visit(s, print_cb, NULL);

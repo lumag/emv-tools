@@ -47,30 +47,33 @@ static size_t dol_calculate_len(const struct tlv *tlv, size_t data_len)
 	return count;
 }
 
-unsigned char *dol_process(const struct tlv *tlv, const struct tlvdb *tlvdb, size_t *len)
+struct tlv *dol_process(const struct tlv *tlv, const struct tlvdb *tlvdb, tlv_tag_t tag)
 {
-	if (!tlv) {
-		*len = 0;
-		return NULL;
+	size_t res_len;
+	if (!tlv || !(res_len = dol_calculate_len(tlv, 0))) {
+		struct tlv *res_tlv = malloc(sizeof(*res_tlv));
+
+		res_tlv->tag = tag;
+		res_tlv->len = 0;
+		res_tlv->value = NULL;
+
+		return res_tlv;
 	}
+
+	struct tlv *res_tlv = malloc(sizeof(*res_tlv) + res_len);
+	if (!res_tlv)
+		return NULL;
 
 	const unsigned char *buf = tlv->value;
 	size_t left = tlv->len;
-	size_t res_len = dol_calculate_len(tlv, 0);
-	unsigned char *res;
+	unsigned char *res = (unsigned char *)(res_tlv + 1);
 	size_t pos = 0;
-
-	if (!res_len) {
-		*len = 0;
-		return NULL;
-	}
-
-	res = malloc(res_len);
 
 	while (left) {
 		struct tlv cur_tlv;
 		if (!tlv_parse_tl(&buf, &left, &cur_tlv) || pos + cur_tlv.len > res_len) {
-			free(res);
+			free(res_tlv);
+
 			return NULL;
 		}
 
@@ -87,9 +90,11 @@ unsigned char *dol_process(const struct tlv *tlv, const struct tlvdb *tlvdb, siz
 		pos += cur_tlv.len;
 	}
 
-	*len = pos;
+	res_tlv->tag = tag;
+	res_tlv->len = res_len;
+	res_tlv->value = res;
 
-	return res;
+	return res_tlv;
 }
 
 struct tlvdb *dol_parse(const struct tlv *tlv, const unsigned char *data, size_t data_len)

@@ -59,7 +59,6 @@ static struct emu_df *read_df(FILE *f, struct sc *sc, const unsigned char *name,
 	unsigned short sw;
 	size_t outlen;
 	unsigned char *outbuf;
-	struct tlv pdol_data_tlv;
 	size_t pdol_data_len;
 	unsigned char *pdol_data;
 
@@ -73,12 +72,14 @@ static struct emu_df *read_df(FILE *f, struct sc *sc, const unsigned char *name,
 
 	df = emu_df_new();
 
-	pdol_data_tlv.tag = 0x83;
-	pdol_data_tlv.value = dol_process(tlvdb_get(s, 0x9f38, NULL), s, &pdol_data_tlv.len);
-	pdol_data = tlv_encode(&pdol_data_tlv, &pdol_data_len);
+	struct tlv *pdol_data_tlv = dol_process(tlvdb_get(s, 0x9f38, NULL), s, 0x83);
+	if (!pdol_data_tlv)
+		return NULL;
+
+	pdol_data = tlv_encode(pdol_data_tlv, &pdol_data_len);
 	if (!pdol_data)
 		return NULL;
-	free((unsigned char *)pdol_data_tlv.value);
+	free(pdol_data_tlv);
 
 	tlvdb_free(s);
 

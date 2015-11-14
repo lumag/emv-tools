@@ -119,6 +119,10 @@ const unsigned char ssd1[] = {
 	0x03, 0x8d, 0x0c, 0x91, 0x0a, 0x8a, 0x02, 0x95, 0x05, 0x9f, 0x37, 0x04, 0x9f, 0x4c, 0x08,
 	0x39, 0x00,
 };
+static const struct tlv ssd1_tlv = {
+	.len = sizeof(ssd1),
+	.value = ssd1,
+};
 
 const unsigned char pan[] = {
 	0x52, 0x85, 0x88, 0x12, 0x54, 0x34, 0x56, 0x53,
@@ -126,6 +130,10 @@ const unsigned char pan[] = {
 
 const unsigned char dd1[] = {
 	0x00, 0x00, 0x00, 0x00,
+};
+static const struct tlv dd1_tlv = {
+	.len = sizeof(dd1),
+	.value = dd1,
 };
 
 static int dda_test_raw(void)
@@ -297,7 +305,7 @@ static int dda_test_pk(void)
 	tlvdb_add(db, tlvdb_external(0x9f47, sizeof(icc_exp), icc_exp));
 	/*tlvdb_add(db, tlvdb_external(0x9f48, sizeof(issuer_rem), issuer_rem));*/
 
-	struct emv_pk *iccpk = emv_pki_recover_icc_cert(ipk, db, ssd1, sizeof(ssd1));
+	struct emv_pk *iccpk = emv_pki_recover_icc_cert(ipk, db, &ssd1_tlv);
 	if (!iccpk) {
 		fprintf(stderr, "Could not recover ICC certificate!\n");
 		emv_pk_free(ipk);
@@ -307,7 +315,7 @@ static int dda_test_pk(void)
 
 	tlvdb_add(db, tlvdb_external(0x9f4b, sizeof(sdad_cr), sdad_cr));
 
-	struct tlvdb *idndb = emv_pki_recover_idn(iccpk, db, dd1, sizeof(dd1));
+	struct tlvdb *idndb = emv_pki_recover_idn(iccpk, db, &dd1_tlv);
 	if (!idndb) {
 		fprintf(stderr, "Could not recover IDN!\n");
 		emv_pk_free(iccpk);

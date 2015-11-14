@@ -41,14 +41,17 @@ unsigned char *emv_get_challenge(struct sc *sc)
 	return NULL;
 }
 
-struct tlvdb *emv_select(struct sc *sc, const unsigned char *aid, size_t aid_len)
+struct tlvdb *emv_select(struct sc *sc, const struct tlv *aid_tlv)
 {
 	unsigned short sw;
 	size_t outlen;
 	unsigned char *outbuf;
 	struct tlvdb *t = NULL;
 
-	outbuf = sc_command(sc, 0x00, 0xa4, 0x04, 0x00, aid_len, aid, &sw, &outlen);
+	if (!aid_tlv)
+		return NULL;
+
+	outbuf = sc_command(sc, 0x00, 0xa4, 0x04, 0x00, aid_tlv->len, aid_tlv->value, &sw, &outlen);
 	if (!outbuf)
 		return NULL;
 
@@ -102,14 +105,11 @@ static void sda_list_free(struct sda_list *head)
 	}
 }
 
-bool emv_read_records(struct sc *sc, struct tlvdb *db, unsigned char **pdata, size_t *plen)
+struct tlv *emv_read_records(struct sc *sc, struct tlvdb *db)
 {
-	*pdata = NULL;
-	*plen = 0;
-
 	const struct tlv *afl = tlvdb_get(db, 0x94, NULL);
 	if (!afl)
-		return 1;
+		return NULL;
 
 	struct sda_list sda_list_head = {
 		.forw = &sda_list_head,
@@ -201,28 +201,28 @@ bool emv_read_records(struct sc *sc, struct tlvdb *db, unsigned char **pdata, si
 	for (elem = sda_list_head.forw; elem != &sda_list_head; elem = elem->forw)
 		sda_len += elem->len;
 
-	unsigned char *sda_data = NULL;
-	sda_data = malloc(sda_len);
-	if (!sda_data)
+	struct tlv *sda_tlv = malloc(sizeof(*sda_tlv) + sda_len);
+	if (!sda_tlv)
 		goto err;
 
-	size_t sda_pos = 0;
+	unsigned char *sda_data = (unsigned char *)(sda_tlv + 1);
+	sda_tlv->tag = 0;
+	sda_tlv->len = sda_len;
+	sda_tlv->value = sda_data;
+
 	for (elem = sda_list_head.forw; elem != &sda_list_head; elem = elem->forw) {
-		memcpy(sda_data + sda_pos, elem->buf + elem->offset, elem->len);
-		sda_pos += elem->len;
+		memcpy(sda_data, elem->buf + elem->offset, elem->len);
+		sda_data += elem->len;
 	}
 
 	sda_list_free(&sda_list_head);
 
-	*pdata = sda_data;
-	*plen = sda_len;
-
-	return true;
+	return sda_tlv;
 err:
 
 	sda_list_free(&sda_list_head);
 
-	return false;
+	return NULL;
 }
 
 static struct tlvdb *emv_command_handle_format(const unsigned char *buf, size_t len, const struct tlv *dol)
@@ -249,22 +249,41 @@ static const struct tlv gpo_dol_tlv = {
 	.value = gpo_dol_value,
 };
 
-struct tlvdb *emv_gpo(struct sc *sc, const unsigned char *data, size_t len)
+static const struct tlv default_pdol_data_tlv = {
+	.tag = 0x83,
+	.len = 0,
+	.value = NULL
+};
+
+struct tlvdb *emv_gpo(struct sc *sc, const struct tlv *pdol_data_tlv)
 {
+	if (!pdol_data_tlv)
+		pdol_data_tlv = &default_pdol_data_tlv;
+
+	size_t pdol_data_tlv_data_len;
+	unsigned char *pdol_data_tlv_data = tlv_encode(pdol_data_tlv, &pdol_data_tlv_data_len);
+	if (!pdol_data_tlv_data)
+		return NULL;
+
 	unsigned short sw;
 	size_t outlen;
-	unsigned char *outbuf = sc_command(sc, 0x80, 0xa8, 0x00, 0x00, len, data, &sw, &outlen);
-	if (!outbuf)
+	unsigned char *outbuf = sc_command(sc, 0x80, 0xa8, 0x00, 0x00, pdol_data_tlv_data_len, pdol_data_tlv_data, &sw, &outlen);
+	if (!outbuf) {
+		free(pdol_data_tlv_data);
+
 		return NULL;
+	}
 
 	if (sw != 0x9000) {
 		free(outbuf);
+		free(pdol_data_tlv_data);
 
 		return NULL;
 	}
 
 	struct tlvdb *t = emv_command_handle_format(outbuf, outlen, &gpo_dol_tlv);
 	free(outbuf);
+	free(pdol_data_tlv_data);
 
 	return t;
 }
@@ -280,11 +299,14 @@ static const struct tlv ac_dol_tlv = {
 	.value = ac_dol_value,
 };
 
-struct tlvdb *emv_generate_ac(struct sc *sc, unsigned char type, const unsigned char *data, size_t len)
+struct tlvdb *emv_generate_ac(struct sc *sc, unsigned char type, const struct tlv *crm_tlv)
 {
+	if (!crm_tlv)
+		return NULL;
+
 	unsigned short sw;
 	size_t outlen;
-	unsigned char *outbuf = sc_command(sc, 0x80, 0xae, type, 0x00, len, data, &sw, &outlen);
+	unsigned char *outbuf = sc_command(sc, 0x80, 0xae, type, 0x00, crm_tlv->len, crm_tlv->value, &sw, &outlen);
 	if (!outbuf)
 		return NULL;
 
@@ -308,11 +330,14 @@ static const struct tlv ia_dol_tlv = {
 	.value = ia_dol_value,
 };
 
-struct tlvdb *emv_internal_authenticate(struct sc *sc, const unsigned char *data, size_t len)
+struct tlvdb *emv_internal_authenticate(struct sc *sc, const struct tlv *data_tlv)
 {
+	if (!data_tlv)
+		return NULL;
+
 	unsigned short sw;
 	size_t outlen;
-	unsigned char *outbuf = sc_command(sc, 0x00, 0x88, 0x00, 0x00, len, data, &sw, &outlen);
+	unsigned char *outbuf = sc_command(sc, 0x00, 0x88, 0x00, 0x00, data_tlv->len, data_tlv->value, &sw, &outlen);
 	if (!outbuf)
 		return NULL;
 

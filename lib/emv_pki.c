@@ -239,19 +239,14 @@ struct emv_pk *emv_pki_recover_issuer_cert(const struct emv_pk *pk, struct tlvdb
 			NULL);
 }
 
-struct emv_pk *emv_pki_recover_icc_cert(const struct emv_pk *pk, struct tlvdb *db, const unsigned char *sda_data, size_t sda_data_len)
+struct emv_pk *emv_pki_recover_icc_cert(const struct emv_pk *pk, struct tlvdb *db, const struct tlv *sda_tlv)
 {
-	struct tlv sda_tlv = {
-		.len = sda_data_len,
-		.value = sda_data,
-	};
-
 	return emv_pki_decode_key(pk, 4,
 			tlvdb_get(db, 0x5a, NULL),
 			tlvdb_get(db, 0x9f46, NULL),
 			tlvdb_get(db, 0x9f47, NULL),
 			tlvdb_get(db, 0x9f48, NULL),
-			&sda_tlv);
+			sda_tlv);
 }
 
 struct emv_pk *emv_pki_recover_icc_pe_cert(const struct emv_pk *pk, struct tlvdb *db)
@@ -264,16 +259,12 @@ struct emv_pk *emv_pki_recover_icc_pe_cert(const struct emv_pk *pk, struct tlvdb
 			NULL);
 }
 
-struct tlvdb *emv_pki_recover_dac(const struct emv_pk *enc_pk, const struct tlvdb *db, const unsigned char *sda_data, size_t sda_data_len)
+struct tlvdb *emv_pki_recover_dac(const struct emv_pk *enc_pk, const struct tlvdb *db, const struct tlv *sda_tlv)
 {
-	struct tlv sda_tlv = {
-		.len = sda_data_len,
-		.value = sda_data,
-	};
 	size_t data_len;
 	unsigned char *data = emv_pki_decode_message(enc_pk, 3, &data_len,
 			tlvdb_get(db, 0x93, NULL),
-			&sda_tlv,
+			sda_tlv,
 			NULL);
 
 	if (!data || data_len < 5)
@@ -286,16 +277,12 @@ struct tlvdb *emv_pki_recover_dac(const struct emv_pk *enc_pk, const struct tlvd
 	return dac_db;
 }
 
-struct tlvdb *emv_pki_recover_idn(const struct emv_pk *enc_pk, const struct tlvdb *db, const unsigned char *dyn_data, size_t dyn_data_len)
+struct tlvdb *emv_pki_recover_idn(const struct emv_pk *enc_pk, const struct tlvdb *db, const struct tlv *dyn_tlv)
 {
-	struct tlv dyn_tlv = {
-		.len = dyn_data_len,
-		.value = dyn_data,
-	};
 	size_t data_len;
 	unsigned char *data = emv_pki_decode_message(enc_pk, 5, &data_len,
 			tlvdb_get(db, 0x9f4b, NULL),
-			&dyn_tlv,
+			dyn_tlv,
 			NULL);
 
 	if (!data || data_len < 3)
@@ -339,9 +326,9 @@ static bool tlv_hash(void *data, const struct tlv *tlv)
 
 struct tlvdb *emv_pki_perform_cda(const struct emv_pk *enc_pk, const struct tlvdb *db,
 		const struct tlvdb *this_db,
-		const unsigned char *pdol_data, size_t pdol_data_len,
-		const unsigned char *crm1_data, size_t crm1_data_len,
-		const unsigned char *crm2_data, size_t crm2_data_len)
+		const struct tlv *pdol_data_tlv,
+		const struct tlv *crm1_tlv,
+		const struct tlv *crm2_tlv)
 {
 	const struct tlv *un_tlv = tlvdb_get(db, 0x9f37, NULL);
 	const struct tlv *cid_tlv = tlvdb_get(this_db, 0x9f27, NULL);
@@ -374,9 +361,12 @@ struct tlvdb *emv_pki_perform_cda(const struct emv_pk *enc_pk, const struct tlvd
 		return NULL;
 	}
 
-	crypto_hash_write(ch, pdol_data, pdol_data_len);
-	crypto_hash_write(ch, crm1_data, crm1_data_len);
-	crypto_hash_write(ch, crm2_data, crm2_data_len);
+	if (pdol_data_tlv)
+		crypto_hash_write(ch, pdol_data_tlv->value, pdol_data_tlv->len);
+	if (crm1_tlv)
+		crypto_hash_write(ch, crm1_tlv->value, crm1_tlv->len);
+	if (crm2_tlv)
+		crypto_hash_write(ch, crm2_tlv->value, crm2_tlv->len);
 
 	tlvdb_visit(this_db, tlv_hash, ch);
 

@@ -66,20 +66,19 @@ static struct tlvdb *perform_dda(const struct emv_pk *pk, const struct tlvdb *db
 	if (!ddol_tlv)
 		ddol_tlv = &default_ddol_tlv;
 
-	size_t ddol_data_len;
-	unsigned char *ddol_data = dol_process(ddol_tlv, db, &ddol_data_len);
-	if (!ddol_data)
+	struct tlv *ddol_data_tlv = dol_process(ddol_tlv, db, 0);
+	if (!ddol_data_tlv)
 		return NULL;
 
-	struct tlvdb *dda_db = emv_internal_authenticate(sc, ddol_data, ddol_data_len);
+	struct tlvdb *dda_db = emv_internal_authenticate(sc, ddol_data_tlv);
 	if (!dda_db) {
-		free(ddol_data);
+		free(ddol_data_tlv);
 
 		return NULL;
 	}
 
-	struct tlvdb *idn_db = emv_pki_recover_idn(pk, dda_db, ddol_data, ddol_data_len);
-	free(ddol_data);
+	struct tlvdb *idn_db = emv_pki_recover_idn(pk, dda_db, ddol_data_tlv);
+	free(ddol_data_tlv);
 	if (!idn_db) {
 		tlvdb_free(dda_db);
 		return NULL;
@@ -195,33 +194,29 @@ int main(void)
 	struct tlvdb *s;
 	struct tlvdb *t;
 	for (i = 0, s = NULL; apps[i].name_len != 0; i++) {
-		s = emv_select(sc, apps[i].name, apps[i].name_len);
+		const struct tlv aid_tlv = {
+			.len = apps[i].name_len,
+			.value = apps[i].name,
+		};
+		s = emv_select(sc, &aid_tlv);
 		if (s)
 			break;
 	}
 	if (!s)
 		return 1;
 
-	size_t pdol_data_len;
-	unsigned char *pdol_data = dol_process(tlvdb_get(s, 0x9f38, NULL), s, &pdol_data_len);
-	struct tlv pdol_data_tlv = { .tag = 0x83, .len = pdol_data_len, .value = pdol_data };
-
-	size_t pdol_data_tlv_data_len;
-	unsigned char *pdol_data_tlv_data = tlv_encode(&pdol_data_tlv, &pdol_data_tlv_data_len);
-	free(pdol_data);
-	if (!pdol_data_tlv_data)
+	struct tlv *pdol_data_tlv = dol_process(tlvdb_get(s, 0x9f38, NULL), s, 0x83);
+	if (!pdol_data_tlv)
 		return 1;
 
-	t = emv_gpo(sc, pdol_data_tlv_data, pdol_data_tlv_data_len);
-	free(pdol_data_tlv_data);
+	t = emv_gpo(sc, pdol_data_tlv);
+	free(pdol_data_tlv);
 	if (!t)
 		return 1;
 	tlvdb_add(s, t);
 
-	unsigned char *sda_data = NULL;
-	size_t sda_len = 0;
-	bool ok = emv_read_records(sc, s, &sda_data, &sda_len);
-	if (!ok)
+	struct tlv *sda_tlv = emv_read_records(sc, s);
+	if (!sda_tlv)
 		return 1;
 
 	struct emv_pk *pk = get_ca_pk(s);
@@ -238,7 +233,7 @@ int main(void)
 				issuer_pk->serial[1],
 				issuer_pk->serial[2]
 				);
-	struct emv_pk *icc_pk = emv_pki_recover_icc_cert(issuer_pk, s, sda_data, sda_len);
+	struct emv_pk *icc_pk = emv_pki_recover_icc_cert(issuer_pk, s, sda_tlv);
 	if (icc_pk)
 		printf("ICC PK recovered! RID %02hhx:%02hhx:%02hhx:%02hhx:%02hhx IDX %02hhx CSN %02hhx:%02hhx:%02hhx\n",
 				icc_pk->rid[0],
@@ -264,7 +259,7 @@ int main(void)
 				icc_pe_pk->serial[1],
 				icc_pe_pk->serial[2]
 				);
-	struct tlvdb *dac_db = emv_pki_recover_dac(issuer_pk, s, sda_data, sda_len);
+	struct tlvdb *dac_db = emv_pki_recover_dac(issuer_pk, s, sda_tlv);
 	if (dac_db) {
 		const struct tlv *dac_tlv = tlvdb_get(dac_db, 0x9f45, NULL);
 		printf("SDA verified OK (%02hhx:%02hhx)!\n", dac_tlv->value[0], dac_tlv->value[1]);
@@ -300,11 +295,9 @@ int main(void)
 #undef TAG
 
 	/* Generate ARQC */
-	size_t crm_data_len;
-	unsigned char *crm_data;
-	crm_data = dol_process(tlvdb_get(s, 0x8c, NULL), s, &crm_data_len);
-	t = emv_generate_ac(sc, 0x80, crm_data, crm_data_len);
-	free(crm_data);
+	struct tlv *crm_tlv = dol_process(tlvdb_get(s, 0x8c, NULL), s, 0);
+	t = emv_generate_ac(sc, 0x80, crm_tlv);
+	free(crm_tlv);
 	tlvdb_add(s, t);
 
 #define TAG(tag, len, value...) tlvdb_add(s, tlvdb_fixed(tag, len, (unsigned char[]){value}))
@@ -312,9 +305,9 @@ int main(void)
 #undef TAG
 
 	/* Generate AAC */
-	crm_data = dol_process(tlvdb_get(s, 0x8d, NULL), s, &crm_data_len);
-	t = emv_generate_ac(sc, 0x00, crm_data, crm_data_len);
-	free(crm_data);
+	crm_tlv = dol_process(tlvdb_get(s, 0x8d, NULL), s, 0);
+	t = emv_generate_ac(sc, 0x00, crm_tlv);
+	free(crm_tlv);
 	tlvdb_add(s, t);
 
 	emv_pk_free(pk);
@@ -322,7 +315,7 @@ int main(void)
 	emv_pk_free(icc_pk);
 	emv_pk_free(icc_pe_pk);
 
-	free(sda_data);
+	free(sda_tlv);
 
 	tlvdb_add(s, emv_get_data(sc, 0x9f36));
 	tlvdb_add(s, emv_get_data(sc, 0x9f13));

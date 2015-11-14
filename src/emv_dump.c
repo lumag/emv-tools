@@ -70,42 +70,39 @@ int main(void)
 	struct tlvdb *s;
 	struct tlvdb *t;
 	for (i = 0, s = NULL; apps[i].name_len != 0; i++) {
-		s = emv_select(sc, apps[i].name, apps[i].name_len);
+		const struct tlv aid_tlv = {
+			.len = apps[i].name_len,
+			.value = apps[i].name,
+		};
+		s = emv_select(sc, &aid_tlv);
 		if (s)
 			break;
 	}
 	if (!s)
 		return 1;
 
-	size_t pdol_data_len;
-	unsigned char *pdol_data = dol_process(tlvdb_get(s, 0x9f38, NULL), s, &pdol_data_len);
-	struct tlv pdol_data_tlv = { .tag = 0x83, .len = pdol_data_len, .value = pdol_data };
-
-	size_t pdol_data_tlv_data_len;
-	unsigned char *pdol_data_tlv_data = tlv_encode(&pdol_data_tlv, &pdol_data_tlv_data_len);
-	free(pdol_data);
-	if (!pdol_data_tlv_data)
+	struct tlv *pdol_data_tlv = dol_process(tlvdb_get(s, 0x9f38, NULL), s, 0x83);
+	if (!pdol_data_tlv)
 		return 1;
 
-	t = emv_gpo(sc, pdol_data_tlv_data, pdol_data_tlv_data_len);
-	free(pdol_data_tlv_data);
+	t = emv_gpo(sc, pdol_data_tlv);
+	free(pdol_data_tlv);
 	if (!t)
 		return 1;
 	tlvdb_add(s, t);
 
-	unsigned char *sda_data = NULL;
-	size_t sda_len = 0;
-	bool ok = emv_read_records(sc, s, &sda_data, &sda_len);
-	if (!ok)
+	struct tlv *sda_tlv = emv_read_records(sc, s);
+	if (!sda_tlv)
 		return 1;
 
-	free(sda_data);
+	free(sda_tlv);
 
 	/* Generate AC asking for AAC */
-	size_t crm_data_len;
-	unsigned char *crm_data = dol_process(tlvdb_get(s, 0x8c, NULL), s, &crm_data_len);
-	t = emv_generate_ac(sc, 0x00, crm_data, crm_data_len);
-	free(crm_data);
+	struct tlv *crm_tlv = dol_process(tlvdb_get(s, 0x8c, NULL), s, 0);
+	if (!crm_tlv)
+		return 1;
+	t = emv_generate_ac(sc, 0x00, crm_tlv);
+	free(crm_tlv);
 	tlvdb_add(s, t);
 
 	tlvdb_add(s, emv_get_data(sc, 0x9f36));

@@ -30,17 +30,35 @@ static const unsigned char caidx = 1;
 static const unsigned char sdad[] = {
 	0xde, 0xad, 0xbe, 0xaf, 0xca, 0xfe, 0xfe, 0xed,
 };
+static const struct tlv sdad_tlv = {
+	.len = sizeof(sdad),
+	.value = sdad,
+};
 
 const unsigned char dd1[] = {
 	0x00, 0x00, 0x00, 0x00,
+};
+static const struct tlv dd1_tlv = {
+	.len = sizeof(dd1),
+	.value = dd1,
 };
 
 static const unsigned char dac[] = {
 	0x31, 0x32,
 };
+static const struct tlv dac_tlv = {
+	.tag = 0x9f45,
+	.len = sizeof(dac),
+	.value = dac,
+};
 
 static const unsigned char idn[] = {
 	0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38
+};
+static const struct tlv idn_tlv = {
+	.tag = 0x9f4c,
+	.len = sizeof(idn),
+	.value = idn,
 };
 
 static int test_emv_pki_make_ca(struct crypto_pk *cp)
@@ -161,12 +179,12 @@ static int test_emv_pki_sign_icc_cert(struct crypto_pk *icp, struct crypto_pk *i
 	if (!icc_pk)
 		goto out;
 
-	struct tlvdb *db = emv_pki_sign_icc_cert(icp, icc_pk, sdad, sizeof(sdad));
+	struct tlvdb *db = emv_pki_sign_icc_cert(icp, icc_pk, &sdad_tlv);
 	if (!db)
 		goto out2;
 	tlvdb_add(db, tlvdb_fixed(0x5a, 10, icc_pk->pan));
 
-	struct emv_pk *rpk = emv_pki_recover_icc_cert(ipk, db, sdad, sizeof(sdad));
+	struct emv_pk *rpk = emv_pki_recover_icc_cert(ipk, db, &sdad_tlv);
 	if (!rpk)
 		goto out3;
 
@@ -251,16 +269,16 @@ static int test_emv_pki_sign_dac(struct crypto_pk *icp)
 	if (!ipk)
 		return ret;
 
-	struct tlvdb *db = emv_pki_sign_dac(icp, dac, sdad, sizeof(sdad));
+	struct tlvdb *db = emv_pki_sign_dac(icp, &dac_tlv, &sdad_tlv);
 	if (!db)
 		goto out;
 
-	struct tlvdb *rdb = emv_pki_recover_dac(ipk, db, sdad, sizeof(sdad));
+	struct tlvdb *rdb = emv_pki_recover_dac(ipk, db, &sdad_tlv);
 	if (!rdb)
 		goto out2;
 
-	const struct tlv *dac_tlv = tlvdb_get(rdb, 0x9f45, NULL);
-	if (!dac_tlv || dac_tlv->len != sizeof(dac) || memcmp(dac_tlv->value, dac, sizeof(dac)))
+	const struct tlv *rdac_tlv = tlvdb_get(rdb, 0x9f45, NULL);
+	if (!tlv_equal(&dac_tlv, rdac_tlv))
 		goto out3;
 
 	ret = 0;
@@ -282,16 +300,16 @@ static int test_emv_pki_sign_idn(struct crypto_pk *icc_cp)
 	if (!icc_pk)
 		return ret;
 
-	struct tlvdb *db = emv_pki_sign_idn(icc_cp, idn, sizeof(idn), dd1, sizeof(dd1));
+	struct tlvdb *db = emv_pki_sign_idn(icc_cp,  &idn_tlv, &dd1_tlv);
 	if (!db)
 		goto out;
 
-	struct tlvdb *rdb = emv_pki_recover_idn(icc_pk, db, dd1, sizeof(dd1));
+	struct tlvdb *rdb = emv_pki_recover_idn(icc_pk, db, &dd1_tlv);
 	if (!rdb)
 		goto out2;
 
-	const struct tlv *idn_tlv = tlvdb_get(rdb, 0x9f4c, NULL);
-	if (!idn_tlv || idn_tlv->len != sizeof(idn) || memcmp(idn_tlv->value, idn, sizeof(idn)))
+	const struct tlv *ridn_tlv = tlvdb_get(rdb, 0x9f4c, NULL);
+	if (!tlv_equal(&idn_tlv, ridn_tlv))
 		goto out3;
 
 	ret = 0;

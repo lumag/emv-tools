@@ -43,6 +43,10 @@ int main(void)
 	const unsigned char pse_name[] = {
 		0x31, 0x50, 0x41, 0x59, 0x2e, 0x53, 0x59, 0x53, 0x2e, 0x44, 0x44, 0x46, 0x30, 0x31
 	};
+	const struct tlv pse_tlv = {
+		.len = sizeof(pse_name),
+		.value = pse_name,
+	};
 
 	sc = scard_init(NULL);
 	if (!sc) {
@@ -56,7 +60,7 @@ int main(void)
 		return 1;
 	}
 
-	struct tlvdb *pse = emv_select(sc, pse_name, sizeof(pse_name));
+	struct tlvdb *pse = emv_select(sc, &pse_tlv);
 	if (!pse)
 		return 1;
 
