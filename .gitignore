@@ -9,6 +9,7 @@
 *.log
 *.o
 *.orig
+*.swo
 *.swp
 *.trs
 .deps/
@@ -33,6 +34,7 @@ Makefile
 
 /data/config.txt
 /data/notinst.txt
+/data/*.0
 
 /lib/emu/emu_lex.c
 /lib/emu/emu_syntax.c
@@ -48,8 +50,8 @@ Makefile
 /src/emv_ppse
 /src/emv_pse
 /src/emv_select
-/src/capk-verify
 
+/test/capk-verify
 /test/cda-test
 /test/crypto-test
 /test/dda-test
