@@ -42,6 +42,21 @@ m4_ifdef([AM_EXTRA_RECURSIVE_TARGETS],
 	 [AC_MSG_WARN([Recursive gcov target will be unsupported due to old Automake])])
 AM_CONDITIONAL([USE_GCOV], [test "x$enable_gcov" != "xno"])
 
+AC_ARG_ENABLE([valgrind-tests],
+	      [AS_HELP_STRING([--disable-valgrind-tests],
+			      [do not run self tests under valgrind])],
+	      [enable_valgrind=$enableval],
+	      [enable_valgrind=yes])
+AC_ARG_VAR([VALGRIND], [Valgrind command to use])
+VALGRIND_OPTS="-q --error-exitcode=2 --leak-check=full"
+AS_IF([test "x$enable_valgrind" != "xno"],
+      [AC_CACHE_CHECK([for valgrind tool], [ac_cv_path_VALGRIND],
+		      [AC_PATH_PROGS_FEATURE_CHECK([VALGRIND], [valgrind],
+			[$ac_path_VALGRIND $VALGRIND_OPTS true \
+			 && ac_cv_path_VALGRIND="$ac_path_VALGRIND" ac_path_VALGRIND_found=:],
+			[AC_MSG_ERROR([could not find valgrind tool])])])
+      AC_SUBST([VALGRIND], ["$ac_cv_path_VALGRIND $VALGRIND_OPTS"])])
+
 # Checks for libraries.
 PKG_CHECK_MODULES([CONFIG], [libconfig])
 OPENEMV_PRIVATE_PKG([libconfig])

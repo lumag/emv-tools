@@ -28,3 +28,4 @@ TESTS = \
 	sda-test
 
 TESTS_ENVIRONMENT = env OPENEMV_CONFIG="$(builddir)"/../data/notinst.txt
+LOG_COMPILER = $(VALGRIND)
