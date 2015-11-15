@@ -31,7 +31,7 @@ OPENEMV_CHECK_CFLAG([-Wformat=2])
 AC_ARG_ENABLE([gcov],
 	      [AS_HELP_STRING([--enable-gcov],
 			      [use Gcov to test the test suite])],
-			      [],
+			      [enable_gcov=$enableval],
 			      [enable_gcov=no])
 AS_IF([test "x$enable_gcov" != "xno"],
       [OPENEMV_CHECK_CFLAG([--coverage])
