@@ -53,9 +53,10 @@ AS_IF([test "x$enable_valgrind" != "xno"],
       [AC_CACHE_CHECK([for valgrind tool], [ac_cv_path_VALGRIND],
 		      [AC_PATH_PROGS_FEATURE_CHECK([VALGRIND], [valgrind],
 			[$ac_path_VALGRIND $VALGRIND_OPTS true \
-			 && ac_cv_path_VALGRIND="$ac_path_VALGRIND" ac_path_VALGRIND_found=:],
-			[AC_MSG_ERROR([could not find valgrind tool])])])
-      AC_SUBST([VALGRIND], ["$ac_cv_path_VALGRIND $VALGRIND_OPTS"])])
+			 && ac_cv_path_VALGRIND="$ac_path_VALGRIND" ac_path_VALGRIND_found=:])])
+      AS_IF([test "x$ac_cv_path_VALGRIND" = "x"],
+	    [AC_MSG_WARN([could not find Valgrind tool])],
+	    [AC_SUBST([VALGRIND], ["$ac_cv_path_VALGRIND $VALGRIND_OPTS"])])])
 
 # Checks for libraries.
 PKG_CHECK_MODULES([CONFIG], [libconfig])
