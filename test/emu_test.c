@@ -36,6 +36,10 @@ int main(int argc, char **argv)
 
 	if (argc == 1) {
 		fname = openemv_config_get_str("scard.emu.file", NULL);
+		if (!fname) {
+			fprintf(stderr, "specify emu file\n");
+			return 1;
+		}
 		f = fopen(fname, "r");
 	} else if (!strcmp(argv[1], "-")) {
 		fname = "<stdin>";
